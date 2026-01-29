@@ -1,13 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import ProgressBar from "@/components/ProgressBar";
 import PillarSection from "@/components/PillarSection";
 import DiagnosticResult from "@/components/DiagnosticResult";
 import LeadCaptureForm, { LeadData } from "@/components/LeadCaptureForm";
 import { pillars, allQuestions, calculateScore } from "@/data/diagnosticQuestions";
+import { useInsertLead } from "@/hooks/useLeads";
 import allevoLogo from "@/assets/allevo-logo.png";
+import type { Json } from "@/integrations/supabase/types";
 
 type View = "intro" | "questions" | "result";
 
@@ -15,6 +17,8 @@ const Index = () => {
   const [view, setView] = useState<View>("intro");
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [leadData, setLeadData] = useState<LeadData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const insertLead = useInsertLead();
 
   // Scroll to top when view changes
   useEffect(() => {
@@ -39,9 +43,34 @@ const Index = () => {
     setView("questions");
   };
 
-  const handleSubmit = () => {
-    if (allAnswered) {
+  const handleSubmit = async () => {
+    if (!allAnswered || !leadData || !result) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Save lead to database
+      await insertLead.mutateAsync({
+        nome: leadData.nome,
+        telefone: leadData.telefone,
+        email: leadData.email,
+        empresa: leadData.empresa,
+        porte_empresa: leadData.porte,
+        departamento: leadData.departamento,
+        cargo: leadData.cargo,
+        resultado_diagnostico: {
+          totalScore: result.totalScore,
+          maxScore: result.maxScore,
+          percentage: result.percentage,
+          stage: result.stage,
+          pillarScores: result.pillarScores,
+          answers: answers,
+        } as unknown as Json,
+      });
       setView("result");
+    } catch (error) {
+      console.error("Error saving lead:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -134,12 +163,19 @@ const Index = () => {
                   <Button
                     size="lg"
                     onClick={handleSubmit}
-                    disabled={!allAnswered}
+                    disabled={!allAnswered || isSubmitting}
                     className="w-full py-6 text-lg font-semibold"
                   >
-                    {allAnswered
-                      ? "Ver Resultado"
-                      : `Responda todas as perguntas (${answeredCount}/${totalQuestions})`}
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : allAnswered ? (
+                      "Ver Resultado"
+                    ) : (
+                      `Responda todas as perguntas (${answeredCount}/${totalQuestions})`
+                    )}
                   </Button>
                 </div>
               </div>
