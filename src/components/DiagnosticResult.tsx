@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, BookOpen, ArrowRight, CheckCircle2 } from "lucide-react";
+import { RotateCcw, BookOpen, ArrowRight, CheckCircle2, Target, Lightbulb } from "lucide-react";
 import StageCard from "./StageCard";
-import PillarResult from "./PillarResult";
 import { maturityStages, type MaturityStage } from "@/data/diagnosticQuestions";
-import { getInterpretation, type Course } from "@/data/interpretations";
+import { coursesByPillarAndStage, getCourseForPillar, type AllevoCourse } from "@/data/allevoCourses";
+import { getPillarInterpretation, getStageKeyFromPercentage, type PillarInterpretation } from "@/data/pillarInterpretations";
 import type { LeadData } from "./LeadCaptureForm";
 
 interface PillarScore {
@@ -26,30 +26,114 @@ interface DiagnosticResultProps {
   onRestart: () => void;
 }
 
-const CourseCard = ({ course }: { course: Course }) => (
+const getStageName = (stageKey: string): string => {
+  switch (stageKey) {
+    case "fundamentacao": return "Fundamentação";
+    case "consolidacao": return "Consolidação";
+    case "estrategico": return "Estratégico";
+    default: return stageKey;
+  }
+};
+
+const PillarDetailCard = ({ 
+  pillar, 
+  interpretation, 
+  course, 
+  stageKey,
+  index 
+}: { 
+  pillar: PillarScore; 
+  interpretation: PillarInterpretation; 
+  course: AllevoCourse | null;
+  stageKey: string;
+  index: number;
+}) => (
   <motion.div
-    initial={{ opacity: 0, y: 10 }}
+    initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="glass-card p-5 flex flex-col h-full"
+    transition={{ delay: 0.3 + index * 0.1 }}
+    className="glass-card p-6 space-y-4"
   >
-    <div className="flex items-start gap-3 mb-3">
-      <div className="p-2 rounded-lg bg-primary/20 shrink-0">
-        <BookOpen className="w-5 h-5 text-primary" />
+    {/* Header */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">{pillar.icon}</span>
+        <div>
+          <h4 className="font-semibold text-foreground">{pillar.pillarName}</h4>
+          <p className="text-sm text-muted-foreground">
+            {pillar.score} de {pillar.maxScore} pontos ({Math.round(pillar.percentage)}%)
+          </p>
+        </div>
       </div>
-      <div className="flex-1">
-        <h4 className="font-semibold text-foreground mb-1">{course.name}</h4>
-        {course.duration && (
-          <p className="text-xs text-muted-foreground">{course.duration} • {course.level}</p>
-        )}
+      <div className="text-right">
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+          stageKey === "fundamentacao" ? "bg-amber-500/20 text-amber-400" :
+          stageKey === "consolidacao" ? "bg-blue-500/20 text-blue-400" :
+          "bg-emerald-500/20 text-emerald-400"
+        }`}>
+          {getStageName(stageKey)}
+        </span>
       </div>
     </div>
-    <p className="text-sm text-foreground/80 leading-relaxed flex-1">
-      {course.description}
-    </p>
-    {course.url && (
-      <Button variant="ghost" size="sm" className="mt-3 self-start text-primary hover:text-primary/80">
-        Saiba mais <ArrowRight className="w-4 h-4 ml-1" />
-      </Button>
+
+    {/* Progress bar */}
+    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${pillar.percentage}%` }}
+        transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
+        className={`h-full rounded-full ${
+          stageKey === "fundamentacao" ? "bg-amber-500" :
+          stageKey === "consolidacao" ? "bg-blue-500" :
+          "bg-emerald-500"
+        }`}
+      />
+    </div>
+
+    {/* Interpretation */}
+    <div className="bg-secondary/30 rounded-lg p-4">
+      <div className="flex items-start gap-2 mb-2">
+        <Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+        <span className="text-sm font-medium text-primary">Diagnóstico</span>
+      </div>
+      <p className="text-sm text-foreground/80 leading-relaxed">
+        {interpretation.interpretation}
+      </p>
+    </div>
+
+    {/* Actions */}
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Target className="w-4 h-4 text-primary" />
+        <span className="text-sm font-medium text-primary">Ações Recomendadas</span>
+      </div>
+      <ul className="space-y-2">
+        {interpretation.actions.slice(0, 3).map((action, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm text-foreground/70">
+            <CheckCircle2 className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+            <span>{action}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {/* Course Recommendation */}
+    {course && (
+      <div className="border-t border-border pt-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-primary/20 shrink-0">
+            <BookOpen className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground mb-1">Próximo passo lógico de evolução</p>
+            <h5 className="font-semibold text-foreground text-sm">{course.name}</h5>
+            <p className="text-xs text-foreground/70 mt-1">{course.description}</p>
+            <p className="text-xs text-primary mt-2">
+              Pilar Allevo: {course.pillarAllevo}
+            </p>
+          </div>
+        </div>
+      </div>
     )}
   </motion.div>
 );
@@ -63,7 +147,23 @@ const DiagnosticResult = ({
   leadData,
   onRestart,
 }: DiagnosticResultProps) => {
-  const interpretation = getInterpretation(stage, leadData);
+  // Processar cada pilar individualmente
+  const pillarDetails = pillarScores.map((pillar) => {
+    const stageKey = getStageKeyFromPercentage(pillar.percentage);
+    const interpretation = getPillarInterpretation(pillar.pillarId, stageKey, leadData);
+    const course = getCourseForPillar(pillar.pillarId, stageKey);
+    return { pillar, stageKey, interpretation, course };
+  });
+
+  // Agrupar cursos únicos recomendados
+  const uniqueCourses = pillarDetails
+    .filter(p => p.course)
+    .reduce((acc, p) => {
+      if (p.course && !acc.find(c => c.id === p.course!.id)) {
+        acc.push(p.course);
+      }
+      return acc;
+    }, [] as AllevoCourse[]);
 
   return (
     <motion.div
@@ -98,7 +198,7 @@ const DiagnosticResult = ({
           ))}
         </div>
 
-        {/* Main Result Card */}
+        {/* Main Result Summary */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -107,7 +207,7 @@ const DiagnosticResult = ({
         >
           <div className="text-center mb-6">
             <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4">
-              Seu nível de maturidade:{" "}
+              Nível Geral de Maturidade:{" "}
               <span className="text-primary">{stage.name}</span>
             </h2>
             
@@ -122,84 +222,73 @@ const DiagnosticResult = ({
                 <p className="text-sm text-muted-foreground">de {maxScore} pontos</p>
               </div>
             </div>
-          </div>
 
-          {/* Personalized Interpretation */}
-          <div className="mb-6">
-            <h3 className="text-xl font-semibold text-primary mb-3">
-              {interpretation.title}
-            </h3>
-            <p className="text-foreground/90 leading-relaxed">
-              {interpretation.description}
+            <p className="text-foreground/80 leading-relaxed max-w-2xl mx-auto">
+              {stage.description}
             </p>
-          </div>
-
-          {/* Actions */}
-          <div className="bg-secondary/50 rounded-xl p-6">
-            <p className="text-sm font-semibold text-primary mb-4 flex items-center gap-2">
-              👉 Ações sugeridas para você:
-            </p>
-            <ul className="space-y-3">
-              {interpretation.actions.map((action, index) => (
-                <motion.li
-                  key={index}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  className="flex items-start gap-3"
-                >
-                  <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground/80 text-sm leading-relaxed">{action}</span>
-                </motion.li>
-              ))}
-            </ul>
           </div>
         </motion.div>
 
-        {/* Course Recommendations */}
-        {interpretation.courses.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mb-8"
-          >
-            <h3 className="text-xl font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              Cursos Recomendados para Você
-            </h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              {interpretation.courses.map((course, index) => (
-                <CourseCard key={course.id} course={course} />
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Pillar Breakdown */}
+        {/* Individual Pillar Results */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.4 }}
           className="mb-8"
         >
-          <h3 className="text-xl font-display font-semibold text-foreground mb-4">
-            Resultados por Pilar
+          <h3 className="text-xl font-display font-semibold text-foreground mb-6 flex items-center gap-2">
+            📊 Análise Detalhada por Pilar
           </h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            {pillarScores.map((pillar, index) => (
-              <PillarResult
-                key={pillar.pillarId}
-                pillarName={pillar.pillarName}
-                icon={pillar.icon}
-                percentage={pillar.percentage}
-                score={pillar.score}
-                maxScore={pillar.maxScore}
+          <div className="grid gap-6">
+            {pillarDetails.map((detail, index) => (
+              <PillarDetailCard
+                key={detail.pillar.pillarId}
+                pillar={detail.pillar}
+                interpretation={detail.interpretation}
+                course={detail.course}
+                stageKey={detail.stageKey}
                 index={index}
               />
             ))}
           </div>
         </motion.div>
+
+        {/* Summary of Recommended Courses */}
+        {uniqueCourses.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="glass-card p-6 mb-8"
+          >
+            <h3 className="text-xl font-display font-semibold text-foreground mb-4 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-primary" />
+              Sua Trilha de Desenvolvimento
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Baseado no seu diagnóstico, recomendamos os seguintes cursos para evoluir sua maturidade em execução:
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {uniqueCourses.map((course, index) => (
+                <motion.div
+                  key={course.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.7 + index * 0.1 }}
+                  className="flex items-start gap-3 bg-secondary/50 rounded-lg p-4"
+                >
+                  <div className="p-2 rounded-lg bg-primary/20 shrink-0">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-foreground text-sm">{course.name}</h5>
+                    <p className="text-xs text-muted-foreground mt-1">{course.pillarAllevo}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* CTA */}
         <motion.div
