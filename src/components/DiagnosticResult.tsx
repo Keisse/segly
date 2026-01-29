@@ -128,9 +128,6 @@ const PillarDetailCard = ({
             <p className="text-xs text-muted-foreground mb-1">Próximo passo lógico de evolução</p>
             <h5 className="font-semibold text-foreground text-sm">{course.name}</h5>
             <p className="text-xs text-foreground/70 mt-1">{course.description}</p>
-            <p className="text-xs text-primary mt-2">
-              Pilar Allevo: {course.pillarAllevo}
-            </p>
           </div>
         </div>
       </div>
@@ -282,7 +279,7 @@ const DiagnosticResult = ({
                   </div>
                   <div>
                     <h5 className="font-medium text-foreground text-sm">{course.name}</h5>
-                    <p className="text-xs text-muted-foreground mt-1">{course.pillarAllevo}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Estágio: {getStageName(course.stage)}</p>
                   </div>
                 </motion.div>
               ))}
