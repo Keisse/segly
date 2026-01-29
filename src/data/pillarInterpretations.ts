@@ -1686,6 +1686,23 @@ const pillarInterpretationsData: Record<number, Record<StageKey, Record<CargoCat
   },
 };
 
+// Contextualizadores por departamento para enriquecer as interpretações
+const departmentContexts: Record<string, string> = {
+  "Operações": "na área de operações",
+  "Comercial/Vendas": "na área comercial",
+  "Marketing": "na área de marketing",
+  "Financeiro/Administrativo": "na área financeira",
+  "Recursos Humanos": "em recursos humanos",
+  "Tecnologia/TI": "na área de tecnologia",
+  "Jurídico": "na área jurídica",
+  "Logística/Supply Chain": "em logística e supply chain",
+  "Produção/Manufatura": "na área de produção",
+  "Atendimento ao Cliente": "no atendimento ao cliente",
+  "Qualidade": "na área de qualidade",
+  "Projetos/PMO": "na gestão de projetos",
+  "Outro": "na sua área de atuação",
+};
+
 export const getPillarInterpretation = (
   pillarId: number,
   stageKey: StageKey,
@@ -1702,6 +1719,26 @@ export const getPillarInterpretation = (
     return {
       interpretation: `Seu resultado indica ${base.meaning}. O foco deve ser ${base.focus}.`,
       actions: ["Revise suas práticas atuais e identifique oportunidades de melhoria"],
+    };
+  }
+  
+  // Enriquecer a interpretação com contexto do departamento quando relevante
+  const deptContext = departmentContexts[leadData.departamento] || "na sua área";
+  let enrichedInterpretation = interpretation.interpretation;
+  
+  // Adicionar contexto do departamento de forma natural quando apropriado
+  if (!enrichedInterpretation.toLowerCase().includes(leadData.departamento.toLowerCase())) {
+    // Personalizar ações com base no departamento
+    const enrichedActions = interpretation.actions.map((action, index) => {
+      if (index === 0 && leadData.departamento !== "Outro") {
+        return action.replace("sua área", deptContext).replace("seu departamento", deptContext);
+      }
+      return action;
+    });
+    
+    return {
+      interpretation: enrichedInterpretation,
+      actions: enrichedActions,
     };
   }
   
