@@ -13,8 +13,7 @@ const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,15 +21,9 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      if (mode === "login") {
-        await signIn(email, password);
-        toast.success("Login realizado com sucesso!");
-        navigate("/admin-dashboard");
-      } else {
-        await signUp(email, password);
-        toast.success("Conta criada com sucesso! Faça login para continuar.");
-        setMode("login");
-      }
+      await signIn(email, password);
+      toast.success("Login realizado com sucesso!");
+      navigate("/admin-dashboard");
     } catch (error: any) {
       console.error("Auth error:", error);
       toast.error(error.message || "Erro ao autenticar. Tente novamente.");
@@ -57,9 +50,7 @@ const AdminLogin = () => {
               Admin Dashboard
             </h1>
             <p className="text-muted-foreground text-sm">
-              {mode === "login"
-                ? "Faça login para acessar o painel administrativo"
-                : "Crie sua conta de administrador"}
+              Faça login para acessar o painel administrativo
             </p>
           </div>
 
@@ -107,28 +98,16 @@ const AdminLogin = () => {
               className="w-full py-6 text-lg font-semibold group"
               disabled={isLoading}
             >
-              {isLoading ? (
+            {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  {mode === "login" ? "Entrar" : "Criar Conta"}
+                  Entrar
                   <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </>
               )}
             </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setMode(mode === "login" ? "signup" : "login")}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {mode === "login"
-                ? "Não tem conta? Criar conta"
-                : "Já tem conta? Fazer login"}
-            </button>
-          </div>
         </div>
       </motion.div>
     </div>
