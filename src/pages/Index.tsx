@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -15,6 +15,11 @@ const Index = () => {
   const [view, setView] = useState<View>("intro");
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [leadData, setLeadData] = useState<LeadData | null>(null);
+
+  // Scroll to top when view changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [view]);
 
   const answeredCount = Object.keys(answers).length;
   const totalQuestions = allQuestions.length;
