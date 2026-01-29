@@ -7,6 +7,7 @@ import PillarSection from "@/components/PillarSection";
 import DiagnosticResult from "@/components/DiagnosticResult";
 import LeadCaptureForm, { LeadData } from "@/components/LeadCaptureForm";
 import { pillars, allQuestions, calculateScore } from "@/data/diagnosticQuestions";
+import allevoLogo from "@/assets/allevo-logo.png";
 
 type View = "intro" | "questions" | "result";
 
@@ -57,14 +58,14 @@ const Index = () => {
             className="min-h-screen flex items-center justify-center px-4 py-12"
           >
             <div className="max-w-2xl w-full flex flex-col items-center">
-              <motion.div
+              <motion.img
+                src={allevoLogo}
+                alt="Allevo for Business"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.1 }}
-                className="text-5xl mb-4"
-              >
-                🚀
-              </motion.div>
+                className="h-12 md:h-14 mb-8"
+              />
               
               <motion.h1
                 initial={{ y: 20, opacity: 0 }}
