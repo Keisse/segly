@@ -154,6 +154,7 @@ const Index = () => {
               percentage={result.percentage}
               stage={result.stage}
               pillarScores={result.pillarScores}
+              leadData={leadData!}
               onRestart={handleRestart}
             />
           </motion.div>
