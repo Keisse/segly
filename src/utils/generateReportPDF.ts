@@ -216,7 +216,7 @@ export const generateReportPDF = (data: ReportData): void => {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  const footerText = "Nos proximos dias, voce vai receber uma serie de 9 e-mails educativos sobre esse tema. Apenas aproveite.";
+  const footerText = "Em breve, enviaremos 9 e-mails educativos para te ajudar a conquistar a Alta Performance em Execução. Apenas aproveite.";
   const splitFooter = doc.splitTextToSize(footerText, contentWidth - 20);
   doc.text(splitFooter, pageWidth / 2, yPos + 10, { align: "center" });
 
