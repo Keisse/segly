@@ -26,7 +26,7 @@ export const pillars: Pillar[] = [
   },
   {
     id: 2,
-    name: "Execução e Disciplina Pessoal",
+    name: "Execução e Disciplina",
     icon: "⚡",
     questions: [
       { id: 6, text: "Estabeleço planos claros com metas, prazos e responsáveis bem definidos.", pillar: 2 },
@@ -38,14 +38,14 @@ export const pillars: Pillar[] = [
   },
   {
     id: 3,
-    name: "Execução e Eficiência Corporativa",
+    name: "Execução Organizacional e Cultura Corporativa",
     icon: "🏢",
     questions: [
-      { id: 11, text: "A maioria dos projetos entrega no prazo prometido (ou replaneja cedo, sem \"surpresa\" no final).", pillar: 3 },
-      { id: 12, text: "As entregas do projeto acontecem em cadência (semanal/quinzenal) e não ficam longos períodos sem avanço visível.", pillar: 3 },
-      { id: 13, text: "Impedimentos são registrados, têm dono e são removidos rapidamente (em dias, não em semanas).", pillar: 3 },
-      { id: 14, text: "Existe cobrança e prestação de contas real: cada entrega tem responsável, data e evidência do que foi concluído.", pillar: 3 },
-      { id: 15, text: "O time consegue manter foco: projetos raramente travam por mudanças constantes de prioridade ou novas urgências.", pillar: 3 },
+      { id: 11, text: "A empresa onde trabalho possui processos claros e bem definidos para garantir uma execução consistente em diferentes áreas.", pillar: 3 },
+      { id: 12, text: "As metas e prioridades da organização são comunicadas de forma clara e bem compreendidas por todos.", pillar: 3 },
+      { id: 13, text: "A cultura da empresa valoriza o cumprimento de compromissos e a disciplina na execução.", pillar: 3 },
+      { id: 14, text: "Existe um ambiente seguro para dialogar abertamente sobre erros, aprendizados e melhorias.", pillar: 3 },
+      { id: 15, text: "Os líderes da empresa são coerentes entre o que falam e o que fazem, e reforçam com o exemplo os valores organizacionais.", pillar: 3 },
     ],
   },
   {
