@@ -129,16 +129,15 @@ export const generateReportPDF = (data: ReportData): void => {
     
     const stageKey = getStageKeyFromPercentage(pillar.percentage);
     const interpretation = getPillarInterpretation(pillar.pillarId, stageKey, data.leadData);
-    const course = getCourseForPillar(pillar.pillarId, stageKey);
 
-    // Pillar header
+    // Pillar header - remove emoji icons, use only clean text
     doc.setFillColor(248, 250, 252);
     doc.roundedRect(margin, yPos, contentWidth, 40, 2, 2, "F");
     
     doc.setTextColor(...darkColor);
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text(`${pillar.icon} ${pillar.pillarName}`, margin + 5, yPos + 8);
+    doc.text(pillar.pillarName, margin + 5, yPos + 8);
     
     doc.setTextColor(...grayColor);
     doc.setFontSize(9);
@@ -207,7 +206,7 @@ export const generateReportPDF = (data: ReportData): void => {
     }
   });
 
-  // Footer CTA
+  // Footer message
   checkPageBreak(30);
   yPos += 10;
   
@@ -215,12 +214,11 @@ export const generateReportPDF = (data: ReportData): void => {
   doc.roundedRect(margin, yPos, contentWidth, 25, 3, 3, "F");
   
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("Quer acelerar sua evolução?", pageWidth / 2, yPos + 10, { align: "center" });
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text("Acesse allevoforbusiness.com e fale com um especialista", pageWidth / 2, yPos + 18, { align: "center" });
+  const footerText = "Nos proximos dias, voce vai receber uma serie de 9 e-mails educativos sobre esse tema. Apenas aproveite.";
+  const splitFooter = doc.splitTextToSize(footerText, contentWidth - 20);
+  doc.text(splitFooter, pageWidth / 2, yPos + 10, { align: "center" });
 
   // Save the PDF
   const fileName = `diagnostico-allevo-${data.leadData.nome.split(" ")[0].toLowerCase()}-${new Date().toISOString().split("T")[0]}.pdf`;

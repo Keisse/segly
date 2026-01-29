@@ -309,9 +309,11 @@ const DiagnosticResult = ({
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </a>
-            
-            {/* PDF Download Link */}
-            <button
+          </div>
+          
+          <div className="flex items-center justify-center gap-4">
+            <Button
+              variant="ghost"
               onClick={() => generateReportPDF({
                 totalScore,
                 maxScore,
@@ -320,21 +322,21 @@ const DiagnosticResult = ({
                 pillarScores,
                 leadData
               })}
-              className="mt-4 inline-flex items-center gap-2 text-primary hover:text-primary/80 underline underline-offset-4 text-sm font-medium transition-colors cursor-pointer"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <Download className="w-4 h-4" />
-              Baixe este relatório em PDF
-            </button>
+              <Download className="w-4 h-4 mr-2" />
+              Baixar Relatório
+            </Button>
+            
+            <Button
+              variant="ghost"
+              onClick={onRestart}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Refazer Diagnóstico
+            </Button>
           </div>
-          
-          <Button
-            variant="ghost"
-            onClick={onRestart}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Refazer Diagnóstico
-          </Button>
         </motion.div>
       </div>
     </motion.div>
