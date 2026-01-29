@@ -221,6 +221,7 @@ export const generateReportPDF = (data: ReportData): void => {
   doc.text(splitFooter, pageWidth / 2, yPos + 10, { align: "center" });
 
   // Save the PDF
-  const fileName = `diagnostico-allevo-${data.leadData.nome.split(" ")[0].toLowerCase()}-${new Date().toISOString().split("T")[0]}.pdf`;
+  const firstName = data.leadData.nome.split(" ")[0];
+  const fileName = `Diagnóstico da Alta Performance - ${firstName}.pdf`;
   doc.save(fileName);
 };
