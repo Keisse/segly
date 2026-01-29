@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, BookOpen, CheckCircle2, Target, Lightbulb, ArrowRight } from "lucide-react";
+import { RotateCcw, BookOpen, CheckCircle2, Target, Lightbulb, ArrowRight, Download } from "lucide-react";
 import MaturityGauge from "./MaturityGauge";
 import { maturityStages, type MaturityStage } from "@/data/diagnosticQuestions";
 import { coursesByPillarAndStage, getCourseForPillar, type AllevoCourse } from "@/data/allevoCourses";
 import { getPillarInterpretation, getStageKeyFromPercentage, type PillarInterpretation } from "@/data/pillarInterpretations";
 import type { LeadData } from "./LeadCaptureForm";
 import allevoLogo from "@/assets/allevo-logo.png";
+import { generateReportPDF } from "@/utils/generateReportPDF";
 
 interface PillarScore {
   pillarId: number;
@@ -308,6 +309,22 @@ const DiagnosticResult = ({
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </a>
+            
+            {/* PDF Download Link */}
+            <button
+              onClick={() => generateReportPDF({
+                totalScore,
+                maxScore,
+                percentage,
+                stage,
+                pillarScores,
+                leadData
+              })}
+              className="mt-4 inline-flex items-center gap-2 text-primary hover:text-primary/80 underline underline-offset-4 text-sm font-medium transition-colors cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              Baixe este relatório em PDF
+            </button>
           </div>
           
           <Button
