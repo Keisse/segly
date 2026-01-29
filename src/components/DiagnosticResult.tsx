@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, BookOpen, CheckCircle2, Target, Lightbulb } from "lucide-react";
+import { RotateCcw, BookOpen, CheckCircle2, Target, Lightbulb, ArrowRight } from "lucide-react";
 import MaturityGauge from "./MaturityGauge";
 import { maturityStages, type MaturityStage } from "@/data/diagnosticQuestions";
 import { coursesByPillarAndStage, getCourseForPillar, type AllevoCourse } from "@/data/allevoCourses";
 import { getPillarInterpretation, getStageKeyFromPercentage, type PillarInterpretation } from "@/data/pillarInterpretations";
 import type { LeadData } from "./LeadCaptureForm";
+import allevoLogo from "@/assets/allevo-logo.png";
 
 interface PillarScore {
   pillarId: number;
@@ -119,7 +120,7 @@ const PillarDetailCard = ({
 
     {/* Course Recommendation */}
     {course && (
-      <div className="border-t border-border pt-4">
+      <div className="border-t border-border pt-4 space-y-4">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-lg bg-primary/20 shrink-0">
             <BookOpen className="w-4 h-4 text-primary" />
@@ -130,6 +131,19 @@ const PillarDetailCard = ({
             <p className="text-xs text-foreground/70 mt-1">{course.description}</p>
           </div>
         </div>
+        <a 
+          href="https://allevoforbusiness.com/" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="block"
+        >
+          <Button 
+            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold py-5 rounded-full shadow-lg transition-all duration-300 hover:shadow-primary/30 hover:shadow-xl group"
+          >
+            Quero avançar neste pilar!
+            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </a>
       </div>
     )}
   </motion.div>
@@ -175,6 +189,11 @@ const DiagnosticResult = ({
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
+          <img 
+            src={allevoLogo} 
+            alt="Allevo for Business" 
+            className="h-10 md:h-12 mx-auto mb-6"
+          />
           <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
             Seu Resultado, {leadData.nome.split(" ")[0]}
           </h1>
@@ -265,14 +284,31 @@ const DiagnosticResult = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="text-center space-y-4"
+          className="text-center space-y-6"
         >
-          <Button
-            size="lg"
-            className="w-full max-w-md text-lg py-6 font-semibold"
-          >
-            Falar com Especialista
-          </Button>
+          <div className="glass-card p-6 md:p-8">
+            <img 
+              src={allevoLogo} 
+              alt="Allevo for Business" 
+              className="h-8 mx-auto mb-4"
+            />
+            <p className="text-foreground/80 mb-6">
+              Quer acelerar sua evolução? Fale com um especialista da Allevo e descubra como podemos ajudar você e sua empresa.
+            </p>
+            <a 
+              href="https://allevoforbusiness.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <Button
+                size="lg"
+                className="w-full max-w-md text-lg py-6 font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-full shadow-lg hover:shadow-primary/30 hover:shadow-xl transition-all duration-300 group"
+              >
+                Falar com Especialista
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </a>
+          </div>
           
           <Button
             variant="ghost"
