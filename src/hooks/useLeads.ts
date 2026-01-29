@@ -97,25 +97,34 @@ export function useLead(id: string) {
   });
 }
 
-// Insert new lead (public - no auth required)
+// Insert new lead via secure Edge Function with validation
 export function useInsertLead() {
   return useMutation({
     mutationFn: async (lead: InsertLead) => {
-      const { data, error } = await supabase
-        .from("leads")
-        .insert([lead])
-        .select()
-        .single();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/submit-lead`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(lead),
+      });
 
-      if (error) throw error;
-      return transformLead(data);
+      const result = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = result.details?.join(", ") || result.error || "Erro ao salvar lead";
+        throw new Error(errorMessage);
+      }
+
+      return transformLead(result.lead);
     },
     onSuccess: () => {
       toast.success("Diagnóstico salvo com sucesso!");
     },
-    onError: (error) => {
-      console.error("Error inserting lead:", error);
-      toast.error("Erro ao salvar diagnóstico. Tente novamente.");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao salvar diagnóstico. Tente novamente.");
     },
   });
 }
