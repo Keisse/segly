@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, BookOpen, ArrowRight, CheckCircle2, Target, Lightbulb } from "lucide-react";
-import StageCard from "./StageCard";
+import { RotateCcw, BookOpen, CheckCircle2, Target, Lightbulb } from "lucide-react";
+import MaturityGauge from "./MaturityGauge";
 import { maturityStages, type MaturityStage } from "@/data/diagnosticQuestions";
 import { coursesByPillarAndStage, getCourseForPillar, type AllevoCourse } from "@/data/allevoCourses";
 import { getPillarInterpretation, getStageKeyFromPercentage, type PillarInterpretation } from "@/data/pillarInterpretations";
@@ -183,46 +183,19 @@ const DiagnosticResult = ({
           </p>
         </motion.div>
 
-        {/* Stage Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
-          {maturityStages.map((s, index) => (
-            <StageCard
-              key={s.id}
-              stage={s}
-              isActive={s.id === stage.id}
-              index={index}
-            />
-          ))}
-        </div>
+        {/* Maturity Gauge */}
+        <MaturityGauge percentage={percentage} stage={stage} />
 
-        {/* Main Result Summary */}
+        {/* Score Summary */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="glass-card p-8 mb-8"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="flex justify-center gap-6 mb-8"
         >
-          <div className="text-center mb-6">
-            <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4">
-              Nível Geral de Maturidade:{" "}
-              <span className="text-primary">{stage.name}</span>
-            </h2>
-            
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="text-center">
-                <p className="text-4xl font-bold text-primary">{Math.round(percentage)}%</p>
-                <p className="text-sm text-muted-foreground">pontuação geral</p>
-              </div>
-              <div className="h-12 w-px bg-border" />
-              <div className="text-center">
-                <p className="text-4xl font-bold text-foreground">{totalScore}</p>
-                <p className="text-sm text-muted-foreground">de {maxScore} pontos</p>
-              </div>
-            </div>
-
-            <p className="text-foreground/80 leading-relaxed max-w-2xl mx-auto">
-              {stage.description}
-            </p>
+          <div className="text-center px-6 py-3 glass-card">
+            <p className="text-2xl font-bold text-primary">{totalScore}</p>
+            <p className="text-xs text-muted-foreground">de {maxScore} pontos</p>
           </div>
         </motion.div>
 
