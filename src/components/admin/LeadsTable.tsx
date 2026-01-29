@@ -1,0 +1,232 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Eye, Phone } from "lucide-react";
+import type { Lead, LeadStatus } from "@/types/lead";
+import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors } from "@/types/lead";
+import { useUpdateLeadStatus } from "@/hooks/useLeads";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface LeadsTableProps {
+  leads: Lead[];
+  isLoading?: boolean;
+}
+
+const ITEMS_PER_PAGE = 20;
+
+const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
+  const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState<keyof Lead>("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const updateStatus = useUpdateLeadStatus();
+
+  // Sort leads
+  const sortedLeads = [...leads].sort((a, b) => {
+    const aVal = a[sortField];
+    const bVal = b[sortField];
+    
+    if (aVal === null || aVal === undefined) return 1;
+    if (bVal === null || bVal === undefined) return -1;
+    
+    if (sortDirection === "asc") {
+      return aVal > bVal ? 1 : -1;
+    }
+    return aVal < bVal ? 1 : -1;
+  });
+
+  // Paginate
+  const totalPages = Math.ceil(sortedLeads.length / ITEMS_PER_PAGE);
+  const paginatedLeads = sortedLeads.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
+  const handleSort = (field: keyof Lead) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+  };
+
+  const handleStatusChange = (leadId: string, newStatus: LeadStatus) => {
+    updateStatus.mutate({ id: leadId, status: newStatus });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="glass-card p-8 text-center">
+        <div className="animate-pulse text-muted-foreground">
+          Carregando leads...
+        </div>
+      </div>
+    );
+  }
+
+  if (leads.length === 0) {
+    return (
+      <div className="glass-card p-8 text-center">
+        <p className="text-muted-foreground">Nenhum lead encontrado.</p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-card overflow-hidden"
+    >
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border/50 hover:bg-transparent">
+              <TableHead 
+                className="cursor-pointer hover:text-foreground"
+                onClick={() => handleSort("created_at")}
+              >
+                Data/Hora {sortField === "created_at" && (sortDirection === "asc" ? "↑" : "↓")}
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer hover:text-foreground"
+                onClick={() => handleSort("nome")}
+              >
+                Nome {sortField === "nome" && (sortDirection === "asc" ? "↑" : "↓")}
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer hover:text-foreground"
+                onClick={() => handleSort("empresa")}
+              >
+                Empresa {sortField === "empresa" && (sortDirection === "asc" ? "↑" : "↓")}
+              </TableHead>
+              <TableHead>Porte</TableHead>
+              <TableHead>Departamento</TableHead>
+              <TableHead>Cargo</TableHead>
+              <TableHead>Score</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedLeads.map((lead) => {
+              const score = lead.resultado_diagnostico?.percentage ?? 0;
+              const maturityLevel = getMaturityLevel(score);
+              
+              return (
+                <TableRow 
+                  key={lead.id} 
+                  className="border-border/50 hover:bg-secondary/30"
+                >
+                  <TableCell className="text-sm text-muted-foreground">
+                    {format(new Date(lead.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                  </TableCell>
+                  <TableCell className="font-medium">{lead.nome}</TableCell>
+                  <TableCell>{lead.empresa}</TableCell>
+                  <TableCell className="text-sm">{lead.porte_empresa}</TableCell>
+                  <TableCell className="text-sm">{lead.departamento}</TableCell>
+                  <TableCell className="text-sm">{lead.cargo}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${maturityColors[maturityLevel]}`}>
+                      {Math.round(score)}% - {maturityLabels[maturityLevel]}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={lead.status}
+                      onValueChange={(value) => handleStatusChange(lead.id, value as LeadStatus)}
+                    >
+                      <SelectTrigger className={`w-[140px] h-8 text-xs ${statusColors[lead.status]} border-0`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {Object.entries(statusLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => navigate(`/admin-dashboard/lead/${lead.id}`)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        asChild
+                      >
+                        <a href={`tel:${lead.telefone}`}>
+                          <Phone className="w-4 h-4" />
+                        </a>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border/50">
+          <p className="text-sm text-muted-foreground">
+            Mostrando {(page - 1) * ITEMS_PER_PAGE + 1} a{" "}
+            {Math.min(page * ITEMS_PER_PAGE, leads.length)} de {leads.length} leads
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Página {page} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page + 1)}
+              disabled={page === totalPages}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+export default LeadsTable;
