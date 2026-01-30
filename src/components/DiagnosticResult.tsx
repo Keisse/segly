@@ -284,7 +284,7 @@ const DiagnosticResult = ({
               Quer acelerar sua evolução? Fale com um especialista da Allevo e descubra como podemos ajudar você e sua empresa.
             </p>
             <a 
-              href="https://wa.me/5511917510567"
+              href="https://wa.me/5511917510567?text=Ol%C3%A1!%20Vim%20do%20diagn%C3%B3stico%20e%20quero%20saber%20mais%20sobre%20a%20Allevo%20For%20Business."
               target="_blank" 
               rel="noopener noreferrer"
             >
