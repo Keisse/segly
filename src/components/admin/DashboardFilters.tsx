@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -14,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Filter, X } from "lucide-react";
+import { CalendarIcon, Filter, Search, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { LeadStatus } from "@/types/lead";
@@ -62,6 +63,7 @@ interface FiltersState {
   porte?: string;
   departamento?: string;
   cargo?: string;
+  searchName?: string;
 }
 
 interface DashboardFiltersProps {
@@ -93,6 +95,24 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
     >
       {/* Quick filters */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Search by name */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome..."
+            value={filters.searchName || ""}
+            onChange={(e) =>
+              onFiltersChange({
+                ...filters,
+                searchName: e.target.value || undefined,
+              })
+            }
+            className="pl-9 w-[200px] h-9 bg-card"
+          />
+        </div>
+
+        <div className="h-6 w-px bg-border/50" />
+
         <Button
           variant={isExpanded ? "default" : "outline"}
           size="sm"
@@ -103,7 +123,7 @@ const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) =
           Filtros
           {hasActiveFilters && (
             <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-              {Object.values(filters).filter(v => v !== undefined).length}
+              {Object.values(filters).filter(v => v !== undefined && v !== "").length}
             </span>
           )}
         </Button>

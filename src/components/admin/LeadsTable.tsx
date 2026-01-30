@@ -16,11 +16,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Eye, Phone } from "lucide-react";
+import { ChevronLeft, ChevronRight, Phone, Trash2 } from "lucide-react";
 import type { Lead, LeadStatus } from "@/types/lead";
 import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors } from "@/types/lead";
-import { useUpdateLeadStatus } from "@/hooks/useLeads";
+import { useUpdateLeadStatus, useDeleteLead } from "@/hooks/useLeads";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -37,6 +48,7 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
   const [sortField, setSortField] = useState<keyof Lead>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const updateStatus = useUpdateLeadStatus();
+  const deleteLead = useDeleteLead();
 
   // Sort leads
   const sortedLeads = [...leads].sort((a, b) => {
@@ -70,6 +82,10 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
 
   const handleStatusChange = (leadId: string, newStatus: LeadStatus) => {
     updateStatus.mutate({ id: leadId, status: newStatus });
+  };
+
+  const handleDelete = (leadId: string) => {
+    deleteLead.mutate(leadId);
   };
 
   if (isLoading) {
@@ -139,7 +155,14 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                   <TableCell className="text-sm text-muted-foreground">
                     {format(new Date(lead.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   </TableCell>
-                  <TableCell className="font-medium">{lead.nome}</TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => navigate(`/admin-dashboard/lead/${lead.id}`)}
+                      className="font-medium text-primary hover:underline text-left"
+                    >
+                      {lead.nome}
+                    </button>
+                  </TableCell>
                   <TableCell>{lead.empresa}</TableCell>
                   <TableCell className="text-sm">{lead.porte_empresa}</TableCell>
                   <TableCell className="text-sm">{lead.departamento}</TableCell>
@@ -172,20 +195,41 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => navigate(`/admin-dashboard/lead/${lead.id}`)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
                         asChild
                       >
                         <a href={`tel:${lead.telefone}`}>
                           <Phone className="w-4 h-4" />
                         </a>
                       </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-card border-border">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir Lead</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir o lead <strong>{lead.nome}</strong>? 
+                              Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(lead.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
