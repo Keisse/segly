@@ -11,9 +11,7 @@ import { useInsertLead } from "@/hooks/useLeads";
 import { useSendWebhook } from "@/hooks/useWebhook";
 import allevoLogo from "@/assets/allevo-logo.png";
 import type { Json } from "@/integrations/supabase/types";
-
 type View = "intro" | "questions" | "result";
-
 const Index = () => {
   const [view, setView] = useState<View>("intro");
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -24,40 +22,39 @@ const Index = () => {
 
   // Scroll to top when view changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo({
+      top: 0,
+      behavior: "instant"
+    });
   }, [view]);
-
   const answeredCount = Object.keys(answers).length;
   const totalQuestions = allQuestions.length;
   const allAnswered = answeredCount === totalQuestions;
-
   const result = useMemo(() => {
     if (!allAnswered) return null;
     return calculateScore(answers);
   }, [answers, allAnswered]);
-
   const handleAnswerChange = (questionId: number, value: number) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: value
+    }));
   };
-
   const handleStart = async (data: LeadData) => {
     setLeadData(data);
-    
+
     // Send first webhook on lead capture (fire and forget)
     sendWebhook.mutate({
       type: "lead_capture",
       lead: {
         ...data,
-        porte_empresa: data.porte,
-      },
+        porte_empresa: data.porte
+      }
     });
-    
     setView("questions");
   };
-
   const handleSubmit = async () => {
     if (!allAnswered || !leadData || !result) return;
-    
     setIsSubmitting(true);
     try {
       // Save lead to database
@@ -75,8 +72,8 @@ const Index = () => {
           percentage: result.percentage,
           stage: result.stage,
           pillarScores: result.pillarScores,
-          answers: answers,
-        } as unknown as Json,
+          answers: answers
+        } as unknown as Json
       });
 
       // Send second webhook with complete diagnostic (fire and forget)
@@ -84,7 +81,7 @@ const Index = () => {
         type: "diagnostic_complete",
         lead: {
           ...leadData,
-          porte_empresa: leadData.porte,
+          porte_empresa: leadData.porte
         },
         diagnostic: {
           totalScore: result.totalScore,
@@ -92,10 +89,9 @@ const Index = () => {
           percentage: result.percentage,
           stage: result.stage,
           pillarScores: result.pillarScores,
-          answers: answers,
-        },
+          answers: answers
+        }
       });
-
       setView("result");
     } catch (error) {
       console.error("Error saving lead:", error);
@@ -103,73 +99,75 @@ const Index = () => {
       setIsSubmitting(false);
     }
   };
-
   const handleRestart = () => {
     setAnswers({});
     setLeadData(null);
     setView("intro");
   };
-
-  return (
-    <div className="min-h-screen">
+  return <div className="min-h-screen">
       <AnimatePresence mode="wait">
-        {view === "intro" && (
-          <motion.div
-            key="intro"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="min-h-screen flex items-center justify-center px-4 py-12"
-          >
+        {view === "intro" && <motion.div key="intro" initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} exit={{
+        opacity: 0
+      }} className="min-h-screen flex items-center justify-center px-4 py-12">
             <div className="max-w-2xl w-full flex flex-col items-center">
-              <motion.img
-                src={allevoLogo}
-                alt="Allevo for Business"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="h-12 md:h-14 mb-8"
-              />
+              <motion.img src={allevoLogo} alt="Allevo for Business" initial={{
+            scale: 0.8,
+            opacity: 0
+          }} animate={{
+            scale: 1,
+            opacity: 1
+          }} transition={{
+            delay: 0.1
+          }} className="h-12 md:h-14 mb-8" />
               
-              <motion.h1
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4 text-center"
-              >
+              <motion.h1 initial={{
+            y: 20,
+            opacity: 0
+          }} animate={{
+            y: 0,
+            opacity: 1
+          }} transition={{
+            delay: 0.2
+          }} className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4 text-center">
                 Diagnóstico de Execução de{" "}
                 <span className="text-primary">Alta Performance</span>
               </motion.h1>
               
-              <motion.p
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.25 }}
-                className="text-base text-muted-foreground mb-8 leading-relaxed text-center max-w-lg"
-              >
-                Preencha seus dados para iniciar o diagnóstico e descobrir seu nível de maturidade em execução.
-              </motion.p>
+              <motion.p initial={{
+            y: 20,
+            opacity: 0
+          }} animate={{
+            y: 0,
+            opacity: 1
+          }} transition={{
+            delay: 0.25
+          }} className="text-base text-muted-foreground mb-8 leading-relaxed text-center max-w-lg">Realize gratuitamente o diagnóstico em execução da sua carreira e empresa e receba uma análise com recomendações práticas para seu time avançar com sucesso.</motion.p>
 
               <LeadCaptureForm onSubmit={handleStart} />
             </div>
-          </motion.div>
-        )}
+          </motion.div>}
 
-        {view === "questions" && (
-          <motion.div
-            key="questions"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+        {view === "questions" && <motion.div key="questions" initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} exit={{
+        opacity: 0
+      }}>
             <ProgressBar current={answeredCount} total={totalQuestions} />
             
             <div className="max-w-3xl mx-auto px-4 pt-24 pb-32">
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-10"
-              >
+              <motion.div initial={{
+            opacity: 0,
+            y: -20
+          }} animate={{
+            opacity: 1,
+            y: 0
+          }} className="text-center mb-10">
                 <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-2">
                   Responda as perguntas
                 </h1>
@@ -178,62 +176,32 @@ const Index = () => {
                 </p>
               </motion.div>
 
-              {pillars.map((pillar) => (
-                <PillarSection
-                  key={pillar.id}
-                  pillar={pillar}
-                  answers={answers}
-                  onChange={handleAnswerChange}
-                />
-              ))}
+              {pillars.map(pillar => <PillarSection key={pillar.id} pillar={pillar} answers={answers} onChange={handleAnswerChange} />)}
 
               {/* Fixed bottom button */}
               <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border/50">
                 <div className="max-w-3xl mx-auto">
-                  <Button
-                    size="lg"
-                    onClick={handleSubmit}
-                    disabled={!allAnswered || isSubmitting}
-                    className="w-full py-6 text-lg font-semibold"
-                  >
-                    {isSubmitting ? (
-                      <>
+                  <Button size="lg" onClick={handleSubmit} disabled={!allAnswered || isSubmitting} className="w-full py-6 text-lg font-semibold">
+                    {isSubmitting ? <>
                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                         Salvando...
-                      </>
-                    ) : allAnswered ? (
-                      "Ver Resultado"
-                    ) : (
-                      `Responda todas as perguntas (${answeredCount}/${totalQuestions})`
-                    )}
+                      </> : allAnswered ? "Ver Resultado" : `Responda todas as perguntas (${answeredCount}/${totalQuestions})`}
                   </Button>
                 </div>
               </div>
             </div>
-          </motion.div>
-        )}
+          </motion.div>}
 
-        {view === "result" && result && (
-          <motion.div
-            key="result"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <DiagnosticResult
-              totalScore={result.totalScore}
-              maxScore={result.maxScore}
-              percentage={result.percentage}
-              stage={result.stage}
-              pillarScores={result.pillarScores}
-              leadData={leadData!}
-              onRestart={handleRestart}
-            />
-          </motion.div>
-        )}
+        {view === "result" && result && <motion.div key="result" initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} exit={{
+        opacity: 0
+      }}>
+            <DiagnosticResult totalScore={result.totalScore} maxScore={result.maxScore} percentage={result.percentage} stage={result.stage} pillarScores={result.pillarScores} leadData={leadData!} onRestart={handleRestart} />
+          </motion.div>}
       </AnimatePresence>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
