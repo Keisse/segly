@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, ChevronDown, ChevronUp, RefreshCw, Check } from "lucide-react";
 import { useSalesIntelligence, type AnalysisType } from "@/hooks/useSalesIntelligence";
+import { useSaveAIContent } from "@/hooks/useLeadAIContent";
 import ReactMarkdown from "react-markdown";
 
 interface LeadContext {
@@ -24,12 +25,29 @@ interface AnalysisCardProps {
   description: string;
   icon: React.ReactNode;
   type: AnalysisType;
+  leadId: string;
   lead: LeadContext;
+  savedContent: string | null;
 }
 
-export function AnalysisCard({ title, description, icon, type, lead }: AnalysisCardProps) {
+export function AnalysisCard({ title, description, icon, type, leadId, lead, savedContent }: AnalysisCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { content, isLoading, error, generate, reset } = useSalesIntelligence();
+  const { content: generatedContent, isLoading, error, generate, reset, setContent } = useSalesIntelligence();
+  const saveContent = useSaveAIContent();
+
+  // Use saved content if available
+  const content = generatedContent || savedContent;
+
+  // When content is generated, save it to the database
+  useEffect(() => {
+    if (generatedContent && leadId) {
+      saveContent.mutate({
+        leadId,
+        analysisType: type,
+        content: generatedContent,
+      });
+    }
+  }, [generatedContent, leadId, type]);
 
   const handleGenerate = async () => {
     if (content) {
@@ -43,6 +61,7 @@ export function AnalysisCard({ title, description, icon, type, lead }: AnalysisC
   const handleRegenerate = async () => {
     reset();
     await generate(type, lead);
+    setIsExpanded(true);
   };
 
   return (
