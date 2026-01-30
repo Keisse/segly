@@ -344,3 +344,29 @@ export function useDashboardMetrics() {
     },
   });
 }
+
+// Delete lead
+export function useDeleteLead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("leads")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      toast.success("Lead excluído com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Error deleting lead:", error);
+      toast.error("Erro ao excluir lead.");
+    },
+  });
+}

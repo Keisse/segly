@@ -20,6 +20,7 @@ interface FiltersState {
   porte?: string;
   departamento?: string;
   cargo?: string;
+  searchName?: string;
 }
 
 const AdminDashboard = () => {
@@ -39,6 +40,7 @@ const AdminDashboard = () => {
       if (filters.porte && lead.porte_empresa !== filters.porte) return false;
       if (filters.departamento && lead.departamento !== filters.departamento) return false;
       if (filters.cargo && lead.cargo !== filters.cargo) return false;
+      if (filters.searchName && !lead.nome.toLowerCase().includes(filters.searchName.toLowerCase())) return false;
       return true;
     });
   }, [metrics?.leads, filters]);
