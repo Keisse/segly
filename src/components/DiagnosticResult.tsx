@@ -191,11 +191,9 @@ const DiagnosticResult = ({
         y: 0
       }} transition={{
         delay: 0.4
-      }} className="flex justify-center gap-6 mb-8">
-          <div className="text-center px-6 py-3 glass-card shadow-none opacity-100">
-            <p className="text-2xl font-bold text-primary">{totalScore}</p>
-            <p className="text-xs text-muted-foreground">de {maxScore} pontos</p>
-          </div>
+      }} className="text-center mb-8">
+          <p className="text-sm text-muted-foreground mb-1">Allevo Score</p>
+          <p className="text-3xl font-bold text-primary">{totalScore}<span className="text-lg font-normal text-muted-foreground"> de {maxScore}</span></p>
         </motion.div>
 
         {/* Individual Pillar Results */}
