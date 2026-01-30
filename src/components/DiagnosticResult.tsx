@@ -121,7 +121,7 @@ const PillarDetailCard = ({
 
     {/* Course Recommendation */}
     {course && (
-      <div className="border-t border-border pt-4 space-y-4">
+      <div className="border-t border-border pt-4">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-lg bg-primary/20 shrink-0">
             <BookOpen className="w-4 h-4 text-primary" />
@@ -132,19 +132,6 @@ const PillarDetailCard = ({
             <p className="text-xs text-foreground/70 mt-1">{course.description}</p>
           </div>
         </div>
-        <a 
-          href="https://allevoforbusiness.com/" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="block"
-        >
-          <Button 
-            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold py-5 rounded-full shadow-lg transition-all duration-300 hover:shadow-primary/30 hover:shadow-xl group"
-          >
-            Quero avançar neste pilar!
-            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </a>
       </div>
     )}
   </motion.div>
@@ -297,7 +284,7 @@ const DiagnosticResult = ({
               Quer acelerar sua evolução? Fale com um especialista da Allevo e descubra como podemos ajudar você e sua empresa.
             </p>
             <a 
-              href="https://allevoforbusiness.com/" 
+              href="https://wa.me/5511917510567"
               target="_blank" 
               rel="noopener noreferrer"
             >
