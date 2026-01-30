@@ -8,6 +8,7 @@ import DiagnosticResult from "@/components/DiagnosticResult";
 import LeadCaptureForm, { LeadData } from "@/components/LeadCaptureForm";
 import { pillars, allQuestions, calculateScore } from "@/data/diagnosticQuestions";
 import { useInsertLead } from "@/hooks/useLeads";
+import { useSendWebhook } from "@/hooks/useWebhook";
 import allevoLogo from "@/assets/allevo-logo.png";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -19,6 +20,7 @@ const Index = () => {
   const [leadData, setLeadData] = useState<LeadData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const insertLead = useInsertLead();
+  const sendWebhook = useSendWebhook();
 
   // Scroll to top when view changes
   useEffect(() => {
@@ -38,8 +40,18 @@ const Index = () => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleStart = (data: LeadData) => {
+  const handleStart = async (data: LeadData) => {
     setLeadData(data);
+    
+    // Send first webhook on lead capture (fire and forget)
+    sendWebhook.mutate({
+      type: "lead_capture",
+      lead: {
+        ...data,
+        porte_empresa: data.porte,
+      },
+    });
+    
     setView("questions");
   };
 
@@ -66,6 +78,24 @@ const Index = () => {
           answers: answers,
         } as unknown as Json,
       });
+
+      // Send second webhook with complete diagnostic (fire and forget)
+      sendWebhook.mutate({
+        type: "diagnostic_complete",
+        lead: {
+          ...leadData,
+          porte_empresa: leadData.porte,
+        },
+        diagnostic: {
+          totalScore: result.totalScore,
+          maxScore: result.maxScore,
+          percentage: result.percentage,
+          stage: result.stage,
+          pillarScores: result.pillarScores,
+          answers: answers,
+        },
+      });
+
       setView("result");
     } catch (error) {
       console.error("Error saving lead:", error);
