@@ -44,6 +44,7 @@ import {
   Radar,
   ResponsiveContainer,
 } from "recharts";
+import { SalesIntelligenceSection } from "@/components/sales/SalesIntelligenceSection";
 
 const LeadDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -315,6 +316,9 @@ const LeadDetail = () => {
             </div>
           </motion.div>
         </div>
+
+        {/* Sales Intelligence Section */}
+        <SalesIntelligenceSection lead={lead} />
 
         {/* Notes Section */}
         <motion.div
