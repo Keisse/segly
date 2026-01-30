@@ -12,6 +12,7 @@ export interface Lead {
   status: LeadStatus;
   notas: Nota[];
   historico: HistoricoItem[];
+  responsavel: string | null;
 }
 
 export interface ResultadoDiagnostico {

@@ -20,6 +20,7 @@ function transformLead(row: any): Lead {
     status: row.status as LeadStatus,
     notas: (row.notas as Nota[]) || [],
     historico: (row.historico as HistoricoItem[]) || [],
+    responsavel: row.responsavel || null,
   };
 }
 
@@ -312,9 +313,9 @@ export function useDashboardMetrics() {
         });
       }
 
-      // Distribution by porte
-      const porteDistribution = leads.reduce((acc, l) => {
-        acc[l.porte_empresa] = (acc[l.porte_empresa] || 0) + 1;
+      // Distribution by cargo
+      const cargoDistribution = leads.reduce((acc, l) => {
+        acc[l.cargo] = (acc[l.cargo] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
@@ -336,11 +337,40 @@ export function useDashboardMetrics() {
         thisWeek,
         thisMonth,
         chartData,
-        porteDistribution,
+        cargoDistribution,
         departamentoDistribution,
         statusDistribution,
         leads,
       };
+    },
+  });
+}
+
+// Update lead responsavel
+export function useUpdateLeadResponsavel() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, responsavel }: { id: string; responsavel: string }) => {
+      const { data, error } = await supabase
+        .from("leads")
+        .update({ responsavel })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return transformLead(data);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      toast.success("Responsável atualizado!");
+    },
+    onError: (error) => {
+      console.error("Error updating lead responsavel:", error);
+      toast.error("Erro ao atualizar responsável.");
     },
   });
 }

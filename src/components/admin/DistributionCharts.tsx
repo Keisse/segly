@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 interface DistributionChartsProps {
-  porteDistribution: Record<string, number>;
+  cargoDistribution: Record<string, number>;
   departamentoDistribution: Record<string, number>;
 }
 
@@ -28,77 +28,25 @@ const COLORS = [
 ];
 
 const DistributionCharts = ({
-  porteDistribution,
+  cargoDistribution,
   departamentoDistribution,
 }: DistributionChartsProps) => {
-  const porteData = Object.entries(porteDistribution)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
-
   const departamentoData = Object.entries(departamentoDistribution)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
+  const cargoData = Object.entries(cargoDistribution)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Porte Distribution */}
+      {/* Departamento Distribution - Left */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="glass-card p-6"
-      >
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          Distribuição por Porte
-        </h3>
-        {porteData.length > 0 ? (
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={porteData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  innerRadius={50}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name.split(" ")[0]} (${(percent * 100).toFixed(0)}%)`
-                  }
-                  labelLine={false}
-                >
-                  {porteData.map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                  formatter={(value: number) => [`${value} leads`, "Total"]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-center py-8">
-            Sem dados disponíveis
-          </p>
-        )}
-      </motion.div>
-
-      {/* Departamento Distribution */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
         className="glass-card p-6"
       >
         <h3 className="text-lg font-semibold text-foreground mb-4">
@@ -147,8 +95,61 @@ const DistributionCharts = ({
           </p>
         )}
       </motion.div>
+
+      {/* Cargo Distribution - Right */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="glass-card p-6"
+      >
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          Distribuição por Cargo
+        </h3>
+        {cargoData.length > 0 ? (
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={cargoData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  innerRadius={50}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) =>
+                    `${name.split(" ")[0]} (${(percent * 100).toFixed(0)}%)`
+                  }
+                  labelLine={false}
+                >
+                  {cargoData.map((_, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                  }}
+                  formatter={(value: number) => [`${value} leads`, "Total"]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-center py-8">
+            Sem dados disponíveis
+          </p>
+        )}
+      </motion.div>
     </div>
   );
+
 };
 
 export default DistributionCharts;
