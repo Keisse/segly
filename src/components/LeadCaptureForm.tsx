@@ -185,9 +185,9 @@ const LeadCaptureForm = ({ onSubmit }: LeadCaptureFormProps) => {
           <SelectTrigger className="bg-card border-border/50 focus:border-primary">
             <SelectValue placeholder="Selecione..." />
           </SelectTrigger>
-          <SelectContent className="bg-card border-border">
+          <SelectContent className="bg-popover border-border shadow-lg z-[100]">
             {porteOptions.map((option) => (
-              <SelectItem key={option} value={option}>
+              <SelectItem key={option} value={option} className="hover:bg-accent focus:bg-accent cursor-pointer">
                 {option}
               </SelectItem>
             ))}
@@ -205,9 +205,9 @@ const LeadCaptureForm = ({ onSubmit }: LeadCaptureFormProps) => {
           <SelectTrigger className="bg-card border-border/50 focus:border-primary">
             <SelectValue placeholder="Selecione..." />
           </SelectTrigger>
-          <SelectContent className="bg-card border-border">
+          <SelectContent className="bg-popover border-border shadow-lg z-[100]">
             {departamentoOptions.map((option) => (
-              <SelectItem key={option} value={option}>
+              <SelectItem key={option} value={option} className="hover:bg-accent focus:bg-accent cursor-pointer">
                 {option}
               </SelectItem>
             ))}
@@ -225,9 +225,9 @@ const LeadCaptureForm = ({ onSubmit }: LeadCaptureFormProps) => {
           <SelectTrigger className="bg-card border-border/50 focus:border-primary">
             <SelectValue placeholder="Selecione..." />
           </SelectTrigger>
-          <SelectContent className="bg-card border-border">
+          <SelectContent className="bg-popover border-border shadow-lg z-[100]">
             {cargoOptions.map((option) => (
-              <SelectItem key={option} value={option}>
+              <SelectItem key={option} value={option} className="hover:bg-accent focus:bg-accent cursor-pointer">
                 {option}
               </SelectItem>
             ))}
