@@ -28,10 +28,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Phone, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, Phone, Trash2, Eye } from "lucide-react";
 import type { Lead, LeadStatus } from "@/types/lead";
 import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors } from "@/types/lead";
-import { useUpdateLeadStatus, useDeleteLead } from "@/hooks/useLeads";
+import { useUpdateLeadStatus, useDeleteLead, useUpdateLeadResponsavel } from "@/hooks/useLeads";
+import { capitalizeWords, hasAtLeastTwoWords } from "@/lib/formatName";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -47,8 +49,12 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<keyof Lead>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [editingResponsavel, setEditingResponsavel] = useState<string | null>(null);
+  const [responsavelValue, setResponsavelValue] = useState("");
+  const [responsavelError, setResponsavelError] = useState<string | null>(null);
   const updateStatus = useUpdateLeadStatus();
   const deleteLead = useDeleteLead();
+  const updateResponsavel = useUpdateLeadResponsavel();
 
   // Sort leads
   const sortedLeads = [...leads].sort((a, b) => {
@@ -86,6 +92,41 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
 
   const handleDelete = (leadId: string) => {
     deleteLead.mutate(leadId);
+  };
+
+  const handleResponsavelClick = (lead: Lead) => {
+    setEditingResponsavel(lead.id);
+    setResponsavelValue(lead.responsavel || "");
+    setResponsavelError(null);
+  };
+
+  const handleResponsavelBlur = (leadId: string) => {
+    if (responsavelValue.trim() === "") {
+      setEditingResponsavel(null);
+      setResponsavelError(null);
+      return;
+    }
+
+    if (!hasAtLeastTwoWords(responsavelValue)) {
+      setResponsavelError("Informe nome e sobrenome");
+      return;
+    }
+
+    updateResponsavel.mutate({ 
+      id: leadId, 
+      responsavel: capitalizeWords(responsavelValue.trim()) 
+    });
+    setEditingResponsavel(null);
+    setResponsavelError(null);
+  };
+
+  const handleResponsavelKeyDown = (e: React.KeyboardEvent, leadId: string) => {
+    if (e.key === "Enter") {
+      handleResponsavelBlur(leadId);
+    } else if (e.key === "Escape") {
+      setEditingResponsavel(null);
+      setResponsavelError(null);
+    }
   };
 
   if (isLoading) {
@@ -138,6 +179,7 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
               <TableHead>Departamento</TableHead>
               <TableHead>Cargo</TableHead>
               <TableHead>Score</TableHead>
+              <TableHead>Responsável</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -160,7 +202,7 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                       onClick={() => navigate(`/admin-dashboard/lead/${lead.id}`)}
                       className="font-medium text-primary hover:underline text-left"
                     >
-                      {lead.nome}
+                      {capitalizeWords(lead.nome)}
                     </button>
                   </TableCell>
                   <TableCell>{lead.empresa}</TableCell>
@@ -171,6 +213,38 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${maturityColors[maturityLevel]}`}>
                       {Math.round(score)}% - {maturityLabels[maturityLevel]}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {editingResponsavel === lead.id ? (
+                      <div className="flex flex-col">
+                        <Input
+                          value={responsavelValue}
+                          onChange={(e) => {
+                            setResponsavelValue(e.target.value);
+                            setResponsavelError(null);
+                          }}
+                          onBlur={() => handleResponsavelBlur(lead.id)}
+                          onKeyDown={(e) => handleResponsavelKeyDown(e, lead.id)}
+                          placeholder="Nome Sobrenome"
+                          className="h-8 text-xs w-[130px]"
+                          autoFocus
+                        />
+                        {responsavelError && (
+                          <span className="text-xs text-destructive mt-1">{responsavelError}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleResponsavelClick(lead)}
+                        className={`px-2 py-1 rounded text-xs font-medium min-w-[100px] text-left ${
+                          lead.responsavel 
+                            ? "bg-white text-gray-900" 
+                            : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        {lead.responsavel ? capitalizeWords(lead.responsavel) : "Atribuir..."}
+                      </button>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Select
@@ -195,6 +269,15 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
+                        onClick={() => navigate(`/admin-dashboard/lead/${lead.id}`)}
+                        title="Ver detalhes"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
                         asChild
                       >
                         <a href={`tel:${lead.telefone}`}>
@@ -215,7 +298,7 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Excluir Lead</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Tem certeza que deseja excluir o lead <strong>{lead.nome}</strong>? 
+                              Tem certeza que deseja excluir o lead <strong>{capitalizeWords(lead.nome)}</strong>? 
                               Esta ação não pode ser desfeita.
                             </AlertDialogDescription>
                           </AlertDialogHeader>

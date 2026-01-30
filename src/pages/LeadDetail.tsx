@@ -32,6 +32,7 @@ import {
   maturityColors,
   type LeadStatus,
 } from "@/types/lead";
+import { capitalizeWords } from "@/lib/formatName";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import allevoLogo from "@/assets/allevo-logo.png";
@@ -133,7 +134,7 @@ const LeadDetail = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="space-y-1">
               <h1 className="text-2xl font-display font-bold text-foreground">
-                {lead.nome}
+                {capitalizeWords(lead.nome)}
               </h1>
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">

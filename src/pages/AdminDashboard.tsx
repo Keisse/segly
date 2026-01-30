@@ -173,7 +173,7 @@ const AdminDashboard = () => {
         {/* Distribution Charts */}
         {metrics && (
           <DistributionCharts
-            porteDistribution={metrics.porteDistribution}
+            cargoDistribution={metrics.cargoDistribution}
             departamentoDistribution={metrics.departamentoDistribution}
           />
         )}

@@ -26,6 +26,7 @@ export type Database = {
           nome: string
           notas: Json | null
           porte_empresa: string
+          responsavel: string | null
           resultado_diagnostico: Json | null
           status: string
           telefone: string
@@ -41,6 +42,7 @@ export type Database = {
           nome: string
           notas?: Json | null
           porte_empresa: string
+          responsavel?: string | null
           resultado_diagnostico?: Json | null
           status?: string
           telefone: string
@@ -56,6 +58,7 @@ export type Database = {
           nome?: string
           notas?: Json | null
           porte_empresa?: string
+          responsavel?: string | null
           resultado_diagnostico?: Json | null
           status?: string
           telefone?: string
