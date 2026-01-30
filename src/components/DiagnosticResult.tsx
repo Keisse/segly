@@ -265,7 +265,7 @@ const DiagnosticResult = ({
             <p className="text-foreground/80 mb-6">
               Quer acelerar sua evolução? Fale com um especialista da Allevo e descubra como podemos ajudar você e sua empresa.
             </p>
-            <a href="https://wa.me/5511917510567" target="_blank" rel="noopener noreferrer">
+            <a href="https://wa.me/5511917510567?text=Ol%C3%A1!%20Vim%20do%20diagn%C3%B3stico%20e%20quero%20saber%20mais%20sobre%20a%20Allevo%20For%20Business." target="_blank" rel="noopener noreferrer">
               <Button size="lg" className="w-full max-w-md text-lg py-6 font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-full shadow-lg hover:shadow-primary/30 hover:shadow-xl transition-all duration-300 group">
                 Falar com Especialista
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
