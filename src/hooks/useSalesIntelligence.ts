@@ -31,6 +31,7 @@ interface UseSalesIntelligenceReturn {
   error: string | null;
   generate: (type: AnalysisType, lead: LeadContext) => Promise<void>;
   reset: () => void;
+  setContent: (content: string | null) => void;
 }
 
 export function useSalesIntelligence(): UseSalesIntelligenceReturn {
@@ -78,5 +79,5 @@ export function useSalesIntelligence(): UseSalesIntelligenceReturn {
     setError(null);
   };
 
-  return { content, isLoading, error, generate, reset };
+  return { content, isLoading, error, generate, reset, setContent };
 }

@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      lead_ai_content: {
+        Row: {
+          analysis_type: string
+          content: string
+          created_at: string
+          id: string
+          lead_id: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_type: string
+          content: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_type?: string
+          content?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_ai_content_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           cargo: string
