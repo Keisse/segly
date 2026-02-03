@@ -149,13 +149,17 @@ const DiagnosticResult = ({
     };
   });
 
-  // Agrupar cursos únicos recomendados
-  const uniqueCourses = pillarDetails.filter(p => p.course).reduce((acc, p) => {
-    if (p.course && !acc.find(c => c.id === p.course!.id)) {
-      acc.push(p.course);
+  // Agrupar cursos únicos recomendados com informação do pilar
+  const uniqueCoursesWithPillar = pillarDetails.filter(p => p.course).reduce((acc, p) => {
+    if (p.course && !acc.find(c => c.course.id === p.course!.id)) {
+      acc.push({
+        course: p.course,
+        pillarName: p.pillar.pillarName,
+        pillarIcon: p.pillar.icon,
+      });
     }
     return acc;
-  }, [] as AllevoCourse[]);
+  }, [] as { course: AllevoCourse; pillarName: string; pillarIcon: string }[]);
   return <motion.div initial={{
     opacity: 0
   }} animate={{
@@ -214,7 +218,7 @@ const DiagnosticResult = ({
         </motion.div>
 
         {/* Summary of Recommended Courses */}
-        {uniqueCourses.length > 0 && <motion.div initial={{
+        {uniqueCoursesWithPillar.length > 0 && <motion.div initial={{
         opacity: 0
       }} animate={{
         opacity: 1
@@ -229,7 +233,7 @@ const DiagnosticResult = ({
               Baseado no seu diagnóstico, recomendamos os seguintes cursos para evoluir sua maturidade em execução:
             </p>
             <div className="grid gap-3 md:grid-cols-2">
-              {uniqueCourses.map((course, index) => <motion.div key={course.id} initial={{
+              {uniqueCoursesWithPillar.map((item, index) => <motion.div key={item.course.id} initial={{
             opacity: 0,
             x: -10
           }} animate={{
@@ -242,8 +246,12 @@ const DiagnosticResult = ({
                     <BookOpen className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <h5 className="font-medium text-foreground text-sm">{course.name}</h5>
-                    <p className="text-xs text-muted-foreground mt-1">Estágio: {getStageName(course.stage)}</p>
+                    <h5 className="font-medium text-foreground text-sm">{item.course.name}</h5>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <span className="mr-2">{item.pillarIcon}</span>
+                      {item.pillarName}
+                    </p>
+                    <p className="text-xs text-foreground/60 mt-0.5">Estágio: {getStageName(item.course.stage)}</p>
                   </div>
                 </motion.div>)}
             </div>
