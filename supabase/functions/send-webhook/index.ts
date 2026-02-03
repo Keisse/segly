@@ -46,6 +46,9 @@ interface WebhookPayload {
   timestamp: string;
   lead: LeadData;
   diagnostic?: DiagnosticResult;
+  preencheu_diagnostico: "Sim" | "Não";
+  allevo_score?: number;
+  nivel_maturidade?: string;
 }
 
 Deno.serve(async (req) => {
@@ -97,6 +100,9 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Determine if diagnostic was completed
+    const isDiagnosticComplete = body.type === "diagnostic_complete";
+
     // Prepare webhook payload
     const webhookPayload: WebhookPayload = {
       type: body.type,
@@ -110,11 +116,14 @@ Deno.serve(async (req) => {
         departamento: body.lead.departamento,
         cargo: body.lead.cargo,
       },
+      preencheu_diagnostico: isDiagnosticComplete ? "Sim" : "Não",
     };
 
     // Add diagnostic data if present
     if (body.diagnostic) {
       webhookPayload.diagnostic = body.diagnostic;
+      webhookPayload.allevo_score = body.diagnostic.totalScore;
+      webhookPayload.nivel_maturidade = body.diagnostic.stage?.name;
     }
 
     console.log(`Sending ${body.type} webhook...`);
