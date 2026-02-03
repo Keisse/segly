@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, BookOpen, CheckCircle2, Target, Lightbulb, ArrowRight, Download } from "lucide-react";
+import MiniProgressRing from "./MiniProgressRing";
 import MaturityGauge from "./MaturityGauge";
 import { maturityStages, type MaturityStage } from "@/data/diagnosticQuestions";
 import { coursesByPillarAndStage, getCourseForPillar, type AllevoCourse } from "@/data/allevoCourses";
@@ -156,10 +157,11 @@ const DiagnosticResult = ({
         course: p.course,
         pillarId: p.pillar.pillarId,
         pillarName: p.pillar.pillarName,
+        percentage: p.pillar.percentage,
       });
     }
     return acc;
-  }, [] as { course: AllevoCourse; pillarId: number; pillarName: string }[]);
+  }, [] as { course: AllevoCourse; pillarId: number; pillarName: string; percentage: number }[]);
   return <motion.div initial={{
     opacity: 0
   }} animate={{
@@ -242,8 +244,8 @@ const DiagnosticResult = ({
           }} transition={{
             delay: 0.7 + index * 0.1
           }} className="flex items-start gap-3 bg-secondary/50 rounded-lg p-4">
-                  <div className="p-2 rounded-lg bg-primary/20 shrink-0">
-                    <BookOpen className="w-4 h-4 text-primary" />
+                  <div className="shrink-0">
+                    <MiniProgressRing percentage={item.percentage} size={32} strokeWidth={3} />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">
