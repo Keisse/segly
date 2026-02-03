@@ -154,12 +154,12 @@ const DiagnosticResult = ({
     if (p.course && !acc.find(c => c.course.id === p.course!.id)) {
       acc.push({
         course: p.course,
+        pillarId: p.pillar.pillarId,
         pillarName: p.pillar.pillarName,
-        pillarIcon: p.pillar.icon,
       });
     }
     return acc;
-  }, [] as { course: AllevoCourse; pillarName: string; pillarIcon: string }[]);
+  }, [] as { course: AllevoCourse; pillarId: number; pillarName: string }[]);
   return <motion.div initial={{
     opacity: 0
   }} animate={{
@@ -248,8 +248,7 @@ const DiagnosticResult = ({
                   <div>
                     <h5 className="font-medium text-foreground text-sm">{item.course.name}</h5>
                     <p className="text-xs text-muted-foreground mt-1">
-                      <span className="mr-2">{item.pillarIcon}</span>
-                      {item.pillarName}
+                      Pilar {item.pillarId} - {item.pillarName}
                     </p>
                     <p className="text-xs text-foreground/60 mt-0.5">Estágio: {getStageName(item.course.stage)}</p>
                   </div>
