@@ -246,10 +246,10 @@ const DiagnosticResult = ({
                     <BookOpen className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <h5 className="font-medium text-foreground text-sm">{item.course.name}</h5>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mb-1">
                       Pilar {item.pillarId} - {item.pillarName}
                     </p>
+                    <h5 className="font-medium text-foreground text-sm">{item.course.name}</h5>
                     <p className="text-xs text-foreground/60 mt-0.5">Estágio: {getStageName(item.course.stage)}</p>
                   </div>
                 </motion.div>)}
