@@ -246,16 +246,31 @@ const ActionPlanPage = () => {
                       </p>
                     </div>
 
-                    {/* O que fazer */}
+                    {/* Ação sugerida */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <Target className="w-5 h-5 text-primary" />
                         <h3 className="font-semibold text-lg">Ação sugerida</h3>
                       </div>
-                      <div className="bg-primary/10 rounded-lg p-4 ml-7">
+                      <div className="bg-primary/10 rounded-lg p-4 ml-7 space-y-4">
                         <p className="text-foreground font-medium">
                           {recommendation.acao}
                         </p>
+                        
+                        {/* Na empresa */}
+                        <div className="pt-3 border-t border-primary/20 space-y-3">
+                          <p className="text-sm font-semibold text-primary">Na empresa:</p>
+                          <div className="grid md:grid-cols-2 gap-3">
+                            <div className="bg-background/50 rounded-lg p-3 border border-border/30">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">Individual</p>
+                              <p className="text-sm text-foreground">{recommendation.acaoIndividual}</p>
+                            </div>
+                            <div className="bg-background/50 rounded-lg p-3 border border-border/30">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">Coletivo</p>
+                              <p className="text-sm text-foreground">{recommendation.acaoColetiva}</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 

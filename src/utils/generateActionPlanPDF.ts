@@ -65,11 +65,11 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.text(interpretacaoLines, leftMargin, yPosition);
   yPosition += interpretacaoLines.length * 5 + 10;
   
-  // Section: O que fazer
+  // Section: Ação sugerida
   doc.setFontSize(12);
   doc.setTextColor(...primaryColor);
   doc.setFont("helvetica", "bold");
-  doc.text("O que fazer", leftMargin, yPosition);
+  doc.text("Ação sugerida", leftMargin, yPosition);
   yPosition += 8;
   
   doc.setFontSize(10);
@@ -78,6 +78,31 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   const acaoLines = doc.splitTextToSize(recommendation.acao, contentWidth);
   doc.text(acaoLines, leftMargin, yPosition);
   yPosition += acaoLines.length * 5 + 10;
+  
+  // Section: Na empresa
+  doc.setFontSize(11);
+  doc.setTextColor(...primaryColor);
+  doc.setFont("helvetica", "bold");
+  doc.text("Na empresa:", leftMargin, yPosition);
+  yPosition += 8;
+  
+  doc.setFontSize(10);
+  doc.setTextColor(...darkColor);
+  doc.setFont("helvetica", "bold");
+  doc.text("Individual:", leftMargin, yPosition);
+  yPosition += 6;
+  doc.setFont("helvetica", "normal");
+  const individualLines = doc.splitTextToSize(recommendation.acaoIndividual, contentWidth);
+  doc.text(individualLines, leftMargin, yPosition);
+  yPosition += individualLines.length * 5 + 6;
+  
+  doc.setFont("helvetica", "bold");
+  doc.text("Coletivo:", leftMargin, yPosition);
+  yPosition += 6;
+  doc.setFont("helvetica", "normal");
+  const coletivoLines = doc.splitTextToSize(recommendation.acaoColetiva, contentWidth);
+  doc.text(coletivoLines, leftMargin, yPosition);
+  yPosition += coletivoLines.length * 5 + 10;
   
   // Section: Prazo sugerido
   doc.setFontSize(12);
