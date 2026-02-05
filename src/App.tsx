@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import LeadDetail from "./pages/LeadDetail";
+import ActionPlanPage from "./pages/ActionPlanPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/plano-acao" element={<ActionPlanPage />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route
             path="/admin-dashboard"
