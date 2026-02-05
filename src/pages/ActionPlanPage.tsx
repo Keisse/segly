@@ -250,7 +250,7 @@ const ActionPlanPage = () => {
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <Target className="w-5 h-5 text-primary" />
-                        <h3 className="font-semibold text-lg">O que fazer</h3>
+                        <h3 className="font-semibold text-lg">Ação sugerida</h3>
                       </div>
                       <div className="bg-primary/10 rounded-lg p-4 ml-7">
                         <p className="text-foreground font-medium">
