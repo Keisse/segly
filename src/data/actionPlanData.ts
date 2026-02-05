@@ -52,7 +52,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos de Estratégia",
       cursoCode: "1.1",
       prazo: "30 dias",
-      indicador: "Conseguir articular verbalmente como suas entregas contribuem para os objetivos estratégicos da área",
+      indicador: "Apresentar para sua liderança como suas entregas se conectam aos objetivos estratégicos da área",
     },
     consolidacao: {
       interpretacao: "Você já compreende a estratégia e usa dados para decidir, mas precisa fortalecer visão de longo prazo e conexão entre áreas.",
@@ -62,7 +62,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Execução Estratégica",
       cursoCode: "1.2",
       prazo: "45 dias",
-      indicador: "Apresentar uma proposta de melhoria baseada em análise de dados e impacto estratégico",
+      indicador: "Submeter uma proposta de melhoria estratégica para aprovação da gestão, com análise de dados e impacto",
     },
     estrategico: {
       interpretacao: "Você atua com visão de futuro, clareza de impacto e decisões orientadas à estratégia. Inspira outros com sua leitura do cenário.",
@@ -72,7 +72,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Governança e Estrutura Organizacional",
       cursoCode: "1.7",
       prazo: "60 dias",
-      indicador: "Liderar um ciclo de planejamento estratégico ou mentorar pelo menos 2 profissionais em pensamento estratégico",
+      indicador: "Conduzir uma sessão de planejamento estratégico com a alta liderança ou ser convidado para fóruns de decisão",
     },
   },
   // Pilar 2: Execução e Disciplina
@@ -85,7 +85,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos da Excelência Operacional",
       cursoCode: "2.1",
       prazo: "21 dias",
-      indicador: "Manter uma rotina de planejamento semanal por 3 semanas consecutivas",
+      indicador: "Reportar à liderança os resultados de 3 semanas consecutivas de planejamento estruturado",
     },
     consolidacao: {
       interpretacao: "Você planeja e executa com regularidade, mas ainda alterna entre disciplina e dispersão.",
@@ -95,7 +95,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos de Gestão de Projetos",
       cursoCode: "2.3",
       prazo: "30 dias",
-      indicador: "Concluir 90% das tarefas planejadas na semana por 4 semanas seguidas",
+      indicador: "Apresentar para a gestão um relatório de produtividade mostrando 90% de conclusão por 4 semanas",
     },
     estrategico: {
       interpretacao: "Você é referência em execução disciplinada e adaptável. Entrega com consistência e ajuda outros a performar.",
@@ -105,7 +105,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "PMO e Gestão de Portfólio",
       cursoCode: "2.4",
       prazo: "45 dias",
-      indicador: "Implementar um ritual de acompanhamento de execução em sua equipe ou área",
+      indicador: "Propor à diretoria a implementação de rituais de execução que você desenvolveu e testou na equipe",
     },
   },
   // Pilar 3: Execução e Cultura Corporativa
@@ -118,7 +118,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Mapeamento e Melhoria de Processos (BPM)",
       cursoCode: "2.2",
       prazo: "30 dias",
-      indicador: "Documentar pelo menos 3 processos críticos da sua área de atuação",
+      indicador: "Entregar à liderança a documentação de 3 processos críticos com sugestões de melhoria",
     },
     consolidacao: {
       interpretacao: "A empresa já tem rotinas e cultura mais consistentes, mas com variações entre áreas ou fragilidades em comunicação e coerência.",
@@ -128,7 +128,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Cultura Organizacional e Engajamento",
       cursoCode: "3.3",
       prazo: "45 dias",
-      indicador: "Implementar um ritual de alinhamento cultural na equipe com frequência regular",
+      indicador: "Apresentar à gestão os resultados de um programa de alinhamento cultural implementado na equipe",
     },
     estrategico: {
       interpretacao: "A organização opera com excelência na execução e possui uma cultura forte, alinhada e disseminada pelos líderes.",
@@ -138,7 +138,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Desenvolvimento de Lideranças",
       cursoCode: "3.5",
       prazo: "60 dias",
-      indicador: "Criar um programa de disseminação de boas práticas para outras áreas",
+      indicador: "Ter seu programa de boas práticas aprovado pela diretoria para replicação em outras áreas",
     },
   },
   // Pilar 4: Gestão de Projetos
@@ -151,7 +151,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos de Gestão de Projetos",
       cursoCode: "2.3",
       prazo: "30 dias",
-      indicador: "Estruturar e acompanhar um projeto completo usando metodologia básica",
+      indicador: "Apresentar o status de um projeto completo para stakeholders usando metodologia estruturada",
     },
     consolidacao: {
       interpretacao: "Você conduz projetos com método, mas ainda precisa amadurecer rituais, ferramentas e influência.",
@@ -161,7 +161,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos da Gestão Ágil",
       cursoCode: "2.3",
       prazo: "45 dias",
-      indicador: "Conduzir um projeto usando metodologia ágil com cerimônias regulares",
+      indicador: "Realizar uma apresentação de review de projeto para a liderança demonstrando resultados da metodologia ágil",
     },
     estrategico: {
       interpretacao: "Você atua com visão sistêmica, conecta projetos à estratégia e mobiliza stakeholders com eficácia.",
@@ -171,7 +171,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "PMO e Gestão de Portfólio",
       cursoCode: "2.4",
       prazo: "60 dias",
-      indicador: "Estruturar a gestão de portfólio da área ou formar outros gestores de projeto",
+      indicador: "Apresentar à alta gestão uma proposta de estruturação de PMO ou gestão de portfólio para a organização",
     },
   },
   // Pilar 5: Liderança e Influência
@@ -184,7 +184,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos da Liderança",
       cursoCode: "3.1",
       prazo: "30 dias",
-      indicador: "Realizar pelo menos 5 conversas de feedback estruturado com colegas ou liderados",
+      indicador: "Receber feedback positivo da liderança sobre melhoria nas suas habilidades de comunicação e relacionamento",
     },
     consolidacao: {
       interpretacao: "Você exercita influência e liderança, mas com impacto ainda limitado ou inconsistente.",
@@ -194,7 +194,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Desenvolvimento de Lideranças",
       cursoCode: "3.5",
       prazo: "45 dias",
-      indicador: "Liderar uma iniciativa cross-funcional mobilizando pessoas de outras áreas",
+      indicador: "Ser reconhecido pela gestão por liderar uma iniciativa que envolveu múltiplas áreas da empresa",
     },
     estrategico: {
       interpretacao: "Você lidera com propósito, engaja naturalmente, influencia além da equipe e gera alto desempenho.",
@@ -204,7 +204,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Cultura Organizacional e Engajamento",
       cursoCode: "3.3",
       prazo: "60 dias",
-      indicador: "Mentorar pelo menos 2 líderes emergentes e documentar o processo",
+      indicador: "Ter seu programa de mentoria endossado pela diretoria como modelo para desenvolvimento de líderes",
     },
   },
   // Pilar 6: Inovação e Criatividade
@@ -217,7 +217,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Transformação Digital",
       cursoCode: "4.1",
       prazo: "30 dias",
-      indicador: "Testar e implementar pelo menos 2 novas ferramentas ou abordagens no trabalho",
+      indicador: "Apresentar à liderança os resultados de 2 novas ferramentas ou abordagens implementadas",
     },
     consolidacao: {
       interpretacao: "Você traz ideias e soluções, mas ainda hesita em inovar com regularidade ou impacto.",
@@ -227,7 +227,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Metodologias Ágeis e Inovação",
       cursoCode: "4.2",
       prazo: "45 dias",
-      indicador: "Prototipar e validar uma ideia inovadora com stakeholders relevantes",
+      indicador: "Ter um protótipo de inovação aprovado por stakeholders-chave para desenvolvimento completo",
     },
     estrategico: {
       interpretacao: "Você inova de forma contínua, traz soluções fora da curva e influencia transformação no ambiente.",
@@ -237,7 +237,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Inteligência Artificial e Automação",
       cursoCode: "4.4",
       prazo: "60 dias",
-      indicador: "Criar e liderar um programa de inovação ou experimentação na organização",
+      indicador: "Ter um programa de inovação ou laboratório experimental aprovado e patrocinado pela alta gestão",
     },
   },
 };
