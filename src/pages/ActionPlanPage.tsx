@@ -252,17 +252,10 @@ const ActionPlanPage = () => {
                         <Target className="w-5 h-5 text-primary" />
                         <h3 className="font-semibold text-lg">Ação sugerida</h3>
                       </div>
-                      <div className="bg-primary/10 rounded-lg p-4 ml-7 space-y-3">
+                      <div className="bg-primary/10 rounded-lg p-4 ml-7">
                         <p className="text-foreground font-medium">
                           {recommendation.acao}
                         </p>
-                        <div className="flex items-start gap-2 pt-2 border-t border-primary/20">
-                          <BookOpen className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-muted-foreground">
-                            <span className="font-medium text-foreground">Leitura recomendada:</span>{" "}
-                            {recommendation.livro.titulo}, de {recommendation.livro.autor}
-                          </p>
-                        </div>
                       </div>
                     </div>
 

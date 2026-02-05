@@ -106,18 +106,6 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.text(indicadorLines, leftMargin, yPosition);
   yPosition += indicadorLines.length * 5 + 10;
   
-  // Section: Leitura recomendada
-  doc.setFontSize(12);
-  doc.setTextColor(...primaryColor);
-  doc.setFont("helvetica", "bold");
-  doc.text("Leitura recomendada", leftMargin, yPosition);
-  yPosition += 8;
-  
-  doc.setFontSize(10);
-  doc.setTextColor(...darkColor);
-  doc.setFont("helvetica", "normal");
-  doc.text(`${recommendation.livro.titulo}, de ${recommendation.livro.autor}`, leftMargin, yPosition);
-  yPosition += 12;
   
   // Section: Curso recomendado
   doc.setFontSize(12);
