@@ -241,7 +241,7 @@ const ActionPlanPage = () => {
                     {/* Onde você está */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-5 h-5 text-primary" />
+                        
                         <h3 className="font-semibold text-lg">Onde você está</h3>
                       </div>
                       <p className="text-muted-foreground leading-relaxed pl-7">
