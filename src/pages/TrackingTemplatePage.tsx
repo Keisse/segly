@@ -207,13 +207,21 @@ const TrackingTemplatePage = () => {
     if (type === "individual") {
       setIndividualTask(prev => {
         const updatedSubtasks = [...prev.subtasks, newSubtask];
-        return { ...prev, status: deriveTaskStatus(updatedSubtasks), subtasks: updatedSubtasks };
+        return {
+          ...prev,
+          status: deriveTaskStatus(updatedSubtasks),
+          subtasks: updatedSubtasks
+        };
       });
       setNewSubtaskIndividual("");
     } else {
       setCollectiveTask(prev => {
         const updatedSubtasks = [...prev.subtasks, newSubtask];
-        return { ...prev, status: deriveTaskStatus(updatedSubtasks), subtasks: updatedSubtasks };
+        return {
+          ...prev,
+          status: deriveTaskStatus(updatedSubtasks),
+          subtasks: updatedSubtasks
+        };
       });
       setNewSubtaskCollective("");
     }
@@ -226,11 +234,13 @@ const TrackingTemplatePage = () => {
     if (anyStarted) return "in_progress";
     return "not_started";
   };
-
   const updateSubtaskStatus = (type: "individual" | "collective", subtaskId: string, status: TaskStatus) => {
     const setter = type === "individual" ? setIndividualTask : setCollectiveTask;
     setter(prev => {
-      const updatedSubtasks = prev.subtasks.map(st => st.id === subtaskId ? { ...st, status } : st);
+      const updatedSubtasks = prev.subtasks.map(st => st.id === subtaskId ? {
+        ...st,
+        status
+      } : st);
       return {
         ...prev,
         status: deriveTaskStatus(updatedSubtasks),
@@ -505,7 +515,7 @@ const TrackingTemplatePage = () => {
 
                 {/* Aviso de download */}
                 <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-                  <p className="text-primary font-bold text-base">Após preencher os campos acima, clique em no botão Gerar Template para baixar a sua planilha de acompanhamento.</p>
+                  <p className="text-primary text-base font-normal">Após preencher os campos acima, clique em no botão Gerar Template para baixar a sua planilha de acompanhamento.</p>
                 </div>
               </CardContent>
             </Card>
