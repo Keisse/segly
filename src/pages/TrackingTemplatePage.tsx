@@ -10,7 +10,6 @@ import {
   Target,
   Clock,
   TrendingUp,
-  GraduationCap,
   CheckCircle2,
   Circle,
   Loader2,
@@ -612,15 +611,11 @@ const TrackingTemplatePage = () => {
                   </div>
                 </div>
 
-                {/* Trilha Recomendada */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-primary" />
-                    <span className="font-medium">Trilha Recomendada</span>
-                  </div>
-                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/30">
-                    Curso {templateData.curso_codigo}: {templateData.curso_nome}
-                  </Badge>
+                {/* Aviso de download */}
+                <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+                  <p className="text-sm text-primary font-medium">
+                    Após preencher os campos acima, clique em Gerar Template para baixar a sua planilha de acompanhamento.
+                  </p>
                 </div>
               </CardContent>
             </Card>
