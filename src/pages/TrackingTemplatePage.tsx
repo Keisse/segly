@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { 
   ArrowLeft, 
   Calendar as CalendarIcon, 
@@ -173,6 +173,38 @@ const TrackingTemplatePage = () => {
         { wch: 25 },
         { wch: 80 },
       ];
+
+      // Apply bold formatting to title and section header cells
+      const boldStyle = { font: { bold: true } };
+      const titleStyle = { font: { bold: true, sz: 14 } };
+
+      // Helper to apply style to a cell
+      const applyStyle = (cellRef: string, style: Record<string, unknown>) => {
+        if (ws[cellRef]) {
+          ws[cellRef].s = style;
+        }
+      };
+
+      // Main title
+      applyStyle("A1", titleStyle);
+
+      // Section labels (column A) that are titles
+      const sectionHeaders = ["LINHA DO TEMPO", "OBJETIVO", "FASE 1 — AÇÕES INDIVIDUAIS", "FASE 2 — AÇÕES COLETIVAS", "INDICADOR DE SUCESSO", "TRILHA RECOMENDADA"];
+      const labelKeys = ["Pilar", "Nível de Maturidade", "Data de Início", "Data de Revisão", "Data de Conclusão", "Prazo", "Status", "Ação Principal", "Subtarefas Individuais", "Subtarefas Coletivas", "Autoavaliação", "Curso"];
+
+      // Iterate through all cells in column A to find and bold headers/labels
+      const range = XLSX.utils.decode_range(ws['!ref'] || "A1");
+      for (let row = range.s.r; row <= range.e.r; row++) {
+        const cellRef = XLSX.utils.encode_cell({ r: row, c: 0 });
+        if (ws[cellRef] && ws[cellRef].v) {
+          const val = String(ws[cellRef].v);
+          if (sectionHeaders.includes(val)) {
+            applyStyle(cellRef, { font: { bold: true, sz: 12 } });
+          } else if (labelKeys.includes(val)) {
+            applyStyle(cellRef, boldStyle);
+          }
+        }
+      }
 
       // Add worksheet to workbook
       XLSX.utils.book_append_sheet(wb, ws, "Acompanhamento");
