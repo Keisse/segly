@@ -16,7 +16,7 @@ import {
   MapPin,
   Sparkles
 } from "lucide-react";
-import { stages, pillars, recommendations, type StageKey } from "@/data/actionPlanData";
+import { stages, pillars, planosDeAcao, type StageKey } from "@/data/planosDeAcao";
 import { generateActionPlanPDF } from "@/utils/generateActionPlanPDF";
 import allevoLogo from "@/assets/allevo-logo.png";
 import { Link } from "react-router-dom";
@@ -43,17 +43,17 @@ const ActionPlanPage = () => {
     
     const stage = stages.find(s => s.key === selectedStage);
     const pillar = pillars.find(p => p.id === selectedPillar);
-    const recommendation = recommendations[selectedPillar]?.[selectedStage];
+    const plano = planosDeAcao[selectedPillar]?.[selectedStage];
     
-    if (stage && pillar && recommendation) {
-      generateActionPlanPDF({ stage, pillar, recommendation });
+    if (stage && pillar && plano) {
+      generateActionPlanPDF({ stage, pillar, plano });
     }
   };
 
   const selectedPillarData = pillars.find(p => p.id === selectedPillar);
   const selectedStageData = stages.find(s => s.key === selectedStage);
-  const recommendation = selectedStage && selectedPillar 
-    ? recommendations[selectedPillar]?.[selectedStage] 
+  const plano = selectedStage && selectedPillar 
+    ? planosDeAcao[selectedPillar]?.[selectedStage] 
     : null;
 
   const PillarIcon = selectedPillarData?.icon || Target;
@@ -232,7 +232,7 @@ const ActionPlanPage = () => {
               </div>
 
               {/* Main Result Card */}
-              {recommendation && (
+              {plano && (
                 <Card className="bg-card/50 border-border/50 mb-6">
                   <CardContent className="pt-6 space-y-6">
                     {/* Onde você está */}
@@ -242,7 +242,7 @@ const ActionPlanPage = () => {
                         <h3 className="font-semibold text-lg">Onde você está</h3>
                       </div>
                       <p className="text-muted-foreground leading-relaxed pl-7">
-                        {recommendation.interpretacao}
+                        {plano.interpretacao}
                       </p>
                     </div>
 
@@ -254,7 +254,7 @@ const ActionPlanPage = () => {
                       </div>
                       <div className="bg-primary/10 rounded-lg p-4 ml-7 space-y-4">
                         <p className="text-foreground font-medium">
-                          {recommendation.acao}
+                          {plano.acao_geral}
                         </p>
                         
                         {/* Na empresa */}
@@ -263,11 +263,11 @@ const ActionPlanPage = () => {
                           <div className="grid md:grid-cols-2 gap-3">
                             <div className="bg-background/50 rounded-lg p-3 border border-border/30">
                               <p className="text-xs font-medium text-muted-foreground mb-1">A nível individual</p>
-                              <p className="text-sm text-foreground">{recommendation.acaoIndividual}</p>
+                              <p className="text-sm text-foreground">{plano.acao_individual}</p>
                             </div>
                             <div className="bg-background/50 rounded-lg p-3 border border-border/30">
                               <p className="text-xs font-medium text-muted-foreground mb-1">A nível coletivo</p>
-                              <p className="text-sm text-foreground">{recommendation.acaoColetiva}</p>
+                              <p className="text-sm text-foreground">{plano.acao_coletiva}</p>
                             </div>
                           </div>
                         </div>
@@ -282,7 +282,7 @@ const ActionPlanPage = () => {
                           <span className="text-sm font-medium">Prazo sugerido</span>
                         </div>
                         <p className="text-foreground bg-card/80 rounded-lg px-4 py-2 border border-border/50">
-                          {recommendation.prazo}
+                          {plano.prazo_sugerido} dias
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -291,7 +291,7 @@ const ActionPlanPage = () => {
                           <span className="text-sm font-medium">Prazo de revisão</span>
                         </div>
                         <p className="text-foreground bg-card/80 rounded-lg px-4 py-2 border border-border/50">
-                          {recommendation.prazoRevisao}
+                          {plano.prazo_revisao} dias
                         </p>
                       </div>
                     </div>
@@ -303,7 +303,7 @@ const ActionPlanPage = () => {
                         <span className="text-sm font-medium">Indicador de sucesso</span>
                       </div>
                       <p className="text-muted-foreground text-sm bg-card/80 rounded-lg px-4 py-3 border border-border/50 leading-relaxed">
-                        {recommendation.indicador}
+                        {plano.indicador_sucesso}
                       </p>
                     </div>
                   </CardContent>
@@ -311,7 +311,7 @@ const ActionPlanPage = () => {
               )}
 
               {/* Course Recommendation */}
-              {recommendation && (
+              {plano && (
                 <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 mb-8">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -322,10 +322,10 @@ const ActionPlanPage = () => {
                   <CardContent>
                     <div className="flex items-center gap-3">
                       <Badge variant="default" className="text-sm px-3 py-1">
-                        {recommendation.cursoCode}
+                        {plano.curso_codigo}
                       </Badge>
                       <span className="text-lg font-medium text-foreground">
-                        Curso {recommendation.curso}
+                        Curso {plano.curso_nome}
                       </span>
                     </div>
                   </CardContent>
