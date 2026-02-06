@@ -5,9 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { 
   ArrowLeft, 
   Calendar as CalendarIcon, 
-  Download, 
-  FileText, 
-  MessageCircle,
+  FileText,
   Target,
   Clock,
   TrendingUp,
@@ -28,7 +26,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { stages, pillars, trackingData, StageKey } from "@/data/trackingTemplateData";
-import { generateTrackingPDF } from "@/utils/generateTrackingPDF";
 import alevoLogo from "@/assets/allevo-logo.png";
 
 type TaskStatus = "not_started" | "in_progress" | "completed";
@@ -98,109 +95,81 @@ const TrackingTemplatePage = () => {
     setStartDate(new Date());
   };
 
-  const handleDownloadPDF = async () => {
+  const handleExportGoogleDocs = () => {
     if (!templateData || !calculatedDates || !selectedPillarData || !selectedStageData) return;
-    
+
     setIsGeneratingPDF(true);
+    
     try {
-      await generateTrackingPDF({
-        pillar: selectedPillarData,
-        stage: selectedStageData,
-        template: templateData,
-        startDate,
-        reviewDate: calculatedDates.reviewDate,
-        completionDate: calculatedDates.completionDate,
-        individualTask,
-        collectiveTask,
-        successEvaluation,
-      });
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
+      const content = `${selectedPillarData.name} — ${selectedStageData.label}
 
-  const handleExportNotion = () => {
-    if (!templateData || !calculatedDates || !selectedPillarData || !selectedStageData) return;
+Nível de Maturidade: ${selectedStageData.range}
 
-    const markdown = `# ${selectedPillarData.name} — ${selectedStageData.label}
+═══════════════════════════════════════════════════════════════
 
-**Nível de Maturidade:** ${selectedStageData.range}
+LINHA DO TEMPO
 
----
+• Início: ${format(startDate, "dd/MM/yyyy", { locale: ptBR })}
+• Revisão: ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)
+• Conclusão: ${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoSugerido} dias)
 
-## 📅 Linha do Tempo
+═══════════════════════════════════════════════════════════════
 
-- **Início:** ${format(startDate, "dd/MM/yyyy", { locale: ptBR })}
-- **Revisão:** ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)
-- **Conclusão:** ${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoSugerido} dias)
-
----
-
-## 🎯 Objetivo
+OBJETIVO
 
 ${templateData.acaoGeral}
 
----
+═══════════════════════════════════════════════════════════════
 
-## 📋 Fase 1 — Ações Individuais
+FASE 1 — AÇÕES INDIVIDUAIS
 
-**Prazo:** Até ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)
+Prazo: Até ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)
 
-- [ ] ${templateData.acaoIndividual}
+☐ ${templateData.acaoIndividual}
 
-### Subtarefas:
-${individualTask.subtasks.map(st => `- [${st.completed ? 'x' : ' '}] ${st.text}`).join('\n') || '- _Adicione suas subtarefas_'}
+Subtarefas:
+${individualTask.subtasks.map(st => `${st.completed ? '☑' : '☐'} ${st.text}`).join('\n') || '(Adicione suas subtarefas)'}
 
-**Status:** ${individualTask.status === "completed" ? "✅ Concluído" : individualTask.status === "in_progress" ? "🔄 Em andamento" : "⏳ Não iniciado"}
+Status: ${individualTask.status === "completed" ? "✓ Concluído" : individualTask.status === "in_progress" ? "↻ Em andamento" : "○ Não iniciado"}
 
----
+═══════════════════════════════════════════════════════════════
 
-## 📋 Fase 2 — Ações Coletivas
+FASE 2 — AÇÕES COLETIVAS
 
-**Prazo:** De ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} até ${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })}
+Prazo: De ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} até ${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })}
 
-- [ ] ${templateData.acaoColetiva}
+☐ ${templateData.acaoColetiva}
 
-### Subtarefas:
-${collectiveTask.subtasks.map(st => `- [${st.completed ? 'x' : ' '}] ${st.text}`).join('\n') || '- _Adicione suas subtarefas_'}
+Subtarefas:
+${collectiveTask.subtasks.map(st => `${st.completed ? '☑' : '☐'} ${st.text}`).join('\n') || '(Adicione suas subtarefas)'}
 
-**Status:** ${collectiveTask.status === "completed" ? "✅ Concluído" : collectiveTask.status === "in_progress" ? "🔄 Em andamento" : "⏳ Não iniciado"}
+Status: ${collectiveTask.status === "completed" ? "✓ Concluído" : collectiveTask.status === "in_progress" ? "↻ Em andamento" : "○ Não iniciado"}
 
----
+═══════════════════════════════════════════════════════════════
 
-## 📊 Indicador de Sucesso
+INDICADOR DE SUCESSO
 
 ${templateData.indicadorSucesso}
 
-**Autoavaliação:** ${successEvaluation === "achieved" ? "✅ Atingido" : successEvaluation === "partial" ? "⚠️ Parcialmente atingido" : successEvaluation === "not_achieved" ? "❌ Não atingido" : "_Pendente_"}
+Autoavaliação: ${successEvaluation === "achieved" ? "✓ Atingido" : successEvaluation === "partial" ? "~ Parcialmente atingido" : successEvaluation === "not_achieved" ? "✗ Não atingido" : "(Pendente)"}
 
----
+═══════════════════════════════════════════════════════════════
 
-## 🎓 Trilha Recomendada
+TRILHA RECOMENDADA
 
-**Curso ${templateData.cursoCode}:** ${templateData.curso}
+Curso ${templateData.cursoCode}: ${templateData.curso}
 
----
+═══════════════════════════════════════════════════════════════
 
-_Gerado pelo Diagnóstico de Alta Performance — Allevo For Business_
+Gerado pelo Diagnóstico de Alta Performance — Allevo For Business
 `;
 
-    const blob = new Blob([markdown], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Acompanhamento - ${selectedPillarData.name}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleWhatsApp = () => {
-    const message = encodeURIComponent(
-      "Olá! Vim do Template de Acompanhamento e quero saber mais sobre a Allevo For Business."
-    );
-    window.open(`https://wa.me/5511917510567?text=${message}`, "_blank");
+      // Create Google Docs URL with pre-filled content
+      const googleDocsUrl = `https://docs.google.com/document/create?title=${encodeURIComponent(`Acompanhamento - ${selectedPillarData.name}`)}&body=${encodeURIComponent(content)}`;
+      window.open(googleDocsUrl, "_blank");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const addSubtask = (type: "individual" | "collective") => {
@@ -620,26 +589,18 @@ _Gerado pelo Diagnóstico de Alta Performance — Allevo For Business_
             </Card>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Button onClick={handleDownloadPDF} variant="outline" disabled={isGeneratingPDF}>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={handleExportGoogleDocs} variant="outline" disabled={isGeneratingPDF}>
                 {isGeneratingPDF ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <Download className="w-4 h-4 mr-2" />
+                  <FileText className="w-4 h-4 mr-2" />
                 )}
-                Baixar PDF
-              </Button>
-              <Button onClick={handleExportNotion} variant="outline">
-                <FileText className="w-4 h-4 mr-2" />
-                Exportar Notion
+                Baixar no Google Docs
               </Button>
               <Button onClick={handleReset} variant="outline">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Ver outro pilar
-              </Button>
-              <Button onClick={handleWhatsApp} className="bg-primary hover:bg-primary/90">
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Falar com Consultor
               </Button>
             </div>
 
