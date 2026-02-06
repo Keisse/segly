@@ -5,61 +5,42 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Target, 
-  ArrowRight, 
-  Download, 
-  MessageCircle, 
-  Clock, 
-  TrendingUp,
-  BookOpen,
-  MapPin,
-  Sparkles
-} from "lucide-react";
+import { Target, ArrowRight, Download, MessageCircle, Clock, TrendingUp, BookOpen, MapPin } from "lucide-react";
 import { stages, pillars, planosDeAcao, type StageKey } from "@/data/planosDeAcao";
 import { generateActionPlanPDF } from "@/utils/generateActionPlanPDF";
 import allevoLogo from "@/assets/allevo-logo.png";
 import { Link } from "react-router-dom";
-
 const WHATSAPP_URL = "https://api.whatsapp.com/send/?phone=5511917510567&text=Ol%C3%A1,%20vim%20do%20plano%20de%20a%C3%A7%C3%A3o,%20e%20gostaria%20de%20falar%20com%20um%20consultor.";
-
 const ActionPlanPage = () => {
   const [selectedStage, setSelectedStage] = useState<StageKey | "">("");
   const [selectedPillar, setSelectedPillar] = useState<number | "">("");
   const [showPlan, setShowPlan] = useState(false);
-
   const handleGeneratePlan = () => {
     if (selectedStage && selectedPillar) {
       setShowPlan(true);
     }
   };
-
   const handleReset = () => {
     setShowPlan(false);
   };
-
   const handleDownloadPDF = () => {
     if (!selectedStage || !selectedPillar) return;
-    
     const stage = stages.find(s => s.key === selectedStage);
     const pillar = pillars.find(p => p.id === selectedPillar);
     const plano = planosDeAcao[selectedPillar]?.[selectedStage];
-    
     if (stage && pillar && plano) {
-      generateActionPlanPDF({ stage, pillar, plano });
+      generateActionPlanPDF({
+        stage,
+        pillar,
+        plano
+      });
     }
   };
-
   const selectedPillarData = pillars.find(p => p.id === selectedPillar);
   const selectedStageData = stages.find(s => s.key === selectedStage);
-  const plano = selectedStage && selectedPillar 
-    ? planosDeAcao[selectedPillar]?.[selectedStage] 
-    : null;
-
+  const plano = selectedStage && selectedPillar ? planosDeAcao[selectedPillar]?.[selectedStage] : null;
   const PillarIcon = selectedPillarData?.icon || Target;
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -74,22 +55,29 @@ const ActionPlanPage = () => {
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <AnimatePresence mode="wait">
-          {!showPlan ? (
-            <motion.div
-              key="form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+          {!showPlan ? <motion.div key="form" initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} exit={{
+          opacity: 0,
+          y: -20
+        }} transition={{
+          duration: 0.3
+        }}>
               {/* Hero Section */}
               <div className="text-center mb-12">
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6"
-                >
+                <motion.div initial={{
+              scale: 0.9,
+              opacity: 0
+            }} animate={{
+              scale: 1,
+              opacity: 1
+            }} transition={{
+              delay: 0.1
+            }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
                   <Target className="w-4 h-4" />
                   <span className="text-sm font-medium">Plano Personalizado</span>
                 </motion.div>
@@ -106,7 +94,7 @@ const ActionPlanPage = () => {
               <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-primary" />
+                    
                     Configure seu Plano
                   </CardTitle>
                   <CardDescription>
@@ -119,19 +107,17 @@ const ActionPlanPage = () => {
                     <Label htmlFor="stage" className="text-base font-medium">
                       Seu nível de maturidade
                     </Label>
-                    <Select value={selectedStage} onValueChange={(value) => setSelectedStage(value as StageKey)}>
+                    <Select value={selectedStage} onValueChange={value => setSelectedStage(value as StageKey)}>
                       <SelectTrigger id="stage" className="w-full">
                         <SelectValue placeholder="Selecione seu nível de maturidade" />
                       </SelectTrigger>
                       <SelectContent>
-                        {stages.map((stage) => (
-                          <SelectItem key={stage.key} value={stage.key}>
+                        {stages.map(stage => <SelectItem key={stage.key} value={stage.key}>
                             <div className="flex flex-col items-start">
                               <span className="font-medium">{stage.label} ({stage.range})</span>
                               <span className="text-xs text-muted-foreground">{stage.description}</span>
                             </div>
-                          </SelectItem>
-                        ))}
+                          </SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -141,33 +127,26 @@ const ActionPlanPage = () => {
                     <Label htmlFor="pillar" className="text-base font-medium">
                       Pilar para desenvolver
                     </Label>
-                    <Select value={selectedPillar.toString()} onValueChange={(value) => setSelectedPillar(parseInt(value))}>
+                    <Select value={selectedPillar.toString()} onValueChange={value => setSelectedPillar(parseInt(value))}>
                       <SelectTrigger id="pillar" className="w-full">
                         <SelectValue placeholder="Selecione o pilar que deseja desenvolver" />
                       </SelectTrigger>
                       <SelectContent>
-                        {pillars.map((pillar) => {
-                          const Icon = pillar.icon;
-                          return (
-                            <SelectItem key={pillar.id} value={pillar.id.toString()}>
+                        {pillars.map(pillar => {
+                      const Icon = pillar.icon;
+                      return <SelectItem key={pillar.id} value={pillar.id.toString()}>
                               <div className="flex items-center gap-2">
                                 <Icon className="w-4 h-4 text-primary" />
                                 <span className="font-medium">{pillar.name}</span>
                               </div>
-                            </SelectItem>
-                          );
-                        })}
+                            </SelectItem>;
+                    })}
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Generate Button */}
-                  <Button
-                    onClick={handleGeneratePlan}
-                    disabled={!selectedStage || !selectedPillar}
-                    className="w-full mt-4"
-                    size="lg"
-                  >
+                  <Button onClick={handleGeneratePlan} disabled={!selectedStage || !selectedPillar} className="w-full mt-4" size="lg">
                     Gerar Plano de Ação
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -204,23 +183,28 @@ const ActionPlanPage = () => {
                   </CardContent>
                 </Card>
               </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="result"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            </motion.div> : <motion.div key="result" initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} exit={{
+          opacity: 0,
+          y: -20
+        }} transition={{
+          duration: 0.3
+        }}>
               {/* Result Header */}
               <div className="text-center mb-8">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", delay: 0.2 }}
-                  className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 text-primary mb-4"
-                >
+                <motion.div initial={{
+              scale: 0
+            }} animate={{
+              scale: 1
+            }} transition={{
+              type: "spring",
+              delay: 0.2
+            }} className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 text-primary mb-4">
                   <PillarIcon className="w-8 h-8" />
                 </motion.div>
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
@@ -232,8 +216,7 @@ const ActionPlanPage = () => {
               </div>
 
               {/* Main Result Card */}
-              {plano && (
-                <Card className="bg-card/50 border-border/50 mb-6">
+              {plano && <Card className="bg-card/50 border-border/50 mb-6">
                   <CardContent className="pt-6 space-y-6">
                     {/* Onde você está */}
                     <div className="space-y-3">
@@ -307,12 +290,10 @@ const ActionPlanPage = () => {
                       </p>
                     </div>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
               {/* Course Recommendation */}
-              {plano && (
-                <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 mb-8">
+              {plano && <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 mb-8">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <BookOpen className="w-5 h-5 text-primary" />
@@ -329,8 +310,7 @@ const ActionPlanPage = () => {
                       </span>
                     </div>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -361,8 +341,7 @@ const ActionPlanPage = () => {
                   </Link>
                 </Button>
               </div>
-            </motion.div>
-          )}
+            </motion.div>}
         </AnimatePresence>
       </main>
 
@@ -375,8 +354,6 @@ const ActionPlanPage = () => {
           </p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default ActionPlanPage;
