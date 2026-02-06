@@ -627,13 +627,13 @@ const TrackingTemplatePage = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleExportExcel} variant="outline" disabled={isGeneratingPDF}>
+              <Button onClick={handleExportExcel} disabled={isGeneratingPDF} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 {isGeneratingPDF ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                 )}
-                Baixar em .xls
+                Gerar Template
               </Button>
               <Button onClick={handleReset} variant="outline">
                 <RefreshCw className="w-4 h-4 mr-2" />
