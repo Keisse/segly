@@ -26,7 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { stages, pillars, trackingData, StageKey } from "@/data/trackingTemplateData";
+import { stages, pillars, planosDeAcao, StageKey } from "@/data/planosDeAcao";
 import alevoLogo from "@/assets/allevo-logo.png";
 
 type TaskStatus = "not_started" | "in_progress" | "completed";
@@ -63,13 +63,13 @@ const TrackingTemplatePage = () => {
 
   const templateData = useMemo(() => {
     if (!selectedStage || !selectedPillar) return null;
-    return trackingData[selectedPillar]?.[selectedStage] || null;
+    return planosDeAcao[selectedPillar]?.[selectedStage] || null;
   }, [selectedStage, selectedPillar]);
 
   const calculatedDates = useMemo(() => {
     if (!templateData) return null;
-    const reviewDate = addDays(startDate, templateData.prazoRevisao);
-    const completionDate = addDays(startDate, templateData.prazoSugerido);
+    const reviewDate = addDays(startDate, templateData.prazo_revisao);
+    const completionDate = addDays(startDate, templateData.prazo_sugerido);
     return { reviewDate, completionDate };
   }, [startDate, templateData]);
 
@@ -131,16 +131,16 @@ const TrackingTemplatePage = () => {
         [""],
         ["LINHA DO TEMPO"],
         ["Data de Início", format(startDate, "dd/MM/yyyy", { locale: ptBR })],
-        ["Data de Revisão", `${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)`],
-        ["Data de Conclusão", `${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoSugerido} dias)`],
+        ["Data de Revisão", `${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazo_revisao} dias)`],
+        ["Data de Conclusão", `${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazo_sugerido} dias)`],
         [""],
         ["OBJETIVO"],
-        ["", templateData.acaoGeral],
+        ["", templateData.acao_geral],
         [""],
         ["FASE 1 — AÇÕES INDIVIDUAIS"],
-        ["Prazo", `Até ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)`],
+        ["Prazo", `Até ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazo_revisao} dias)`],
         ["Status", getStatusText(individualTask.status)],
-        ["Ação Principal", templateData.acaoIndividual],
+        ["Ação Principal", templateData.acao_individual],
         [""],
         ["Subtarefas Individuais", "Status"],
         ...individualTask.subtasks.map(st => [st.text, getStatusText(st.status)]),
@@ -149,18 +149,18 @@ const TrackingTemplatePage = () => {
         ["FASE 2 — AÇÕES COLETIVAS"],
         ["Prazo", `De ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} até ${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })}`],
         ["Status", getStatusText(collectiveTask.status)],
-        ["Ação Principal", templateData.acaoColetiva],
+        ["Ação Principal", templateData.acao_coletiva],
         [""],
         ["Subtarefas Coletivas", "Status"],
         ...collectiveTask.subtasks.map(st => [st.text, getStatusText(st.status)]),
         ...(collectiveTask.subtasks.length === 0 ? [["(Nenhuma subtarefa adicionada)", ""]] : []),
         [""],
         ["INDICADOR DE SUCESSO"],
-        ["", templateData.indicadorSucesso],
+        ["", templateData.indicador_sucesso],
         ["Autoavaliação", getEvaluationText()],
         [""],
         ["TRILHA RECOMENDADA"],
-        ["Curso", `${templateData.cursoCode}: ${templateData.curso}`],
+        ["Curso", `${templateData.curso_codigo}: ${templateData.curso_nome}`],
         [""],
         [""],
         ["Gerado pelo Diagnóstico de Alta Performance — Allevo For Business", format(new Date(), "dd/MM/yyyy", { locale: ptBR })],
@@ -365,7 +365,7 @@ const TrackingTemplatePage = () => {
                     <div className="font-semibold text-sm text-amber-400">
                       {format(calculatedDates.reviewDate, "dd/MM/yyyy")}
                     </div>
-                    <div className="text-xs text-muted-foreground">{templateData.prazoRevisao} dias</div>
+                    <div className="text-xs text-muted-foreground">{templateData.prazo_revisao} dias</div>
                   </div>
                   <ArrowRight className="w-4 h-4 text-muted-foreground" />
                   <div className="text-center">
@@ -373,7 +373,7 @@ const TrackingTemplatePage = () => {
                     <div className="font-semibold text-sm text-emerald-400">
                       {format(calculatedDates.completionDate, "dd/MM/yyyy")}
                     </div>
-                    <div className="text-xs text-muted-foreground">{templateData.prazoSugerido} dias</div>
+                    <div className="text-xs text-muted-foreground">{templateData.prazo_sugerido} dias</div>
                   </div>
                 </div>
               </div>
@@ -386,7 +386,7 @@ const TrackingTemplatePage = () => {
                     <span className="font-medium">Objetivo</span>
                   </div>
                   <p className="text-muted-foreground bg-primary/5 rounded-lg p-4 border border-primary/20">
-                    {templateData.acaoGeral}
+                    {templateData.acao_geral}
                   </p>
                 </div>
 
@@ -403,7 +403,7 @@ const TrackingTemplatePage = () => {
                   <div className="bg-card/80 rounded-lg p-4 border border-border/50 space-y-4">
                     <div className="text-sm text-muted-foreground flex items-center gap-2">
                       <Clock className="w-4 h-4" />
-                      Até {format(calculatedDates.reviewDate, "dd/MM/yyyy")} ({templateData.prazoRevisao} dias)
+                      Até {format(calculatedDates.reviewDate, "dd/MM/yyyy")} ({templateData.prazo_revisao} dias)
                     </div>
                     
                     <div className="flex items-start gap-3">
@@ -416,7 +416,7 @@ const TrackingTemplatePage = () => {
                           }))
                         }
                       />
-                      <span className="text-sm">{templateData.acaoIndividual}</span>
+                      <span className="text-sm">{templateData.acao_individual}</span>
                     </div>
 
                     {/* Subtasks */}
@@ -500,7 +500,7 @@ const TrackingTemplatePage = () => {
                           }))
                         }
                       />
-                      <span className="text-sm">{templateData.acaoColetiva}</span>
+                      <span className="text-sm">{templateData.acao_coletiva}</span>
                     </div>
 
                     {/* Subtasks */}
@@ -567,7 +567,7 @@ const TrackingTemplatePage = () => {
                   
                   <div className="bg-card/80 rounded-lg p-4 border border-border/50 space-y-4">
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      {templateData.indicadorSucesso}
+                      {templateData.indicador_sucesso}
                     </p>
                     
                     <div className="space-y-2">
@@ -615,7 +615,7 @@ const TrackingTemplatePage = () => {
                     <span className="font-medium">Trilha Recomendada</span>
                   </div>
                   <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/30">
-                    Curso {templateData.cursoCode}: {templateData.curso}
+                    Curso {templateData.curso_codigo}: {templateData.curso_nome}
                   </Badge>
                 </div>
               </CardContent>

@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Stage, Pillar, TrackingTemplateData } from "@/data/trackingTemplateData";
+import type { Stage, Pillar, PlanoDeAcao } from "@/data/planosDeAcao";
 
 type TaskStatus = "not_started" | "in_progress" | "completed";
 
@@ -19,7 +19,7 @@ interface TaskState {
 interface TrackingPDFData {
   pillar: Pillar;
   stage: Stage;
-  template: TrackingTemplateData;
+  template: PlanoDeAcao;
   startDate: Date;
   reviewDate: Date;
   completionDate: Date;
@@ -112,10 +112,10 @@ export const generateTrackingPDF = async (data: TrackingPDFData): Promise<void> 
   doc.text(`Início: ${format(startDate, "dd/MM/yyyy", { locale: ptBR })}`, leftMargin, yPosition);
   yPosition += 6;
   doc.setTextColor(...yellowColor);
-  doc.text(`Revisão: ${format(reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${template.prazoRevisao} dias)`, leftMargin, yPosition);
+  doc.text(`Revisão: ${format(reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${template.prazo_revisao} dias)`, leftMargin, yPosition);
   yPosition += 6;
   doc.setTextColor(...greenColor);
-  doc.text(`Conclusão: ${format(completionDate, "dd/MM/yyyy", { locale: ptBR })} (${template.prazoSugerido} dias)`, leftMargin, yPosition);
+  doc.text(`Conclusão: ${format(completionDate, "dd/MM/yyyy", { locale: ptBR })} (${template.prazo_sugerido} dias)`, leftMargin, yPosition);
   yPosition += 15;
   
   // Objective
@@ -129,7 +129,7 @@ export const generateTrackingPDF = async (data: TrackingPDFData): Promise<void> 
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
-  const objetivoLines = doc.splitTextToSize(template.acaoGeral, contentWidth);
+  const objetivoLines = doc.splitTextToSize(template.acao_geral, contentWidth);
   doc.text(objetivoLines, leftMargin, yPosition);
   yPosition += objetivoLines.length * 5 + 12;
   
@@ -144,14 +144,14 @@ export const generateTrackingPDF = async (data: TrackingPDFData): Promise<void> 
   doc.setFontSize(10);
   doc.setTextColor(...grayColor);
   doc.setFont("helvetica", "normal");
-  doc.text(`Prazo: Até ${format(reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${template.prazoRevisao} dias)`, leftMargin, yPosition);
+  doc.text(`Prazo: Até ${format(reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${template.prazo_revisao} dias)`, leftMargin, yPosition);
   yPosition += 6;
   doc.text(`Status: ${getStatusText(individualTask.status)}`, leftMargin, yPosition);
   yPosition += 8;
   
   doc.setTextColor(...darkColor);
   const checkboxSymbol = individualTask.status === "completed" ? "[X]" : "[ ]";
-  const individualLines = doc.splitTextToSize(`${checkboxSymbol} ${template.acaoIndividual}`, contentWidth);
+  const individualLines = doc.splitTextToSize(`${checkboxSymbol} ${template.acao_individual}`, contentWidth);
   doc.text(individualLines, leftMargin, yPosition);
   yPosition += individualLines.length * 5 + 6;
   
@@ -188,7 +188,7 @@ export const generateTrackingPDF = async (data: TrackingPDFData): Promise<void> 
   
   doc.setTextColor(...darkColor);
   const collectiveCheckbox = collectiveTask.status === "completed" ? "[X]" : "[ ]";
-  const collectiveLines = doc.splitTextToSize(`${collectiveCheckbox} ${template.acaoColetiva}`, contentWidth);
+  const collectiveLines = doc.splitTextToSize(`${collectiveCheckbox} ${template.acao_coletiva}`, contentWidth);
   doc.text(collectiveLines, leftMargin, yPosition);
   yPosition += collectiveLines.length * 5 + 6;
   
@@ -218,7 +218,7 @@ export const generateTrackingPDF = async (data: TrackingPDFData): Promise<void> 
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
-  const indicadorLines = doc.splitTextToSize(template.indicadorSucesso, contentWidth);
+  const indicadorLines = doc.splitTextToSize(template.indicador_sucesso, contentWidth);
   doc.text(indicadorLines, leftMargin, yPosition);
   yPosition += indicadorLines.length * 5 + 6;
   
@@ -237,7 +237,7 @@ export const generateTrackingPDF = async (data: TrackingPDFData): Promise<void> 
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
-  doc.text(`Curso ${template.cursoCode}: ${template.curso}`, leftMargin, yPosition);
+  doc.text(`Curso ${template.curso_codigo}: ${template.curso_nome}`, leftMargin, yPosition);
   yPosition += 20;
   
   // Footer divider

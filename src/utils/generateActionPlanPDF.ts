@@ -1,14 +1,14 @@
 import { jsPDF } from "jspdf";
-import type { Stage, Pillar, ActionPlanRecommendation } from "@/data/actionPlanData";
+import type { Stage, Pillar, PlanoDeAcao } from "@/data/planosDeAcao";
 
 interface ActionPlanPDFData {
   stage: Stage;
   pillar: Pillar;
-  recommendation: ActionPlanRecommendation;
+  plano: PlanoDeAcao;
 }
 
 export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
-  const { stage, pillar, recommendation } = data;
+  const { stage, pillar, plano } = data;
   const doc = new jsPDF();
   
   // Colors
@@ -61,7 +61,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
-  const interpretacaoLines = doc.splitTextToSize(recommendation.interpretacao, contentWidth);
+  const interpretacaoLines = doc.splitTextToSize(plano.interpretacao, contentWidth);
   doc.text(interpretacaoLines, leftMargin, yPosition);
   yPosition += interpretacaoLines.length * 5 + 10;
   
@@ -75,7 +75,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
-  const acaoLines = doc.splitTextToSize(recommendation.acao, contentWidth);
+  const acaoLines = doc.splitTextToSize(plano.acao_geral, contentWidth);
   doc.text(acaoLines, leftMargin, yPosition);
   yPosition += acaoLines.length * 5 + 10;
   
@@ -92,7 +92,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.text("A nível individual:", leftMargin, yPosition);
   yPosition += 6;
   doc.setFont("helvetica", "normal");
-  const individualLines = doc.splitTextToSize(recommendation.acaoIndividual, contentWidth);
+  const individualLines = doc.splitTextToSize(plano.acao_individual, contentWidth);
   doc.text(individualLines, leftMargin, yPosition);
   yPosition += individualLines.length * 5 + 6;
   
@@ -100,7 +100,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.text("A nível coletivo:", leftMargin, yPosition);
   yPosition += 6;
   doc.setFont("helvetica", "normal");
-  const coletivoLines = doc.splitTextToSize(recommendation.acaoColetiva, contentWidth);
+  const coletivoLines = doc.splitTextToSize(plano.acao_coletiva, contentWidth);
   doc.text(coletivoLines, leftMargin, yPosition);
   yPosition += coletivoLines.length * 5 + 10;
   
@@ -114,7 +114,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
-  doc.text(recommendation.prazo, leftMargin, yPosition);
+  doc.text(`${plano.prazo_sugerido} dias`, leftMargin, yPosition);
   yPosition += 10;
   
   // Section: Prazo de revisão
@@ -127,7 +127,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
-  doc.text(recommendation.prazoRevisao, leftMargin, yPosition);
+  doc.text(`${plano.prazo_revisao} dias`, leftMargin, yPosition);
   yPosition += 12;
   
   // Section: Indicador de sucesso
@@ -140,7 +140,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
-  const indicadorLines = doc.splitTextToSize(recommendation.indicador, contentWidth);
+  const indicadorLines = doc.splitTextToSize(plano.indicador_sucesso, contentWidth);
   doc.text(indicadorLines, leftMargin, yPosition);
   yPosition += indicadorLines.length * 5 + 10;
   
@@ -155,7 +155,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
-  doc.text(`Curso ${recommendation.cursoCode}: ${recommendation.curso}`, leftMargin, yPosition);
+  doc.text(`Curso ${plano.curso_codigo}: ${plano.curso_nome}`, leftMargin, yPosition);
   yPosition += 20;
   
   // Footer divider
