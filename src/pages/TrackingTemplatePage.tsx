@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx-js-style";
-import { ArrowLeft, Calendar as CalendarIcon, FileSpreadsheet, Target, Clock, TrendingUp, Circle, Loader2, ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, FileSpreadsheet, Target, Clock, Circle, Loader2, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -483,7 +483,7 @@ const TrackingTemplatePage = () => {
                 {/* Indicador de Sucesso */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-primary" />
+                    <span className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">3</span>
                     <span className="font-medium">Indicador de Sucesso</span>
                   </div>
                   
