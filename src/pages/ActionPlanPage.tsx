@@ -178,14 +178,14 @@ const ActionPlanPage = () => {
                       <CardContent className="pt-6">
                         <Target className="w-8 h-8 text-primary mb-3" />
                         <h3 className="font-semibold mb-1">Ações Claras</h3>
-                        <p className="text-sm text-muted-foreground">Saiba exatamente o que fazer a nível individual e coletivo</p>
+                        <p className="text-sm text-muted-foreground">Saiba o que fazer a nível individual e coletivo</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-card/30 border-border/30">
                       <CardContent className="pt-6">
                         <BookOpen className="w-8 h-8 text-primary mb-3" />
                         <h3 className="font-semibold mb-1">Trilha Recomendada</h3>
-                        <p className="text-sm text-muted-foreground">Cursos alinhados ao seu nível de maturidade e pilar a desenvolver</p>
+                        <p className="text-sm text-muted-foreground">Cursos alinhados ao seu nível de maturidade e pilar </p>
                       </CardContent>
                     </Card>
                     <Card className="bg-card/30 border-border/30">
@@ -199,7 +199,7 @@ const ActionPlanPage = () => {
                       <CardContent className="pt-6">
                         <CalendarCheck className="w-8 h-8 text-primary mb-3" />
                         <h3 className="font-semibold mb-1">Prazo de Revisão</h3>
-                        <p className="text-sm text-muted-foreground">Momento ideal para avaliar o progresso e ajustar o plano</p>
+                        <p className="text-sm text-muted-foreground">Momento ideal para avaliar progresso e ajustar o plano</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-card/30 border-border/30">
