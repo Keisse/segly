@@ -9,6 +9,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import LeadDetail from "./pages/LeadDetail";
 import ActionPlanPage from "./pages/ActionPlanPage";
+import TrackingTemplatePage from "./pages/TrackingTemplatePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/plano-acao" element={<ActionPlanPage />} />
+          <Route path="/acompanhamento" element={<TrackingTemplatePage />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route
             path="/admin-dashboard"
