@@ -316,7 +316,7 @@ const ActionPlanPage = () => {
               {plano && <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 mb-8">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-primary" />
+                      
                       Trilha de Desenvolvimento Recomendada
                     </CardTitle>
                   </CardHeader>
@@ -325,7 +325,7 @@ const ActionPlanPage = () => {
                       <Badge variant="default" className="text-sm px-3 py-1">
                         {plano.curso_codigo}
                       </Badge>
-                      <span className="text-foreground font-normal text-sm">
+                      <span className="text-foreground font-normal text-base">
                         Curso {plano.curso_nome}
                       </span>
                     </div>
