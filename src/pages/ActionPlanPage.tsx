@@ -244,7 +244,7 @@ const ActionPlanPage = () => {
                         
                         <h3 className="font-semibold text-lg">Onde você está</h3>
                       </div>
-                      <p className="text-muted-foreground leading-relaxed pl-7">
+                      <p className="text-muted-foreground leading-relaxed pl-7 px-0">
                         {plano.interpretacao}
                       </p>
                     </div>
