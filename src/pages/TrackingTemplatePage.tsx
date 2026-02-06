@@ -34,7 +34,7 @@ type TaskStatus = "not_started" | "in_progress" | "completed";
 interface SubTask {
   id: string;
   text: string;
-  completed: boolean;
+  status: TaskStatus;
 }
 
 interface TaskState {
@@ -143,7 +143,7 @@ const TrackingTemplatePage = () => {
         ["Ação Principal", templateData.acaoIndividual],
         [""],
         ["Subtarefas Individuais", "Status"],
-        ...individualTask.subtasks.map(st => [st.text, st.completed ? "✓ Concluída" : "○ Pendente"]),
+        ...individualTask.subtasks.map(st => [st.text, getStatusText(st.status)]),
         ...(individualTask.subtasks.length === 0 ? [["(Nenhuma subtarefa adicionada)", ""]] : []),
         [""],
         ["FASE 2 — AÇÕES COLETIVAS"],
@@ -152,7 +152,7 @@ const TrackingTemplatePage = () => {
         ["Ação Principal", templateData.acaoColetiva],
         [""],
         ["Subtarefas Coletivas", "Status"],
-        ...collectiveTask.subtasks.map(st => [st.text, st.completed ? "✓ Concluída" : "○ Pendente"]),
+        ...collectiveTask.subtasks.map(st => [st.text, getStatusText(st.status)]),
         ...(collectiveTask.subtasks.length === 0 ? [["(Nenhuma subtarefa adicionada)", ""]] : []),
         [""],
         ["INDICADOR DE SUCESSO"],
@@ -194,7 +194,7 @@ const TrackingTemplatePage = () => {
     const newSubtask: SubTask = {
       id: Date.now().toString(),
       text: text.trim(),
-      completed: false,
+      status: "not_started",
     };
 
     if (type === "individual") {
@@ -212,12 +212,12 @@ const TrackingTemplatePage = () => {
     }
   };
 
-  const toggleSubtask = (type: "individual" | "collective", subtaskId: string) => {
+  const updateSubtaskStatus = (type: "individual" | "collective", subtaskId: string, status: TaskStatus) => {
     const setter = type === "individual" ? setIndividualTask : setCollectiveTask;
     setter(prev => ({
       ...prev,
       subtasks: prev.subtasks.map(st =>
-        st.id === subtaskId ? { ...st, completed: !st.completed } : st
+        st.id === subtaskId ? { ...st, status } : st
       ),
     }));
   };
@@ -424,13 +424,22 @@ const TrackingTemplatePage = () => {
                       <div className="text-xs text-muted-foreground">Subtarefas:</div>
                       {individualTask.subtasks.map((subtask) => (
                         <div key={subtask.id} className="flex items-center gap-2">
-                          <Checkbox 
-                            checked={subtask.completed}
-                            onCheckedChange={() => toggleSubtask("individual", subtask.id)}
-                          />
-                          <span className={cn("text-sm", subtask.completed && "line-through text-muted-foreground")}>
+                          <span className={cn("text-sm flex-1", subtask.status === "completed" && "line-through text-muted-foreground")}>
                             {subtask.text}
                           </span>
+                          <Select 
+                            value={subtask.status} 
+                            onValueChange={(value) => updateSubtaskStatus("individual", subtask.id, value as TaskStatus)}
+                          >
+                            <SelectTrigger className="w-36 h-7 text-xs bg-background/50">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="not_started">Não iniciado</SelectItem>
+                              <SelectItem value="in_progress">Em andamento</SelectItem>
+                              <SelectItem value="completed">Concluído</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       ))}
                       <div className="flex gap-2">
@@ -499,13 +508,22 @@ const TrackingTemplatePage = () => {
                       <div className="text-xs text-muted-foreground">Subtarefas:</div>
                       {collectiveTask.subtasks.map((subtask) => (
                         <div key={subtask.id} className="flex items-center gap-2">
-                          <Checkbox 
-                            checked={subtask.completed}
-                            onCheckedChange={() => toggleSubtask("collective", subtask.id)}
-                          />
-                          <span className={cn("text-sm", subtask.completed && "line-through text-muted-foreground")}>
+                          <span className={cn("text-sm flex-1", subtask.status === "completed" && "line-through text-muted-foreground")}>
                             {subtask.text}
                           </span>
+                          <Select 
+                            value={subtask.status} 
+                            onValueChange={(value) => updateSubtaskStatus("collective", subtask.id, value as TaskStatus)}
+                          >
+                            <SelectTrigger className="w-36 h-7 text-xs bg-background/50">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="not_started">Não iniciado</SelectItem>
+                              <SelectItem value="in_progress">Em andamento</SelectItem>
+                              <SelectItem value="completed">Concluído</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       ))}
                       <div className="flex gap-2">

@@ -8,7 +8,7 @@ type TaskStatus = "not_started" | "in_progress" | "completed";
 interface SubTask {
   id: string;
   text: string;
-  completed: boolean;
+  status: TaskStatus;
 }
 
 interface TaskState {
@@ -162,7 +162,7 @@ export const generateTrackingPDF = async (data: TrackingPDFData): Promise<void> 
     yPosition += 5;
     individualTask.subtasks.forEach((subtask) => {
       checkPageBreak(10);
-      const subtaskSymbol = subtask.completed ? "[X]" : "[ ]";
+      const subtaskSymbol = subtask.status === "completed" ? "[X]" : subtask.status === "in_progress" ? "[~]" : "[ ]";
       const subtaskLines = doc.splitTextToSize(`${subtaskSymbol} ${subtask.text}`, contentWidth - 10);
       doc.text(subtaskLines, leftMargin + 10, yPosition);
       yPosition += subtaskLines.length * 4 + 2;
@@ -199,7 +199,7 @@ export const generateTrackingPDF = async (data: TrackingPDFData): Promise<void> 
     yPosition += 5;
     collectiveTask.subtasks.forEach((subtask) => {
       checkPageBreak(10);
-      const subtaskSymbol = subtask.completed ? "[X]" : "[ ]";
+      const subtaskSymbol = subtask.status === "completed" ? "[X]" : subtask.status === "in_progress" ? "[~]" : "[ ]";
       const subtaskLines = doc.splitTextToSize(`${subtaskSymbol} ${subtask.text}`, contentWidth - 10);
       doc.text(subtaskLines, leftMargin + 10, yPosition);
       yPosition += subtaskLines.length * 4 + 2;
