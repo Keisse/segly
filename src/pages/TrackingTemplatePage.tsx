@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx-js-style";
-import { ArrowLeft, Calendar as CalendarIcon, FileSpreadsheet, Target, Clock, ClipboardList, Users, Loader2, ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, FileSpreadsheet, Target, Clock, Circle, CheckCircle2, Loader2, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -401,7 +401,12 @@ const TrackingTemplatePage = () => {
                     </div>
                     
                     <div className="flex items-start gap-3">
-                      <ClipboardList className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      {individualTask.status === "completed" 
+                        ? <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                        : individualTask.status === "in_progress"
+                          ? <Circle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
+                          : <Circle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                      }
                       <span className="text-sm">{templateData.acao_individual}</span>
                     </div>
 
@@ -451,7 +456,12 @@ const TrackingTemplatePage = () => {
                     </div>
                     
                     <div className="flex items-start gap-3">
-                      <Users className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      {collectiveTask.status === "completed" 
+                        ? <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                        : collectiveTask.status === "in_progress"
+                          ? <Circle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
+                          : <Circle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                      }
                       <span className="text-sm">{templateData.acao_coletiva}</span>
                     </div>
 
