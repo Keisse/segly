@@ -226,16 +226,7 @@ const ActionPlanPage = () => {
         }}>
               {/* Result Header */}
               <div className="text-center mb-8">
-                <motion.div initial={{
-              scale: 0
-            }} animate={{
-              scale: 1
-            }} transition={{
-              type: "spring",
-              delay: 0.2
-            }} className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 text-primary mb-4">
-                  <PillarIcon className="w-8 h-8" />
-                </motion.div>
+                
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                   {selectedPillarData?.name} — {selectedStageData?.label}
                 </h1>
@@ -264,7 +255,7 @@ const ActionPlanPage = () => {
                         <Target className="w-5 h-5 text-primary" />
                         <h3 className="font-semibold text-lg">Ação sugerida</h3>
                       </div>
-                      <div className="bg-primary/10 rounded-lg p-4 ml-7 space-y-4 mx-0">
+                      <div className="bg-primary/10 rounded-lg p-4 space-y-4 mx-0 ml-0">
                         <p className="text-foreground font-medium">
                           {plano.acao_geral}
                         </p>
