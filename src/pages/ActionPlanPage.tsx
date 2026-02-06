@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Target, ArrowRight, Download, MessageCircle, Clock, TrendingUp, BookOpen, MapPin } from "lucide-react";
+import { Target, ArrowRight, Download, MessageCircle, Clock, TrendingUp, BookOpen, MapPin, CalendarCheck, BarChart3 } from "lucide-react";
 import { stages, pillars, planosDeAcao, type StageKey } from "@/data/planosDeAcao";
 import { generateActionPlanPDF } from "@/utils/generateActionPlanPDF";
 import allevoLogo from "@/assets/allevo-logo.png";
@@ -186,6 +186,27 @@ const ActionPlanPage = () => {
                         <BookOpen className="w-8 h-8 text-primary mb-3" />
                         <h3 className="font-semibold mb-1">Trilha Recomendada</h3>
                         <p className="text-sm text-muted-foreground">Cursos alinhados ao seu nível de maturidade e pilar a desenvolver</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-card/30 border-border/30">
+                      <CardContent className="pt-6">
+                        <Clock className="w-8 h-8 text-primary mb-3" />
+                        <h3 className="font-semibold mb-1">Prazo Sugerido</h3>
+                        <p className="text-sm text-muted-foreground">Tempo estimado para implementação das ações</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-card/30 border-border/30">
+                      <CardContent className="pt-6">
+                        <CalendarCheck className="w-8 h-8 text-primary mb-3" />
+                        <h3 className="font-semibold mb-1">Prazo de Revisão</h3>
+                        <p className="text-sm text-muted-foreground">Momento ideal para avaliar o progresso e ajustar o plano</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-card/30 border-border/30">
+                      <CardContent className="pt-6">
+                        <BarChart3 className="w-8 h-8 text-primary mb-3" />
+                        <h3 className="font-semibold mb-1">Indicador de Sucesso</h3>
+                        <p className="text-sm text-muted-foreground">Critérios claros para medir o resultado das suas ações</p>
                       </CardContent>
                     </Card>
                   </div>
