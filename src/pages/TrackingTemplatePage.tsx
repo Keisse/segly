@@ -612,8 +612,8 @@ const TrackingTemplatePage = () => {
                 </div>
 
                 {/* Aviso de download */}
-                <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-                  <p className="text-sm text-muted-foreground font-medium">
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-sm text-primary font-medium">
                     Após preencher os campos acima, clique em Gerar Template para baixar a sua planilha de acompanhamento.
                   </p>
                 </div>
