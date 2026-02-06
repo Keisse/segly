@@ -457,20 +457,6 @@ const TrackingTemplatePage = () => {
                       </div>
                     </div>
 
-                    {/* Status Selector */}
-                    <Select 
-                      value={individualTask.status} 
-                      onValueChange={(value) => setIndividualTask(prev => ({ ...prev, status: value as TaskStatus }))}
-                    >
-                      <SelectTrigger className="w-48 bg-background/50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="not_started">Não iniciado</SelectItem>
-                        <SelectItem value="in_progress">Em andamento</SelectItem>
-                        <SelectItem value="completed">Concluído</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
 
@@ -541,20 +527,6 @@ const TrackingTemplatePage = () => {
                       </div>
                     </div>
 
-                    {/* Status Selector */}
-                    <Select 
-                      value={collectiveTask.status} 
-                      onValueChange={(value) => setCollectiveTask(prev => ({ ...prev, status: value as TaskStatus }))}
-                    >
-                      <SelectTrigger className="w-48 bg-background/50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="not_started">Não iniciado</SelectItem>
-                        <SelectItem value="in_progress">Em andamento</SelectItem>
-                        <SelectItem value="completed">Concluído</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
 
