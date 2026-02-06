@@ -117,7 +117,7 @@ const TrackingTemplatePage = () => {
         locale: ptBR
       })} (${templateData.prazo_revisao} dias)`], ["Data de Conclusão", `${format(calculatedDates.completionDate, "dd/MM/yyyy", {
         locale: ptBR
-      })} (${templateData.prazo_sugerido} dias)`], [""], ["OBJETIVO"], ["", templateData.acao_geral], [""], ["FASE 1 — AÇÕES INDIVIDUAIS"], ["Prazo", `Até ${format(calculatedDates.reviewDate, "dd/MM/yyyy", {
+      })} (${templateData.prazo_sugerido} dias)`], [""], ["OBJETIVO", templateData.acao_geral], [""], ["FASE 1 — AÇÕES INDIVIDUAIS"], ["Prazo", `Até ${format(calculatedDates.reviewDate, "dd/MM/yyyy", {
         locale: ptBR
       })} (${templateData.prazo_revisao} dias)`], ["Status", getStatusText(individualTask.status)], ["Ação Principal", templateData.acao_individual], [""], ["Subtarefas Individuais", "Status"], ...individualTask.subtasks.map(st => [st.text, getStatusText(st.status)]), ...(individualTask.subtasks.length === 0 ? [["(Nenhuma subtarefa adicionada)", ""]] : []), [""], ["FASE 2 — AÇÕES COLETIVAS"], ["Prazo", `De ${format(calculatedDates.reviewDate, "dd/MM/yyyy", {
         locale: ptBR
@@ -514,8 +514,9 @@ const TrackingTemplatePage = () => {
                 </div>
 
                 {/* Aviso de download */}
-                <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-                  <p className="text-primary text-base font-normal">Após preencher os campos acima, clique em no botão Gerar Template para baixar a sua planilha de acompanhamento.</p>
+                <div className="flex items-start gap-2">
+                  <span className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">4</span>
+                  <span className="text-muted-foreground">Após preencher os campos acima, clique no botão Gerar Template para baixar a sua planilha de acompanhamento.</span>
                 </div>
               </CardContent>
             </Card>
