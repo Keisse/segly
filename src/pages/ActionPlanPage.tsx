@@ -252,7 +252,7 @@ const ActionPlanPage = () => {
                     {/* Ação sugerida */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <Target className="w-5 h-5 text-primary" />
+                        
                         <h3 className="font-semibold text-lg">Ação sugerida</h3>
                       </div>
                       <div className="bg-primary/10 rounded-lg p-4 space-y-4 mx-0 ml-0">
@@ -281,7 +281,7 @@ const ActionPlanPage = () => {
                     <div className="grid md:grid-cols-2 gap-4 px-0 py-0 pl-0 pb-0">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <Clock className="text-primary w-[20px] h-[20px]" />
+                          <Clock className="text-primary w-[16px] h-[16px]" />
                           <span className="text-lg font-semibold">Prazo sugerido</span>
                         </div>
                         <p className="text-foreground bg-card/80 rounded-lg px-4 py-2 border border-border/50">
@@ -290,7 +290,7 @@ const ActionPlanPage = () => {
                       </div>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <Clock className="text-muted-foreground w-[20px] h-[20px]" />
+                          <Clock className="text-muted-foreground w-[16px] h-[16px]" />
                           <span className="font-semibold text-lg">Prazo de revisão</span>
                         </div>
                         <p className="text-foreground bg-card/80 rounded-lg px-4 py-2 border border-border/50">
