@@ -178,18 +178,14 @@ const ActionPlanPage = () => {
                       <CardContent className="pt-6">
                         <Target className="w-8 h-8 text-primary mb-3" />
                         <h3 className="font-semibold mb-1">Ações Claras</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Saiba exatamente o que fazer
-                        </p>
+                        <p className="text-sm text-muted-foreground">Saiba exatamente o que fazer a nível individual e coletivo</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-card/30 border-border/30">
                       <CardContent className="pt-6">
                         <BookOpen className="w-8 h-8 text-primary mb-3" />
                         <h3 className="font-semibold mb-1">Trilha Recomendada</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Cursos alinhados ao seu momento
-                        </p>
+                        <p className="text-sm text-muted-foreground">Cursos alinhados ao seu nível de maturidade e pilar a desenvolver</p>
                       </CardContent>
                     </Card>
                   </div>
