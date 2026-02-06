@@ -115,6 +115,19 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "normal");
   doc.text(recommendation.prazo, leftMargin, yPosition);
+  yPosition += 10;
+  
+  // Section: Prazo de revisão
+  doc.setFontSize(12);
+  doc.setTextColor(...primaryColor);
+  doc.setFont("helvetica", "bold");
+  doc.text("Prazo de revisão", leftMargin, yPosition);
+  yPosition += 8;
+  
+  doc.setFontSize(10);
+  doc.setTextColor(...darkColor);
+  doc.setFont("helvetica", "normal");
+  doc.text(recommendation.prazoRevisao, leftMargin, yPosition);
   yPosition += 12;
   
   // Section: Indicador de sucesso
