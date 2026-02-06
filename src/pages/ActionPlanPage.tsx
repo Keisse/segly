@@ -226,6 +226,10 @@ const ActionPlanPage = () => {
         }}>
               {/* Result Header */}
               <div className="text-center mb-8">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
+                  <Target className="w-4 h-4" />
+                  <span className="text-sm font-medium">Plano de Ação</span>
+                </div>
                 
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                   {selectedPillarData?.name} — {selectedStageData?.label}
