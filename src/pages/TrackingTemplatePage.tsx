@@ -401,12 +401,7 @@ const TrackingTemplatePage = () => {
                     </div>
                     
                     <div className="flex items-start gap-3">
-                      {individualTask.status === "completed" 
-                        ? <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                        : individualTask.status === "in_progress"
-                          ? <Circle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
-                          : <Circle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                      }
+                      {individualTask.status === "completed" ? <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" /> : individualTask.status === "in_progress" ? <Circle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />}
                       <span className="text-sm">{templateData.acao_individual}</span>
                     </div>
 
@@ -456,12 +451,7 @@ const TrackingTemplatePage = () => {
                     </div>
                     
                     <div className="flex items-start gap-3">
-                      {collectiveTask.status === "completed" 
-                        ? <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                        : collectiveTask.status === "in_progress"
-                          ? <Circle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
-                          : <Circle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                      }
+                      {collectiveTask.status === "completed" ? <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" /> : collectiveTask.status === "in_progress" ? <Circle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />}
                       <span className="text-sm">{templateData.acao_coletiva}</span>
                     </div>
 
@@ -526,7 +516,7 @@ const TrackingTemplatePage = () => {
                 {/* Aviso de download */}
                 <div className="flex items-start gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">4</span>
-                  <span className="text-muted-foreground">Após preencher os campos acima, clique no botão Gerar Template para baixar a sua planilha de acompanhamento.</span>
+                  <span className="font-medium text-muted-foreground">Após preencher os campos acima, clique no botão Gerar Template para baixar a sua planilha de acompanhamento.</span>
                 </div>
               </CardContent>
             </Card>
