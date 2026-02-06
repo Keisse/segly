@@ -52,7 +52,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos de Estratégia",
       cursoCode: "1.1",
       prazo: "30 dias",
-      indicador: "Propor à liderança um workshop para alinhar as entregas individuais da equipe aos objetivos estratégicos da área",
+      indicador: "Concluir seu mapeamento pessoal de contribuição estratégica. Em seguida, propor à liderança um workshop para alinhar as entregas individuais da equipe aos objetivos estratégicos da área.",
     },
     consolidacao: {
       interpretacao: "Você já compreende a estratégia e usa dados para decidir, mas precisa fortalecer visão de longo prazo e conexão entre áreas.",
@@ -62,7 +62,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Execução Estratégica",
       cursoCode: "1.2",
       prazo: "45 dias",
-      indicador: "Propor à gestão uma iniciativa de alinhamento estratégico envolvendo múltiplas equipes e liderar sua implementação",
+      indicador: "Finalizar seu dashboard pessoal de indicadores estratégicos. Em seguida, propor à gestão uma iniciativa de alinhamento estratégico envolvendo múltiplas equipes.",
     },
     estrategico: {
       interpretacao: "Você atua com visão de futuro, clareza de impacto e decisões orientadas à estratégia. Inspira outros com sua leitura do cenário.",
@@ -72,7 +72,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Governança e Estrutura Organizacional",
       cursoCode: "1.7",
       prazo: "60 dias",
-      indicador: "Propor à diretoria um programa de capacitação em pensamento estratégico para transformar toda a organização",
+      indicador: "Documentar seu framework pessoal de análise estratégica. Em seguida, propor à diretoria um programa de capacitação em pensamento estratégico para toda a organização.",
     },
   },
   // Pilar 2: Execução e Disciplina
@@ -85,7 +85,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos da Excelência Operacional",
       cursoCode: "2.1",
       prazo: "21 dias",
-      indicador: "Propor à liderança a implementação de rotinas de planejamento estruturado para toda a equipe",
+      indicador: "Completar 3 semanas consecutivas do seu planejamento pessoal estruturado. Em seguida, propor à liderança a implementação dessas rotinas para toda a equipe.",
     },
     consolidacao: {
       interpretacao: "Você planeja e executa com regularidade, mas ainda alterna entre disciplina e dispersão.",
@@ -95,7 +95,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos de Gestão de Projetos",
       cursoCode: "2.3",
       prazo: "30 dias",
-      indicador: "Propor à gestão metodologias compartilhadas de produtividade para elevar a taxa de conclusão de toda a equipe",
+      indicador: "Atingir 90% de conclusão nas suas metas pessoais por 4 semanas. Em seguida, propor à gestão a adoção dessas metodologias para elevar a produtividade coletiva.",
     },
     estrategico: {
       interpretacao: "Você é referência em execução disciplinada e adaptável. Entrega com consistência e ajuda outros a performar.",
@@ -105,7 +105,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "PMO e Gestão de Portfólio",
       cursoCode: "2.4",
       prazo: "45 dias",
-      indicador: "Propor à diretoria a replicação dos rituais de execução que você desenvolveu para outras áreas da organização",
+      indicador: "Consolidar e documentar seus rituais pessoais de alta performance. Em seguida, propor à diretoria a replicação desses rituais para outras áreas da organização.",
     },
   },
   // Pilar 3: Execução e Cultura Corporativa
@@ -118,7 +118,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Mapeamento e Melhoria de Processos (BPM)",
       cursoCode: "2.2",
       prazo: "30 dias",
-      indicador: "Propor à liderança um mapeamento colaborativo de processos envolvendo toda a equipe",
+      indicador: "Finalizar a documentação dos seus próprios processos de trabalho. Em seguida, propor à liderança um mapeamento colaborativo envolvendo toda a equipe.",
     },
     consolidacao: {
       interpretacao: "A empresa já tem rotinas e cultura mais consistentes, mas com variações entre áreas ou fragilidades em comunicação e coerência.",
@@ -128,7 +128,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Cultura Organizacional e Engajamento",
       cursoCode: "3.3",
       prazo: "45 dias",
-      indicador: "Propor à gestão um programa de alinhamento cultural para transformar a cultura de execução da equipe",
+      indicador: "Demonstrar consistência pessoal entre discurso e prática por 30 dias. Em seguida, propor à gestão um programa de alinhamento cultural para transformar a equipe.",
     },
     estrategico: {
       interpretacao: "A organização opera com excelência na execução e possui uma cultura forte, alinhada e disseminada pelos líderes.",
@@ -138,7 +138,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Desenvolvimento de Lideranças",
       cursoCode: "3.5",
       prazo: "60 dias",
-      indicador: "Propor à alta liderança um programa de formação para escalar a cultura de excelência para toda a organização",
+      indicador: "Documentar seus cases de sucesso como embaixador da cultura. Em seguida, propor à alta liderança um programa de formação para escalar a excelência organizacional.",
     },
   },
   // Pilar 4: Gestão de Projetos
@@ -151,7 +151,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos de Gestão de Projetos",
       cursoCode: "2.3",
       prazo: "30 dias",
-      indicador: "Propor aos stakeholders a adoção de práticas estruturadas de gestão de projetos para toda a equipe",
+      indicador: "Concluir a organização dos seus projetos usando templates estruturados. Em seguida, propor aos stakeholders a adoção dessas práticas para toda a equipe.",
     },
     consolidacao: {
       interpretacao: "Você conduz projetos com método, mas ainda precisa amadurecer rituais, ferramentas e influência.",
@@ -161,7 +161,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos da Gestão Ágil",
       cursoCode: "2.3",
       prazo: "45 dias",
-      indicador: "Propor à liderança um plano de capacitação para elevar a maturidade em gestão de projetos de toda a equipe",
+      indicador: "Dominar uma ferramenta de gestão e criar seu dashboard pessoal. Em seguida, propor à liderança um plano de capacitação para elevar a maturidade de toda a equipe.",
     },
     estrategico: {
       interpretacao: "Você atua com visão sistêmica, conecta projetos à estratégia e mobiliza stakeholders com eficácia.",
@@ -171,7 +171,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "PMO e Gestão de Portfólio",
       cursoCode: "2.4",
       prazo: "60 dias",
-      indicador: "Propor à alta gestão a estruturação de um PMO ou modelo de gestão de portfólio para múltiplas áreas",
+      indicador: "Consolidar seu framework pessoal de gestão de projetos. Em seguida, propor à alta gestão a estruturação de um PMO ou modelo de portfólio para múltiplas áreas.",
     },
   },
   // Pilar 5: Liderança e Influência
@@ -184,7 +184,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos da Liderança",
       cursoCode: "3.1",
       prazo: "30 dias",
-      indicador: "Propor à liderança iniciativas para melhorar o clima de comunicação e colaboração da equipe",
+      indicador: "Receber feedback positivo sobre sua evolução em comunicação. Em seguida, propor à liderança iniciativas para melhorar o clima de colaboração da equipe.",
     },
     consolidacao: {
       interpretacao: "Você exercita influência e liderança, mas com impacto ainda limitado ou inconsistente.",
@@ -194,7 +194,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Desenvolvimento de Lideranças",
       cursoCode: "3.5",
       prazo: "45 dias",
-      indicador: "Propor à gestão uma iniciativa cross-funcional que mobilize equipes de diferentes áreas",
+      indicador: "Concluir seu mapeamento pessoal de stakeholders e estratégias de influência. Em seguida, propor à gestão uma iniciativa cross-funcional envolvendo diferentes áreas.",
     },
     estrategico: {
       interpretacao: "Você lidera com propósito, engaja naturalmente, influencia além da equipe e gera alto desempenho.",
@@ -204,7 +204,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Cultura Organizacional e Engajamento",
       cursoCode: "3.3",
       prazo: "60 dias",
-      indicador: "Propor à diretoria um programa institucional de mentoria para formar a próxima geração de líderes",
+      indicador: "Documentar seu framework pessoal de liderança e iniciar mentorias individuais. Em seguida, propor à diretoria um programa institucional para formar a próxima geração de líderes.",
     },
   },
   // Pilar 6: Inovação e Criatividade
@@ -217,7 +217,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Transformação Digital",
       cursoCode: "4.1",
       prazo: "30 dias",
-      indicador: "Propor à liderança a criação de uma cultura de experimentação envolvendo toda a equipe",
+      indicador: "Testar pessoalmente 2 novas ferramentas ou abordagens. Em seguida, propor à liderança a criação de uma cultura de experimentação envolvendo toda a equipe.",
     },
     consolidacao: {
       interpretacao: "Você traz ideias e soluções, mas ainda hesita em inovar com regularidade ou impacto.",
@@ -227,7 +227,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Metodologias Ágeis e Inovação",
       cursoCode: "4.2",
       prazo: "45 dias",
-      indicador: "Propor aos stakeholders um processo de inovação colaborativo envolvendo múltiplas equipes",
+      indicador: "Desenvolver e validar um protótipo pessoal de inovação. Em seguida, propor aos stakeholders um processo colaborativo de inovação envolvendo múltiplas equipes.",
     },
     estrategico: {
       interpretacao: "Você inova de forma contínua, traz soluções fora da curva e influencia transformação no ambiente.",
@@ -237,7 +237,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Inteligência Artificial e Automação",
       cursoCode: "4.4",
       prazo: "60 dias",
-      indicador: "Propor à alta gestão a criação de um laboratório de inovação para transformar a cultura organizacional",
+      indicador: "Consolidar sua reputação como referência em inovação através de talks e workshops. Em seguida, propor à alta gestão a criação de um laboratório para transformar a cultura organizacional.",
     },
   },
 };
