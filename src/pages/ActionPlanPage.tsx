@@ -155,8 +155,8 @@ const ActionPlanPage = () => {
 
               {/* Info Cards */}
               <div className="mt-8">
-                <h2 className="text-xl font-semibold text-foreground mb-1">O que você vai receber?</h2>
-                <p className="text-sm text-muted-foreground mb-4">Veja o que o plano de ação inclui</p>
+                <h2 className="font-semibold text-foreground mb-1 text-2xl text-left">O que você vai receber?</h2>
+                <p className="text-sm text-muted-foreground mb-4 text-left">Veja o que o plano de ação inclui</p>
               </div>
               <div className="grid md:grid-cols-3 gap-4">
                 <Card className="bg-card/30 border-border/30">
