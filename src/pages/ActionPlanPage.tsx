@@ -154,39 +154,47 @@ const ActionPlanPage = () => {
               </Card>
 
               {/* Info Cards */}
-              <div className="mt-8">
-                <h2 className="font-semibold text-foreground mb-1 text-2xl text-left">O que você vai receber?</h2>
-                <p className="text-sm text-muted-foreground mb-4 text-left">Veja o que o plano de ação inclui</p>
-              </div>
-              <div className="grid md:grid-cols-3 gap-4">
-                <Card className="bg-card/30 border-border/30">
-                  <CardContent className="pt-6">
-                    <MapPin className="w-8 h-8 text-primary mb-3" />
-                    <h3 className="font-semibold mb-1">Diagnóstico Preciso</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Entenda exatamente onde você está
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-card/30 border-border/30">
-                  <CardContent className="pt-6">
-                    <Target className="w-8 h-8 text-primary mb-3" />
-                    <h3 className="font-semibold mb-1">Ações Claras</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Saiba exatamente o que fazer
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-card/30 border-border/30">
-                  <CardContent className="pt-6">
-                    <BookOpen className="w-8 h-8 text-primary mb-3" />
-                    <h3 className="font-semibold mb-1">Trilha Recomendada</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Cursos alinhados ao seu momento
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50 mt-8">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    O que você vai receber?
+                  </CardTitle>
+                  <CardDescription>
+                    Veja o que o plano de ação inclui
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <Card className="bg-card/30 border-border/30">
+                      <CardContent className="pt-6">
+                        <MapPin className="w-8 h-8 text-primary mb-3" />
+                        <h3 className="font-semibold mb-1">Diagnóstico Preciso</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Entenda exatamente onde você está
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-card/30 border-border/30">
+                      <CardContent className="pt-6">
+                        <Target className="w-8 h-8 text-primary mb-3" />
+                        <h3 className="font-semibold mb-1">Ações Claras</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Saiba exatamente o que fazer
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-card/30 border-border/30">
+                      <CardContent className="pt-6">
+                        <BookOpen className="w-8 h-8 text-primary mb-3" />
+                        <h3 className="font-semibold mb-1">Trilha Recomendada</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Cursos alinhados ao seu momento
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div> : <motion.div key="result" initial={{
           opacity: 0,
           y: 20
