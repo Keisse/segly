@@ -370,15 +370,9 @@ const TrackingTemplatePage = () => {
 
               <CardContent className="p-6 space-y-6">
                 {/* Objetivo */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-primary" />
-                    <span className="font-medium">Objetivo</span>
-                  </div>
-                  <p className="text-muted-foreground bg-primary/5 rounded-lg p-4 border border-primary/20">
-                    {templateData.acao_geral}
-                  </p>
-                </div>
+                <p className="text-muted-foreground bg-primary/5 rounded-lg p-4 border border-primary/20">
+                  <span className="font-medium text-foreground">Objetivo: </span>{templateData.acao_geral}
+                </p>
 
                 {/* Fase 1: Ações Individuais */}
                 <div className="space-y-4">
