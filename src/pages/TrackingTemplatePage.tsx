@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx-js-style";
-import { ArrowLeft, Calendar as CalendarIcon, FileSpreadsheet, Target, Clock, TrendingUp, CheckCircle2, Circle, Loader2, ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, FileSpreadsheet, Target, Clock, TrendingUp, Circle, Loader2, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -205,28 +205,38 @@ const TrackingTemplatePage = () => {
       status: "not_started"
     };
     if (type === "individual") {
-      setIndividualTask(prev => ({
-        ...prev,
-        subtasks: [...prev.subtasks, newSubtask]
-      }));
+      setIndividualTask(prev => {
+        const updatedSubtasks = [...prev.subtasks, newSubtask];
+        return { ...prev, status: deriveTaskStatus(updatedSubtasks), subtasks: updatedSubtasks };
+      });
       setNewSubtaskIndividual("");
     } else {
-      setCollectiveTask(prev => ({
-        ...prev,
-        subtasks: [...prev.subtasks, newSubtask]
-      }));
+      setCollectiveTask(prev => {
+        const updatedSubtasks = [...prev.subtasks, newSubtask];
+        return { ...prev, status: deriveTaskStatus(updatedSubtasks), subtasks: updatedSubtasks };
+      });
       setNewSubtaskCollective("");
     }
   };
+  const deriveTaskStatus = (subtasks: SubTask[]): TaskStatus => {
+    if (subtasks.length === 0) return "not_started";
+    const allCompleted = subtasks.every(st => st.status === "completed");
+    if (allCompleted) return "completed";
+    const anyStarted = subtasks.some(st => st.status === "in_progress" || st.status === "completed");
+    if (anyStarted) return "in_progress";
+    return "not_started";
+  };
+
   const updateSubtaskStatus = (type: "individual" | "collective", subtaskId: string, status: TaskStatus) => {
     const setter = type === "individual" ? setIndividualTask : setCollectiveTask;
-    setter(prev => ({
-      ...prev,
-      subtasks: prev.subtasks.map(st => st.id === subtaskId ? {
-        ...st,
-        status
-      } : st)
-    }));
+    setter(prev => {
+      const updatedSubtasks = prev.subtasks.map(st => st.id === subtaskId ? { ...st, status } : st);
+      return {
+        ...prev,
+        status: deriveTaskStatus(updatedSubtasks),
+        subtasks: updatedSubtasks
+      };
+    });
   };
   const getStatusBadge = (status: TaskStatus) => {
     switch (status) {
@@ -374,7 +384,7 @@ const TrackingTemplatePage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Circle className="w-4 h-4 text-primary" />
+                      <span className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">1</span>
                       <span className="font-medium">Fase 1 — Ações Individuais</span>
                     </div>
                     {getStatusBadge(individualTask.status)}
@@ -387,10 +397,7 @@ const TrackingTemplatePage = () => {
                     </div>
                     
                     <div className="flex items-start gap-3">
-                      <Checkbox checked={individualTask.status === "completed"} onCheckedChange={checked => setIndividualTask(prev => ({
-                    ...prev,
-                    status: checked ? "completed" : prev.subtasks.length > 0 ? "in_progress" : "not_started"
-                  }))} />
+                      <Circle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                       <span className="text-sm">{templateData.acao_individual}</span>
                     </div>
 
@@ -427,7 +434,7 @@ const TrackingTemplatePage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                      <span className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">2</span>
                       <span className="font-medium">Fase 2 — Ações Coletivas</span>
                     </div>
                     {getStatusBadge(collectiveTask.status)}
@@ -440,10 +447,7 @@ const TrackingTemplatePage = () => {
                     </div>
                     
                     <div className="flex items-start gap-3">
-                      <Checkbox checked={collectiveTask.status === "completed"} onCheckedChange={checked => setCollectiveTask(prev => ({
-                    ...prev,
-                    status: checked ? "completed" : prev.subtasks.length > 0 ? "in_progress" : "not_started"
-                  }))} />
+                      <Circle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                       <span className="text-sm">{templateData.acao_coletiva}</span>
                     </div>
 
