@@ -244,6 +244,10 @@ const LeadCaptureForm = ({ onSubmit }: LeadCaptureFormProps) => {
         Iniciar Diagnóstico
         <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
       </Button>
+
+      <p className="text-sm text-muted-foreground text-center mt-4 leading-relaxed">
+        Em 3 minutos você gera um relatório exclusivo com gaps identificados e ações práticas para evoluir.
+      </p>
     </motion.form>
   );
 };

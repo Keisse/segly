@@ -145,7 +145,7 @@ const Index = () => {
             opacity: 1
           }} transition={{
             delay: 0.25
-          }} className="text-base text-muted-foreground mb-8 leading-relaxed text-center max-w-lg">Realize gratuitamente o diagnóstico em execução da sua carreira e empresa e receba uma análise com recomendações práticas para seu time avançar com sucesso.</motion.p>
+          }} className="text-base text-muted-foreground mb-8 leading-relaxed text-center max-w-lg">Falta pouco para medir sua maturidade e descobrir seu score de execução. Preencha seus dados e clique em "Iniciar Diagnóstico".</motion.p>
 
               <LeadCaptureForm onSubmit={handleStart} />
             </div>
