@@ -23,6 +23,7 @@ export interface ActionPlanRecommendation {
   curso: string;
   cursoCode: string;
   prazo: string;
+  prazoRevisao: string;
   indicador: string;
 }
 
@@ -52,6 +53,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos de Estratégia",
       cursoCode: "1.1",
       prazo: "30 dias",
+      prazoRevisao: "15 dias",
       indicador: "Concluir seu mapeamento pessoal de contribuição estratégica. Em seguida, propor à liderança um workshop para alinhar as entregas individuais da equipe aos objetivos estratégicos da área.",
     },
     consolidacao: {
@@ -62,6 +64,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Execução Estratégica",
       cursoCode: "1.2",
       prazo: "45 dias",
+      prazoRevisao: "21 dias",
       indicador: "Finalizar seu dashboard pessoal de indicadores estratégicos. Em seguida, propor à gestão uma iniciativa de alinhamento estratégico envolvendo múltiplas equipes.",
     },
     estrategico: {
@@ -72,6 +75,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Governança e Estrutura Organizacional",
       cursoCode: "1.7",
       prazo: "60 dias",
+      prazoRevisao: "30 dias",
       indicador: "Documentar seu framework pessoal de análise estratégica. Em seguida, propor à diretoria um programa de capacitação em pensamento estratégico para toda a organização.",
     },
   },
@@ -85,6 +89,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos da Excelência Operacional",
       cursoCode: "2.1",
       prazo: "21 dias",
+      prazoRevisao: "10 dias",
       indicador: "Completar 3 semanas consecutivas do seu planejamento pessoal estruturado. Em seguida, propor à liderança a implementação dessas rotinas para toda a equipe.",
     },
     consolidacao: {
@@ -95,6 +100,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos de Gestão de Projetos",
       cursoCode: "2.3",
       prazo: "30 dias",
+      prazoRevisao: "15 dias",
       indicador: "Atingir 90% de conclusão nas suas metas pessoais por 4 semanas. Em seguida, propor à gestão a adoção dessas metodologias para elevar a produtividade coletiva.",
     },
     estrategico: {
@@ -105,6 +111,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "PMO e Gestão de Portfólio",
       cursoCode: "2.4",
       prazo: "45 dias",
+      prazoRevisao: "21 dias",
       indicador: "Consolidar e documentar seus rituais pessoais de alta performance. Em seguida, propor à diretoria a replicação desses rituais para outras áreas da organização.",
     },
   },
@@ -118,6 +125,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Mapeamento e Melhoria de Processos (BPM)",
       cursoCode: "2.2",
       prazo: "30 dias",
+      prazoRevisao: "15 dias",
       indicador: "Finalizar a documentação dos seus próprios processos de trabalho. Em seguida, propor à liderança um mapeamento colaborativo envolvendo toda a equipe.",
     },
     consolidacao: {
@@ -128,6 +136,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Cultura Organizacional e Engajamento",
       cursoCode: "3.3",
       prazo: "45 dias",
+      prazoRevisao: "21 dias",
       indicador: "Demonstrar consistência pessoal entre discurso e prática por 30 dias. Em seguida, propor à gestão um programa de alinhamento cultural para transformar a equipe.",
     },
     estrategico: {
@@ -138,6 +147,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Desenvolvimento de Lideranças",
       cursoCode: "3.5",
       prazo: "60 dias",
+      prazoRevisao: "30 dias",
       indicador: "Documentar seus cases de sucesso como embaixador da cultura. Em seguida, propor à alta liderança um programa de formação para escalar a excelência organizacional.",
     },
   },
@@ -151,6 +161,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos de Gestão de Projetos",
       cursoCode: "2.3",
       prazo: "30 dias",
+      prazoRevisao: "15 dias",
       indicador: "Concluir a organização dos seus projetos usando templates estruturados. Em seguida, propor aos stakeholders a adoção dessas práticas para toda a equipe.",
     },
     consolidacao: {
@@ -161,6 +172,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos da Gestão Ágil",
       cursoCode: "2.3",
       prazo: "45 dias",
+      prazoRevisao: "21 dias",
       indicador: "Dominar uma ferramenta de gestão e criar seu dashboard pessoal. Em seguida, propor à liderança um plano de capacitação para elevar a maturidade de toda a equipe.",
     },
     estrategico: {
@@ -171,6 +183,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "PMO e Gestão de Portfólio",
       cursoCode: "2.4",
       prazo: "60 dias",
+      prazoRevisao: "30 dias",
       indicador: "Consolidar seu framework pessoal de gestão de projetos. Em seguida, propor à alta gestão a estruturação de um PMO ou modelo de portfólio para múltiplas áreas.",
     },
   },
@@ -184,6 +197,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Fundamentos da Liderança",
       cursoCode: "3.1",
       prazo: "30 dias",
+      prazoRevisao: "15 dias",
       indicador: "Receber feedback positivo sobre sua evolução em comunicação. Em seguida, propor à liderança iniciativas para melhorar o clima de colaboração da equipe.",
     },
     consolidacao: {
@@ -194,6 +208,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Desenvolvimento de Lideranças",
       cursoCode: "3.5",
       prazo: "45 dias",
+      prazoRevisao: "21 dias",
       indicador: "Concluir seu mapeamento pessoal de stakeholders e estratégias de influência. Em seguida, propor à gestão uma iniciativa cross-funcional envolvendo diferentes áreas.",
     },
     estrategico: {
@@ -204,6 +219,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Cultura Organizacional e Engajamento",
       cursoCode: "3.3",
       prazo: "60 dias",
+      prazoRevisao: "30 dias",
       indicador: "Documentar seu framework pessoal de liderança e iniciar mentorias individuais. Em seguida, propor à diretoria um programa institucional para formar a próxima geração de líderes.",
     },
   },
@@ -217,6 +233,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Transformação Digital",
       cursoCode: "4.1",
       prazo: "30 dias",
+      prazoRevisao: "15 dias",
       indicador: "Testar pessoalmente 2 novas ferramentas ou abordagens. Em seguida, propor à liderança a criação de uma cultura de experimentação envolvendo toda a equipe.",
     },
     consolidacao: {
@@ -227,6 +244,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Metodologias Ágeis e Inovação",
       cursoCode: "4.2",
       prazo: "45 dias",
+      prazoRevisao: "21 dias",
       indicador: "Desenvolver e validar um protótipo pessoal de inovação. Em seguida, propor aos stakeholders um processo colaborativo de inovação envolvendo múltiplas equipes.",
     },
     estrategico: {
@@ -237,6 +255,7 @@ export const recommendations: Record<number, Record<StageKey, ActionPlanRecommen
       curso: "Inteligência Artificial e Automação",
       cursoCode: "4.4",
       prazo: "60 dias",
+      prazoRevisao: "30 dias",
       indicador: "Consolidar sua reputação como referência em inovação através de talks e workshops. Em seguida, propor à alta gestão a criação de um laboratório para transformar a cultura organizacional.",
     },
   },

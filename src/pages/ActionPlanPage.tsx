@@ -274,8 +274,8 @@ const ActionPlanPage = () => {
                       </div>
                     </div>
 
-                    {/* Prazo e Indicador */}
-                    <div className="grid md:grid-cols-2 gap-4 pl-7">
+                    {/* Prazo, Prazo de Revisão e Indicador */}
+                    <div className="grid md:grid-cols-3 gap-4 pl-7">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-primary" />
@@ -283,6 +283,15 @@ const ActionPlanPage = () => {
                         </div>
                         <p className="text-foreground bg-card/80 rounded-lg px-4 py-2 border border-border/50">
                           {recommendation.prazo}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Prazo de revisão</span>
+                        </div>
+                        <p className="text-foreground bg-card/80 rounded-lg px-4 py-2 border border-border/50">
+                          {recommendation.prazoRevisao}
                         </p>
                       </div>
                       <div className="space-y-2">
