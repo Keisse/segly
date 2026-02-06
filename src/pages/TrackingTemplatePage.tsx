@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx-js-style";
-import { ArrowLeft, Calendar as CalendarIcon, FileSpreadsheet, Target, Clock, Circle, Loader2, ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, FileSpreadsheet, Target, Clock, ClipboardList, Users, Loader2, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -401,7 +401,7 @@ const TrackingTemplatePage = () => {
                     </div>
                     
                     <div className="flex items-start gap-3">
-                      <Circle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <ClipboardList className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                       <span className="text-sm">{templateData.acao_individual}</span>
                     </div>
 
@@ -451,7 +451,7 @@ const TrackingTemplatePage = () => {
                     </div>
                     
                     <div className="flex items-start gap-3">
-                      <Circle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <Users className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                       <span className="text-sm">{templateData.acao_coletiva}</span>
                     </div>
 
