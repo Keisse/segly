@@ -358,18 +358,6 @@ const ActionPlanPage = () => {
                 </Button>
               </div>
 
-              {/* Link to full diagnostic */}
-              <div className="text-center mt-8">
-                <p className="text-muted-foreground text-sm mb-2">
-                  Quer um diagnóstico completo da sua maturidade?
-                </p>
-                <Button variant="link" asChild className="text-primary">
-                  <Link to="/">
-                    Fazer Diagnóstico Completo
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </Button>
-              </div>
             </motion.div>}
         </AnimatePresence>
       </main>
