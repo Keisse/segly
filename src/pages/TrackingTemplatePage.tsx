@@ -2,10 +2,11 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import * as XLSX from "xlsx";
 import { 
   ArrowLeft, 
   Calendar as CalendarIcon, 
-  FileText,
+  FileSpreadsheet,
   Target,
   Clock,
   TrendingUp,
@@ -95,78 +96,92 @@ const TrackingTemplatePage = () => {
     setStartDate(new Date());
   };
 
-  const handleExportGoogleDocs = () => {
+  const handleExportExcel = () => {
     if (!templateData || !calculatedDates || !selectedPillarData || !selectedStageData) return;
 
     setIsGeneratingPDF(true);
     
     try {
-      const content = `${selectedPillarData.name} — ${selectedStageData.label}
+      const getStatusText = (status: TaskStatus): string => {
+        switch (status) {
+          case "completed": return "✓ Concluído";
+          case "in_progress": return "↻ Em andamento";
+          default: return "○ Não iniciado";
+        }
+      };
 
-Nível de Maturidade: ${selectedStageData.range}
+      const getEvaluationText = (): string => {
+        switch (successEvaluation) {
+          case "achieved": return "✓ Atingido";
+          case "partial": return "~ Parcialmente atingido";
+          case "not_achieved": return "✗ Não atingido";
+          default: return "(Pendente)";
+        }
+      };
 
-═══════════════════════════════════════════════════════════════
+      // Create workbook
+      const wb = XLSX.utils.book_new();
 
-LINHA DO TEMPO
+      // Main data for the sheet
+      const mainData = [
+        ["TEMPLATE DE ACOMPANHAMENTO DA EXECUÇÃO"],
+        [""],
+        ["Pilar", selectedPillarData.name],
+        ["Nível de Maturidade", `${selectedStageData.label} (${selectedStageData.range})`],
+        [""],
+        ["LINHA DO TEMPO"],
+        ["Data de Início", format(startDate, "dd/MM/yyyy", { locale: ptBR })],
+        ["Data de Revisão", `${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)`],
+        ["Data de Conclusão", `${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoSugerido} dias)`],
+        [""],
+        ["OBJETIVO"],
+        ["", templateData.acaoGeral],
+        [""],
+        ["FASE 1 — AÇÕES INDIVIDUAIS"],
+        ["Prazo", `Até ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)`],
+        ["Status", getStatusText(individualTask.status)],
+        ["Ação Principal", templateData.acaoIndividual],
+        [""],
+        ["Subtarefas Individuais", "Status"],
+        ...individualTask.subtasks.map(st => [st.text, st.completed ? "✓ Concluída" : "○ Pendente"]),
+        ...(individualTask.subtasks.length === 0 ? [["(Nenhuma subtarefa adicionada)", ""]] : []),
+        [""],
+        ["FASE 2 — AÇÕES COLETIVAS"],
+        ["Prazo", `De ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} até ${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })}`],
+        ["Status", getStatusText(collectiveTask.status)],
+        ["Ação Principal", templateData.acaoColetiva],
+        [""],
+        ["Subtarefas Coletivas", "Status"],
+        ...collectiveTask.subtasks.map(st => [st.text, st.completed ? "✓ Concluída" : "○ Pendente"]),
+        ...(collectiveTask.subtasks.length === 0 ? [["(Nenhuma subtarefa adicionada)", ""]] : []),
+        [""],
+        ["INDICADOR DE SUCESSO"],
+        ["", templateData.indicadorSucesso],
+        ["Autoavaliação", getEvaluationText()],
+        [""],
+        ["TRILHA RECOMENDADA"],
+        ["Curso", `${templateData.cursoCode}: ${templateData.curso}`],
+        [""],
+        [""],
+        ["Gerado pelo Diagnóstico de Alta Performance — Allevo For Business", format(new Date(), "dd/MM/yyyy", { locale: ptBR })],
+      ];
 
-• Início: ${format(startDate, "dd/MM/yyyy", { locale: ptBR })}
-• Revisão: ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)
-• Conclusão: ${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoSugerido} dias)
+      const ws = XLSX.utils.aoa_to_sheet(mainData);
 
-═══════════════════════════════════════════════════════════════
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 25 },
+        { wch: 80 },
+      ];
 
-OBJETIVO
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, "Acompanhamento");
 
-${templateData.acaoGeral}
+      // Generate filename
+      const fileName = `Acompanhamento - ${selectedPillarData.name} - ${selectedStageData.label}.xls`;
 
-═══════════════════════════════════════════════════════════════
-
-FASE 1 — AÇÕES INDIVIDUAIS
-
-Prazo: Até ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} (${templateData.prazoRevisao} dias)
-
-☐ ${templateData.acaoIndividual}
-
-Subtarefas:
-${individualTask.subtasks.map(st => `${st.completed ? '☑' : '☐'} ${st.text}`).join('\n') || '(Adicione suas subtarefas)'}
-
-Status: ${individualTask.status === "completed" ? "✓ Concluído" : individualTask.status === "in_progress" ? "↻ Em andamento" : "○ Não iniciado"}
-
-═══════════════════════════════════════════════════════════════
-
-FASE 2 — AÇÕES COLETIVAS
-
-Prazo: De ${format(calculatedDates.reviewDate, "dd/MM/yyyy", { locale: ptBR })} até ${format(calculatedDates.completionDate, "dd/MM/yyyy", { locale: ptBR })}
-
-☐ ${templateData.acaoColetiva}
-
-Subtarefas:
-${collectiveTask.subtasks.map(st => `${st.completed ? '☑' : '☐'} ${st.text}`).join('\n') || '(Adicione suas subtarefas)'}
-
-Status: ${collectiveTask.status === "completed" ? "✓ Concluído" : collectiveTask.status === "in_progress" ? "↻ Em andamento" : "○ Não iniciado"}
-
-═══════════════════════════════════════════════════════════════
-
-INDICADOR DE SUCESSO
-
-${templateData.indicadorSucesso}
-
-Autoavaliação: ${successEvaluation === "achieved" ? "✓ Atingido" : successEvaluation === "partial" ? "~ Parcialmente atingido" : successEvaluation === "not_achieved" ? "✗ Não atingido" : "(Pendente)"}
-
-═══════════════════════════════════════════════════════════════
-
-TRILHA RECOMENDADA
-
-Curso ${templateData.cursoCode}: ${templateData.curso}
-
-═══════════════════════════════════════════════════════════════
-
-Gerado pelo Diagnóstico de Alta Performance — Allevo For Business
-`;
-
-      // Create Google Docs URL with pre-filled content
-      const googleDocsUrl = `https://docs.google.com/document/create?title=${encodeURIComponent(`Acompanhamento - ${selectedPillarData.name}`)}&body=${encodeURIComponent(content)}`;
-      window.open(googleDocsUrl, "_blank");
+      // Download the file
+      XLSX.writeFile(wb, fileName);
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -590,13 +605,13 @@ Gerado pelo Diagnóstico de Alta Performance — Allevo For Business
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleExportGoogleDocs} variant="outline" disabled={isGeneratingPDF}>
+              <Button onClick={handleExportExcel} variant="outline" disabled={isGeneratingPDF}>
                 {isGeneratingPDF ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <FileText className="w-4 h-4 mr-2" />
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
                 )}
-                Baixar no Google Docs
+                Baixar em .xls
               </Button>
               <Button onClick={handleReset} variant="outline">
                 <RefreshCw className="w-4 h-4 mr-2" />
