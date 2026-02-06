@@ -81,7 +81,7 @@ const LeadDetail = () => {
   const pillarScores = lead.resultado_diagnostico?.pillarScores || [];
 
   const radarData = pillarScores.map((p) => ({
-    subject: p.pillarName.split(" ").slice(0, 2).join(" "),
+    subject: p.pillarName,
     value: p.percentage,
     fullName: p.pillarName,
   }));
