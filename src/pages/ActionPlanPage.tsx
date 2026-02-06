@@ -242,7 +242,7 @@ const ActionPlanPage = () => {
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         
-                        <h3 className="font-semibold text-lg">Onde você está</h3>
+                        <h3 className="font-semibold text-xl">Onde você está</h3>
                       </div>
                       <p className="text-muted-foreground leading-relaxed pl-7 px-0">
                         {plano.interpretacao}
@@ -253,7 +253,7 @@ const ActionPlanPage = () => {
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         
-                        <h3 className="font-semibold text-lg">Ação sugerida</h3>
+                        <h3 className="font-semibold text-xl">Ação sugerida</h3>
                       </div>
                       <div className="bg-primary/10 rounded-lg p-4 space-y-4 mx-0 ml-0">
                         <p className="text-foreground font-medium">
@@ -282,7 +282,7 @@ const ActionPlanPage = () => {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Clock className="text-primary w-[16px] h-[16px]" />
-                          <span className="text-lg font-semibold">Prazo sugerido</span>
+                          <span className="font-semibold text-base">Prazo sugerido</span>
                         </div>
                         <p className="text-foreground bg-card/80 rounded-lg px-4 py-2 border border-border/50">
                           {plano.prazo_sugerido} dias
@@ -291,7 +291,7 @@ const ActionPlanPage = () => {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Clock className="text-muted-foreground w-[16px] h-[16px]" />
-                          <span className="font-semibold text-lg">Prazo de revisão</span>
+                          <span className="font-semibold text-base">Prazo de revisão</span>
                         </div>
                         <p className="text-foreground bg-card/80 rounded-lg px-4 py-2 border border-border/50">
                           {plano.prazo_revisao} dias
@@ -302,8 +302,8 @@ const ActionPlanPage = () => {
                     {/* Indicador de sucesso */}
                     <div className="space-y-2 py-[15px] px-0 pt-[10px] pb-0 pl-0">
                       <div className="flex items-center gap-2">
-                        <TrendingUp className="text-primary w-[20px] h-[20px]" />
-                        <span className="text-lg font-semibold">Indicador de sucesso</span>
+                        <TrendingUp className="text-primary w-[16px] h-[16px]" />
+                        <span className="font-semibold text-base">Indicador de sucesso</span>
                       </div>
                       <p className="text-muted-foreground text-sm bg-card/80 rounded-lg px-4 py-3 border border-border/50 leading-relaxed">
                         {plano.indicador_sucesso}
