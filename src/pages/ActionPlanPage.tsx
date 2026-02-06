@@ -109,7 +109,7 @@ const ActionPlanPage = () => {
                     </Label>
                     <Select value={selectedStage} onValueChange={value => setSelectedStage(value as StageKey)}>
                       <SelectTrigger id="stage" className="w-full">
-                        <SelectValue placeholder="Selecione seu nível de maturidade" />
+                        <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
                         {stages.map(stage => <SelectItem key={stage.key} value={stage.key}>
@@ -129,7 +129,7 @@ const ActionPlanPage = () => {
                     </Label>
                     <Select value={selectedPillar.toString()} onValueChange={value => setSelectedPillar(parseInt(value))}>
                       <SelectTrigger id="pillar" className="w-full">
-                        <SelectValue placeholder="Selecione o pilar que deseja desenvolver" />
+                        <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
                         {pillars.map(pillar => {
@@ -154,7 +154,11 @@ const ActionPlanPage = () => {
               </Card>
 
               {/* Info Cards */}
-              <div className="grid md:grid-cols-3 gap-4 mt-8">
+              <div className="mt-8">
+                <h2 className="text-xl font-semibold text-foreground mb-1">O que você vai receber?</h2>
+                <p className="text-sm text-muted-foreground mb-4">Veja o que o plano de ação inclui</p>
+              </div>
+              <div className="grid md:grid-cols-3 gap-4">
                 <Card className="bg-card/30 border-border/30">
                   <CardContent className="pt-6">
                     <MapPin className="w-8 h-8 text-primary mb-3" />
