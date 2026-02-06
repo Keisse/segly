@@ -261,10 +261,10 @@ const TrackingTemplatePage = () => {
             <CardContent className="space-y-6">
               {/* Nível de Maturidade */}
               <div className="space-y-2">
-                <Label>Nível de Maturidade</Label>
+                <Label>1. Nível de maturidade</Label>
                 <Select value={selectedStage} onValueChange={(value) => setSelectedStage(value as StageKey)}>
                   <SelectTrigger className="bg-background/50">
-                    <SelectValue placeholder="Selecione o nível" />
+                    <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
                     {stages.map((stage) => (
@@ -278,13 +278,13 @@ const TrackingTemplatePage = () => {
 
               {/* Pilar */}
               <div className="space-y-2">
-                <Label>Pilar</Label>
+                <Label>2. Pilar</Label>
                 <Select 
                   value={selectedPillar?.toString() || ""} 
                   onValueChange={(value) => setSelectedPillar(Number(value))}
                 >
                   <SelectTrigger className="bg-background/50">
-                    <SelectValue placeholder="Selecione o pilar" />
+                    <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
                     {pillars.map((pillar) => (
