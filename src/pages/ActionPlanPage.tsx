@@ -93,7 +93,7 @@ const ActionPlanPage = () => {
                   {/* Stage Selection */}
                   <div className="space-y-2">
                     <Label htmlFor="stage" className="text-base font-medium">
-                      Seu nível de maturidade
+                      1. Escolha seu nível de maturidade
                     </Label>
                     <Select value={selectedStage} onValueChange={value => setSelectedStage(value as StageKey)}>
                       <SelectTrigger id="stage" className="w-full">
@@ -113,7 +113,7 @@ const ActionPlanPage = () => {
                   {/* Pillar Selection */}
                   <div className="space-y-2">
                     <Label htmlFor="pillar" className="text-base font-medium">
-                      Pilar para desenvolver
+                      2. Selecione o pilar para desenvolver
                     </Label>
                     <Select value={selectedPillar.toString()} onValueChange={value => setSelectedPillar(parseInt(value))}>
                       <SelectTrigger id="pillar" className="w-full">
