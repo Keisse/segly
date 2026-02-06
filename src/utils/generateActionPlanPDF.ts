@@ -89,7 +89,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
   doc.setFont("helvetica", "bold");
-  doc.text("Individual:", leftMargin, yPosition);
+  doc.text("A nível individual:", leftMargin, yPosition);
   yPosition += 6;
   doc.setFont("helvetica", "normal");
   const individualLines = doc.splitTextToSize(recommendation.acaoIndividual, contentWidth);
@@ -97,7 +97,7 @@ export const generateActionPlanPDF = (data: ActionPlanPDFData) => {
   yPosition += individualLines.length * 5 + 6;
   
   doc.setFont("helvetica", "bold");
-  doc.text("Coletivo:", leftMargin, yPosition);
+  doc.text("A nível coletivo:", leftMargin, yPosition);
   yPosition += 6;
   doc.setFont("helvetica", "normal");
   const coletivoLines = doc.splitTextToSize(recommendation.acaoColetiva, contentWidth);

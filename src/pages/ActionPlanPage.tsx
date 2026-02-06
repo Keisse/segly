@@ -262,11 +262,11 @@ const ActionPlanPage = () => {
                           <p className="text-sm font-semibold text-primary">Na empresa:</p>
                           <div className="grid md:grid-cols-2 gap-3">
                             <div className="bg-background/50 rounded-lg p-3 border border-border/30">
-                              <p className="text-xs font-medium text-muted-foreground mb-1">Individual</p>
+                              <p className="text-xs font-medium text-muted-foreground mb-1">A nível individual</p>
                               <p className="text-sm text-foreground">{recommendation.acaoIndividual}</p>
                             </div>
                             <div className="bg-background/50 rounded-lg p-3 border border-border/30">
-                              <p className="text-xs font-medium text-muted-foreground mb-1">Coletivo</p>
+                              <p className="text-xs font-medium text-muted-foreground mb-1">A nível coletivo</p>
                               <p className="text-sm text-foreground">{recommendation.acaoColetiva}</p>
                             </div>
                           </div>
