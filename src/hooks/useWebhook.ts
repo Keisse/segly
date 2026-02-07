@@ -24,15 +24,25 @@ interface DiagnosticResult {
   answers: Record<number, number>;
 }
 
+interface UtmParams {
+  utm_campaign?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_term?: string;
+  utm_content?: string;
+}
+
 interface WebhookLeadCapturePayload {
   type: "lead_capture";
   lead: LeadData & { porte_empresa: string };
+  utm?: UtmParams;
 }
 
 interface WebhookDiagnosticCompletePayload {
   type: "diagnostic_complete";
   lead: LeadData & { porte_empresa: string };
   diagnostic: DiagnosticResult;
+  utm?: UtmParams;
 }
 
 type WebhookPayload = WebhookLeadCapturePayload | WebhookDiagnosticCompletePayload;

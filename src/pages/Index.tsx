@@ -20,6 +20,18 @@ const Index = () => {
   const insertLead = useInsertLead();
   const sendWebhook = useSendWebhook();
 
+  // Capture UTM parameters from URL on mount
+  const utmParams = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      utm_campaign: params.get("utm_campaign") || undefined,
+      utm_source: params.get("utm_source") || undefined,
+      utm_medium: params.get("utm_medium") || undefined,
+      utm_term: params.get("utm_term") || undefined,
+      utm_content: params.get("utm_content") || undefined,
+    };
+  }, []);
+
   // Scroll to top when view changes
   useEffect(() => {
     window.scrollTo({
@@ -84,7 +96,8 @@ const Index = () => {
       lead: {
         ...data,
         porte_empresa: data.porte
-      }
+      },
+      utm: utmParams
     });
     setView("questions");
   };
@@ -125,7 +138,8 @@ const Index = () => {
           stage: result.stage,
           pillarScores: result.pillarScores,
           answers: answers
-        }
+        },
+        utm: utmParams
       });
       setView("result");
     } catch (error) {
