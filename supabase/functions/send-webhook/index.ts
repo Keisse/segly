@@ -41,6 +41,14 @@ interface DiagnosticResult {
   answers: Record<string, number>;
 }
 
+interface UtmParams {
+  utm_campaign?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_term?: string;
+  utm_content?: string;
+}
+
 interface WebhookPayload {
   type: "lead_capture" | "diagnostic_complete";
   timestamp: string;
@@ -49,6 +57,7 @@ interface WebhookPayload {
   preencheu_diagnostico: "Sim" | "Não";
   allevo_score?: number;
   nivel_maturidade?: string;
+  utm?: UtmParams;
 }
 
 Deno.serve(async (req) => {
@@ -118,6 +127,17 @@ Deno.serve(async (req) => {
       },
       preencheu_diagnostico: isDiagnosticComplete ? "Sim" : "Não",
     };
+
+    // Add UTM parameters if present
+    if (body.utm) {
+      webhookPayload.utm = {
+        utm_campaign: body.utm.utm_campaign || undefined,
+        utm_source: body.utm.utm_source || undefined,
+        utm_medium: body.utm.utm_medium || undefined,
+        utm_term: body.utm.utm_term || undefined,
+        utm_content: body.utm.utm_content || undefined,
+      };
+    }
 
     // Add diagnostic data if present
     if (body.diagnostic) {
