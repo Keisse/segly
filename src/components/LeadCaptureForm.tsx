@@ -33,15 +33,41 @@ const LeadCaptureForm = ({
     cargo: ""
   });
   const [errors, setErrors] = useState<Partial<Record<keyof LeadData, string>>>({});
+  const freeEmailDomains = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "yahoo.com.br", "live.com", "msn.com", "aol.com", "icloud.com", "mail.com", "protonmail.com", "zoho.com", "ymail.com", "gmx.com", "uol.com.br", "bol.com.br", "terra.com.br", "ig.com.br"];
+
   const validateForm = () => {
     const newErrors: Partial<Record<keyof LeadData, string>> = {};
     if (!formData.nome.trim()) newErrors.nome = "Nome é obrigatório";
-    if (!formData.telefone.trim()) newErrors.telefone = "Telefone é obrigatório";
+
+    // Phone validation: only digits, 10-11 digits for Brazilian numbers
+    const phoneDigits = formData.telefone.replace(/\D/g, "");
+    if (!formData.telefone.trim()) {
+      newErrors.telefone = "Telefone é obrigatório";
+    } else if (phoneDigits.length < 10 || phoneDigits.length > 13) {
+      newErrors.telefone = "Telefone inválido. Informe entre 10 e 13 dígitos (com DDD)";
+    }
+
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = "E-mail é obrigatório";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "E-mail inválido";
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = "E-mail inválido";
+      } else {
+        const [prefix, domainFull] = formData.email.split("@");
+        const domainParts = domainFull?.split(".");
+        const domainName = domainParts?.[0] || "";
+        if (prefix.length < 3) {
+          newErrors.email = "O prefixo do e-mail deve ter no mínimo 3 caracteres";
+        } else if (domainName.length < 3) {
+          newErrors.email = "O domínio do e-mail deve ter no mínimo 3 caracteres";
+        } else if (freeEmailDomains.includes(domainFull.toLowerCase())) {
+          newErrors.email = "Use um e-mail corporativo (não são aceitos Gmail, Outlook, Yahoo, etc.)";
+        }
+      }
     }
+
     if (!formData.empresa.trim()) newErrors.empresa = "Nome da empresa é obrigatório";
     if (!formData.porte) newErrors.porte = "Selecione o porte da empresa";
     if (!formData.departamento) newErrors.departamento = "Selecione seu departamento";
