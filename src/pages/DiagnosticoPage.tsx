@@ -32,9 +32,9 @@ const DiagnosticoPage = () => {
   const insertLead = useInsertLead();
   const sendWebhook = useSendWebhook();
 
-  // Redirect to home if no lead data
+  // Redirect to home if no lead data (only in production, not in preview/dev)
   useEffect(() => {
-    if (!state?.leadData) {
+    if (!state?.leadData && !window.location.search.includes("__lovable_token")) {
       navigate("/", { replace: true });
     }
   }, [state, navigate]);
@@ -147,7 +147,7 @@ const DiagnosticoPage = () => {
     }
   };
 
-  if (!state?.leadData) return null;
+  if (!state?.leadData && !window.location.search.includes("__lovable_token")) return null;
 
   return (
     <div className="min-h-screen">
