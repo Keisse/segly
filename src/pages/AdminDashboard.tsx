@@ -10,6 +10,7 @@ import LeadsChart from "@/components/admin/LeadsChart";
 import LeadsTable from "@/components/admin/LeadsTable";
 import DashboardFilters from "@/components/admin/DashboardFilters";
 import DistributionCharts from "@/components/admin/DistributionCharts";
+import AddUserDialog from "@/components/admin/AddUserDialog";
 import allevoLogo from "@/assets/allevo-logo.png";
 import type { LeadStatus } from "@/types/lead";
 
@@ -117,6 +118,7 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <AddUserDialog />
             <Button
               variant="outline"
               size="sm"
