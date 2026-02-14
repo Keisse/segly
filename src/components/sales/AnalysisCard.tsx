@@ -72,7 +72,7 @@ export function AnalysisCard({ title, description, icon, type, leadId, lead, sav
             <div className="p-2 rounded-lg bg-primary/10 text-primary">
               {icon}
             </div>
-            <div>
+            <div className="text-left">
               <CardTitle className="text-base font-medium">{title}</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
             </div>
