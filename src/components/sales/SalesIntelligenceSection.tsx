@@ -67,7 +67,7 @@ export function SalesIntelligenceSection({ lead }: SalesIntelligenceSectionProps
       </h2>
 
       <Tabs defaultValue="analises" className="w-full">
-        <TabsList className="inline-flex w-auto mb-4">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="analises">Análises Enriquecidas</TabsTrigger>
           <TabsTrigger value="scripts">Scripts de Vendas</TabsTrigger>
         </TabsList>
