@@ -67,14 +67,14 @@ export function AnalysisCard({ title, description, icon, type, leadId, lead, sav
   return (
     <Card className="bg-card/50 border-border/50 overflow-hidden">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
               {icon}
             </div>
             <div className="text-left">
-              <CardTitle className="text-base font-medium">{title}</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+              <CardTitle className="text-base font-medium text-left">{title}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5 text-left">{description}</p>
             </div>
           </div>
           <Button
