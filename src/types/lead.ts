@@ -13,6 +13,7 @@ export interface Lead {
   notas: Nota[];
   historico: HistoricoItem[];
   responsavel: string | null;
+  fonte: string;
 }
 
 export interface ResultadoDiagnostico {

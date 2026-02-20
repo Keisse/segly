@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Users, UserPlus, Calendar, TrendingUp, LogOut, Download } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardMetrics } from "@/hooks/useLeads";
 import MetricCard from "@/components/admin/MetricCard";
@@ -24,17 +25,25 @@ interface FiltersState {
   searchName?: string;
 }
 
+type FonteTab = "todos" | "organico" | "outbound";
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { data: metrics, isLoading } = useDashboardMetrics();
   const [filters, setFilters] = useState<FiltersState>({});
+  const [fonteTab, setFonteTab] = useState<FonteTab>("todos");
 
-  // Filter leads based on filters
+  // Filter leads based on filters + fonte tab
   const filteredLeads = useMemo(() => {
     if (!metrics?.leads) return [];
     
     return metrics.leads.filter((lead) => {
+      // Filter by fonte tab
+      if (fonteTab !== "todos") {
+        const leadFonte = (lead as any).fonte || "organico";
+        if (leadFonte !== fonteTab) return false;
+      }
       if (filters.status && lead.status !== filters.status) return false;
       if (filters.startDate && new Date(lead.created_at) < filters.startDate) return false;
       if (filters.endDate && new Date(lead.created_at) > filters.endDate) return false;
@@ -44,7 +53,7 @@ const AdminDashboard = () => {
       if (filters.searchName && !lead.nome.toLowerCase().includes(filters.searchName.toLowerCase())) return false;
       return true;
     });
-  }, [metrics?.leads, filters]);
+  }, [metrics?.leads, filters, fonteTab]);
 
   const handleLogout = async () => {
     await signOut();
@@ -55,16 +64,8 @@ const AdminDashboard = () => {
     if (!filteredLeads.length) return;
 
     const headers = [
-      "Data",
-      "Nome",
-      "Email",
-      "Telefone",
-      "Empresa",
-      "Porte",
-      "Departamento",
-      "Cargo",
-      "Score (%)",
-      "Status",
+      "Data", "Nome", "Email", "Telefone", "Empresa",
+      "Porte", "Departamento", "Cargo", "Score (%)", "Status", "Fonte",
     ];
 
     const rows = filteredLeads.map((lead) => [
@@ -78,6 +79,7 @@ const AdminDashboard = () => {
       lead.cargo,
       lead.resultado_diagnostico?.percentage?.toFixed(1) || "N/A",
       lead.status,
+      lead.fonte || "organico",
     ]);
 
     const csvContent = [
@@ -89,7 +91,7 @@ const AdminDashboard = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `leads-${new Date().toISOString().split("T")[0]}.csv`;
+    link.download = `leads-${fonteTab}-${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
   };
 
@@ -103,11 +105,7 @@ const AdminDashboard = () => {
           className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
         >
           <div className="flex items-center gap-4">
-            <img
-              src={allevoLogo}
-              alt="Allevo for Business"
-              className="h-8"
-            />
+            <img src={allevoLogo} alt="Allevo for Business" className="h-8" />
             <div>
               <h1 className="text-2xl font-display font-bold text-foreground">
                 Admin Dashboard
@@ -119,20 +117,11 @@ const AdminDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <AddUserDialog />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportCSV}
-              disabled={!filteredLeads.length}
-            >
+            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!filteredLeads.length}>
               <Download className="w-4 h-4 mr-2" />
               Exportar CSV
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-            >
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Sair
             </Button>
@@ -141,36 +130,14 @@ const AdminDashboard = () => {
 
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            title="Total de Leads"
-            value={isLoading ? "..." : metrics?.total || 0}
-            icon={Users}
-            delay={0}
-          />
-          <MetricCard
-            title="Leads Hoje"
-            value={isLoading ? "..." : metrics?.today || 0}
-            icon={UserPlus}
-            delay={0.1}
-          />
-          <MetricCard
-            title="Esta Semana"
-            value={isLoading ? "..." : metrics?.thisWeek || 0}
-            icon={Calendar}
-            delay={0.2}
-          />
-          <MetricCard
-            title="Este Mês"
-            value={isLoading ? "..." : metrics?.thisMonth || 0}
-            icon={TrendingUp}
-            delay={0.3}
-          />
+          <MetricCard title="Total de Leads" value={isLoading ? "..." : metrics?.total || 0} icon={Users} delay={0} />
+          <MetricCard title="Leads Hoje" value={isLoading ? "..." : metrics?.today || 0} icon={UserPlus} delay={0.1} />
+          <MetricCard title="Esta Semana" value={isLoading ? "..." : metrics?.thisWeek || 0} icon={Calendar} delay={0.2} />
+          <MetricCard title="Este Mês" value={isLoading ? "..." : metrics?.thisMonth || 0} icon={TrendingUp} delay={0.3} />
         </div>
 
         {/* Chart */}
-        {metrics?.chartData && (
-          <LeadsChart data={metrics.chartData} />
-        )}
+        {metrics?.chartData && <LeadsChart data={metrics.chartData} />}
 
         {/* Distribution Charts */}
         {metrics && (
@@ -180,11 +147,16 @@ const AdminDashboard = () => {
           />
         )}
 
-        {/* Filters */}
-        <DashboardFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-        />
+        {/* Fonte Tabs + Filters */}
+        <Tabs value={fonteTab} onValueChange={(v) => setFonteTab(v as FonteTab)}>
+          <TabsList>
+            <TabsTrigger value="todos">Todos</TabsTrigger>
+            <TabsTrigger value="organico">Orgânico</TabsTrigger>
+            <TabsTrigger value="outbound">Outbound</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <DashboardFilters filters={filters} onFiltersChange={setFilters} />
 
         {/* Leads Table */}
         <div>
@@ -193,10 +165,7 @@ const AdminDashboard = () => {
               Leads ({filteredLeads.length})
             </h2>
           </div>
-          <LeadsTable
-            leads={filteredLeads}
-            isLoading={isLoading}
-          />
+          <LeadsTable leads={filteredLeads} isLoading={isLoading} />
         </div>
       </div>
     </div>
