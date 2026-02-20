@@ -21,7 +21,7 @@ function transformLead(row: any): Lead {
     notas: (row.notas as Nota[]) || [],
     historico: (row.historico as HistoricoItem[]) || [],
     responsavel: row.responsavel || null,
-    fonte: row.fonte || "organico",
+    fonte: row.fonte || "inbound",
   };
 }
 

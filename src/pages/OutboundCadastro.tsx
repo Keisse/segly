@@ -4,13 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight } from "lucide-react";
 import allevoLogo from "@/assets/allevo-logo.png";
 
-export interface OutboundLeadData {
-  nome: string;
-  email: string;
-}
+const porteOptions = ["Autônomo", "2 - 10 funcionários", "11 - 50 funcionários", "51 - 200 funcionários", "201 - 500 funcionários", "501 - 1000 funcionários", "1001 - 5000 funcionários", "5001+ funcionários"];
+const departamentoOptions = ["Recursos Humanos", "Treinamento & Desenvolvimento", "Tecnologia", "Business Intelligence/Dados", "Produto", "Inovação", "Marketing", "Compras", "Não tem departamento", "Outros"];
+const cargoOptions = ["C-level", "Diretor(a)", "Gerente", "Coordenador(a)/Supervisor(a)", "Especialista", "Analista", "Estagiário / Estudante", "Outros"];
 
 const freeEmailDomains = [
   "gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "yahoo.com.br",
@@ -19,10 +19,28 @@ const freeEmailDomains = [
   "uol.com.br", "bol.com.br", "terra.com.br", "ig.com.br",
 ];
 
+interface FormData {
+  nome: string;
+  telefone: string;
+  email: string;
+  empresa: string;
+  porte: string;
+  departamento: string;
+  cargo: string;
+}
+
 const OutboundCadastro = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ nome: "", email: "" });
-  const [errors, setErrors] = useState<Partial<Record<"nome" | "email", string>>>({});
+  const [formData, setFormData] = useState<FormData>({
+    nome: "",
+    telefone: "",
+    email: "",
+    empresa: "",
+    porte: "",
+    departamento: "",
+    cargo: "",
+  });
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
   const utmParams = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -40,8 +58,15 @@ const OutboundCadastro = () => {
   }, []);
 
   const validate = () => {
-    const newErrors: typeof errors = {};
+    const newErrors: Partial<Record<keyof FormData, string>> = {};
     if (!formData.nome.trim()) newErrors.nome = "Nome é obrigatório";
+
+    const phoneDigits = formData.telefone.replace(/\D/g, "");
+    if (!formData.telefone.trim()) {
+      newErrors.telefone = "Telefone é obrigatório";
+    } else if (phoneDigits.length < 10 || phoneDigits.length > 13) {
+      newErrors.telefone = "Telefone inválido. Informe entre 10 e 13 dígitos (com DDD)";
+    }
 
     if (!formData.email.trim()) {
       newErrors.email = "E-mail é obrigatório";
@@ -63,6 +88,11 @@ const OutboundCadastro = () => {
       }
     }
 
+    if (!formData.empresa.trim()) newErrors.empresa = "Nome da empresa é obrigatório";
+    if (!formData.porte) newErrors.porte = "Selecione o porte da empresa";
+    if (!formData.departamento) newErrors.departamento = "Selecione seu departamento";
+    if (!formData.cargo) newErrors.cargo = "Selecione seu cargo";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -75,12 +105,12 @@ const OutboundCadastro = () => {
       state: {
         leadData: {
           nome: formData.nome,
-          telefone: "",
+          telefone: formData.telefone,
           email: formData.email,
-          empresa: "",
-          porte: "",
-          departamento: "",
-          cargo: "",
+          empresa: formData.empresa,
+          porte: formData.porte,
+          departamento: formData.departamento,
+          cargo: formData.cargo,
         },
         utmParams,
         fonte: "outbound",
@@ -88,7 +118,7 @@ const OutboundCadastro = () => {
     });
   };
 
-  const handleChange = (field: "nome" | "email", value: string) => {
+  const handleChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
@@ -131,6 +161,7 @@ const OutboundCadastro = () => {
           onSubmit={handleSubmit}
           className="w-full space-y-5"
         >
+          {/* Nome */}
           <div className="space-y-2">
             <Label htmlFor="nome" className="text-foreground font-medium">
               Nome<span className="text-primary">*</span>
@@ -145,6 +176,22 @@ const OutboundCadastro = () => {
             {errors.nome && <p className="text-sm text-destructive">{errors.nome}</p>}
           </div>
 
+          {/* WhatsApp/Telefone */}
+          <div className="space-y-2">
+            <Label htmlFor="telefone" className="text-foreground font-medium">
+              WhatsApp/Telefone<span className="text-primary">*</span>
+            </Label>
+            <Input
+              id="telefone"
+              placeholder="(11) 99999-9999"
+              value={formData.telefone}
+              onChange={(e) => handleChange("telefone", e.target.value)}
+              className="bg-card border-border/50 focus:border-primary"
+            />
+            {errors.telefone && <p className="text-sm text-destructive">{errors.telefone}</p>}
+          </div>
+
+          {/* E-mail Corporativo */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-foreground font-medium">
               E-mail Corporativo<span className="text-primary">*</span>
@@ -158,6 +205,81 @@ const OutboundCadastro = () => {
               className="bg-card border-border/50 focus:border-primary"
             />
             {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+          </div>
+
+          {/* Nome da Empresa */}
+          <div className="space-y-2">
+            <Label htmlFor="empresa" className="text-foreground font-medium">
+              Nome da Empresa<span className="text-primary">*</span>
+            </Label>
+            <Input
+              id="empresa"
+              placeholder="Nome da empresa"
+              value={formData.empresa}
+              onChange={(e) => handleChange("empresa", e.target.value)}
+              className="bg-card border-border/50 focus:border-primary"
+            />
+            {errors.empresa && <p className="text-sm text-destructive">{errors.empresa}</p>}
+          </div>
+
+          {/* Porte da Empresa */}
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium">
+              Porte da Empresa<span className="text-primary">*</span>
+            </Label>
+            <Select value={formData.porte} onValueChange={(value) => handleChange("porte", value)}>
+              <SelectTrigger className="bg-card border-border/50 focus:border-primary">
+                <SelectValue placeholder="Selecione..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border shadow-lg z-[100]">
+                {porteOptions.map((option) => (
+                  <SelectItem key={option} value={option} className="hover:bg-accent focus:bg-accent cursor-pointer">
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.porte && <p className="text-sm text-destructive">{errors.porte}</p>}
+          </div>
+
+          {/* Seu Departamento */}
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium">
+              Seu Departamento<span className="text-primary">*</span>
+            </Label>
+            <Select value={formData.departamento} onValueChange={(value) => handleChange("departamento", value)}>
+              <SelectTrigger className="bg-card border-border/50 focus:border-primary">
+                <SelectValue placeholder="Selecione..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border shadow-lg z-[100]">
+                {departamentoOptions.map((option) => (
+                  <SelectItem key={option} value={option} className="hover:bg-accent focus:bg-accent cursor-pointer">
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.departamento && <p className="text-sm text-destructive">{errors.departamento}</p>}
+          </div>
+
+          {/* Seu Cargo */}
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium">
+              Seu Cargo<span className="text-primary">*</span>
+            </Label>
+            <Select value={formData.cargo} onValueChange={(value) => handleChange("cargo", value)}>
+              <SelectTrigger className="bg-card border-border/50 focus:border-primary">
+                <SelectValue placeholder="Selecione..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border shadow-lg z-[100]">
+                {cargoOptions.map((option) => (
+                  <SelectItem key={option} value={option} className="hover:bg-accent focus:bg-accent cursor-pointer">
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.cargo && <p className="text-sm text-destructive">{errors.cargo}</p>}
           </div>
 
           <Button type="submit" size="lg" className="w-full text-lg py-6 font-semibold group mt-6">

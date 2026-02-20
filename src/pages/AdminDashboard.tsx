@@ -25,7 +25,7 @@ interface FiltersState {
   searchName?: string;
 }
 
-type FonteTab = "todos" | "organico" | "outbound";
+type FonteTab = "todos" | "inbound" | "outbound";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -41,8 +41,9 @@ const AdminDashboard = () => {
     return metrics.leads.filter((lead) => {
       // Filter by fonte tab
       if (fonteTab !== "todos") {
-        const leadFonte = (lead as any).fonte || "organico";
-        if (leadFonte !== fonteTab) return false;
+        const leadFonte = (lead as any).fonte || "inbound";
+        if (fonteTab === "inbound" && leadFonte !== "inbound" && leadFonte !== "organico") return false;
+        if (fonteTab === "outbound" && leadFonte !== "outbound") return false;
       }
       if (filters.status && lead.status !== filters.status) return false;
       if (filters.startDate && new Date(lead.created_at) < filters.startDate) return false;
@@ -79,7 +80,7 @@ const AdminDashboard = () => {
       lead.cargo,
       lead.resultado_diagnostico?.percentage?.toFixed(1) || "N/A",
       lead.status,
-      lead.fonte || "organico",
+      (lead.fonte === "outbound" ? "Outbound" : "Inbound"),
     ]);
 
     const csvContent = [
@@ -151,7 +152,7 @@ const AdminDashboard = () => {
         <Tabs value={fonteTab} onValueChange={(v) => setFonteTab(v as FonteTab)}>
           <TabsList>
             <TabsTrigger value="todos">Todos</TabsTrigger>
-            <TabsTrigger value="organico">Orgânico</TabsTrigger>
+            <TabsTrigger value="inbound">Inbound</TabsTrigger>
             <TabsTrigger value="outbound">Outbound</TabsTrigger>
           </TabsList>
         </Tabs>

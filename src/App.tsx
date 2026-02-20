@@ -27,7 +27,7 @@ const App = () => (
           <Route path="/diagnostico" element={<DiagnosticoPage />} />
           <Route path="/plano-acao" element={<ActionPlanPage />} />
           <Route path="/acompanhamento" element={<TrackingTemplatePage />} />
-          <Route path="/cadastro" element={<OutboundCadastro />} />
+          <Route path="/mail" element={<OutboundCadastro />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route
             path="/admin-dashboard"
