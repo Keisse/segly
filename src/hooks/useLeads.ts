@@ -21,6 +21,7 @@ function transformLead(row: any): Lead {
     notas: (row.notas as Nota[]) || [],
     historico: (row.historico as HistoricoItem[]) || [],
     responsavel: row.responsavel || null,
+    fonte: row.fonte || "organico",
   };
 }
 
@@ -34,6 +35,7 @@ interface InsertLead {
   departamento: string;
   cargo: string;
   resultado_diagnostico?: Json;
+  fonte?: string;
 }
 
 // Fetch all leads

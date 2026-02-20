@@ -56,6 +56,7 @@ export type Database = {
           departamento: string
           email: string
           empresa: string
+          fonte: string
           historico: Json | null
           id: string
           nome: string
@@ -72,6 +73,7 @@ export type Database = {
           departamento: string
           email: string
           empresa: string
+          fonte?: string
           historico?: Json | null
           id?: string
           nome: string
@@ -88,6 +90,7 @@ export type Database = {
           departamento?: string
           email?: string
           empresa?: string
+          fonte?: string
           historico?: Json | null
           id?: string
           nome?: string

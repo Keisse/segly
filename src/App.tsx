@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import LeadDetail from "./pages/LeadDetail";
 import ActionPlanPage from "./pages/ActionPlanPage";
 import TrackingTemplatePage from "./pages/TrackingTemplatePage";
+import OutboundCadastro from "./pages/OutboundCadastro";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -26,7 +27,7 @@ const App = () => (
           <Route path="/diagnostico" element={<DiagnosticoPage />} />
           <Route path="/plano-acao" element={<ActionPlanPage />} />
           <Route path="/acompanhamento" element={<TrackingTemplatePage />} />
-          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/cadastro" element={<OutboundCadastro />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route
             path="/admin-dashboard"

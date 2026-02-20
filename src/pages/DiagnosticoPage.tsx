@@ -20,6 +20,7 @@ interface LocationState {
     utm_term?: string;
     utm_content?: string;
   };
+  fonte?: string;
 }
 
 const DiagnosticoPage = () => {
@@ -97,6 +98,7 @@ const DiagnosticoPage = () => {
     if (!allAnswered || !state?.leadData || !result) return;
     setIsSubmitting(true);
     try {
+      const fonte = state.fonte || "organico";
       await insertLead.mutateAsync({
         nome: state.leadData.nome,
         telefone: state.leadData.telefone,
@@ -113,6 +115,7 @@ const DiagnosticoPage = () => {
           pillarScores: result.pillarScores,
           answers: answers,
         } as unknown as Json,
+        fonte,
       });
 
       sendWebhook.mutate({
