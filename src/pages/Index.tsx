@@ -16,7 +16,7 @@ interface ResultState {
     maxScore: number;
     percentage: number;
     stage: MaturityStage;
-    pillarScores: Array<{ pillarId: number; pillarName: string; icon: string; score: number; maxScore: number; percentage: number }>;
+    pillarScores: Array<{pillarId: number;pillarName: string;icon: string;score: number;maxScore: number;percentage: number;}>;
   };
   leadData: LeadData;
 }
@@ -44,7 +44,7 @@ const Index = () => {
       utm_source: params.get("utm_source") || undefined,
       utm_medium: params.get("utm_medium") || undefined,
       utm_term: params.get("utm_term") || undefined,
-      utm_content: params.get("utm_content") || undefined,
+      utm_content: params.get("utm_content") || undefined
     };
   }, []);
 
@@ -94,13 +94,13 @@ const Index = () => {
       type: "lead_capture",
       lead: {
         ...data,
-        porte_empresa: data.porte,
+        porte_empresa: data.porte
       },
-      utm: utmParams,
+      utm: utmParams
     });
 
     navigate("/diagnostico", {
-      state: { leadData: data, utmParams },
+      state: { leadData: data, utmParams }
     });
   };
 
@@ -115,70 +115,70 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <AnimatePresence mode="wait">
-        {view === "intro" && (
-          <motion.div
-            key="intro"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="min-h-screen flex items-center justify-center px-4 py-12"
-          >
+        {view === "intro" &&
+        <motion.div
+          key="intro"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="min-h-screen flex items-center justify-center px-4 py-12">
+
             <div className="max-w-2xl w-full flex flex-col items-center">
               <motion.img
-                src={allevoLogo}
-                alt="Allevo for Business"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="h-12 md:h-14 mb-8"
-              />
+              src={allevoLogo}
+              alt="Allevo for Business"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="h-12 md:h-14 mb-8" />
+
 
               <motion.h1
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4 text-center"
-              >
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4 text-center">
+
                 Diagnóstico de Execução de{" "}
                 <span className="text-primary">Alta Performance</span>
               </motion.h1>
 
               <motion.p
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.25 }}
-                className="text-base text-muted-foreground mb-8 leading-relaxed text-center max-w-lg"
-              >
-                Falta pouco para medir sua maturidade e descobrir seu score de
-                execução. Preencha seus dados e clique em "Iniciar Diagnóstico".
-              </motion.p>
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.25 }}
+              className="text-base text-muted-foreground mb-8 leading-relaxed max-w-lg font-sans text-center">Falta pouquinho para medir sua maturidade e descobrir seu score de execução. Preencha seus dados e clique em "Iniciar Diagnóstico".
+
+
+
+            </motion.p>
 
               <LeadCaptureForm onSubmit={handleStart} />
             </div>
           </motion.div>
-        )}
+        }
 
-        {view === "result" && result && leadData && (
-          <motion.div
-            key="result"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+        {view === "result" && result && leadData &&
+        <motion.div
+          key="result"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}>
+
             <DiagnosticResult
-              totalScore={result.totalScore}
-              maxScore={result.maxScore}
-              percentage={result.percentage}
-              stage={result.stage}
-              pillarScores={result.pillarScores}
-              leadData={leadData}
-              onRestart={handleRestart}
-            />
+            totalScore={result.totalScore}
+            maxScore={result.maxScore}
+            percentage={result.percentage}
+            stage={result.stage}
+            pillarScores={result.pillarScores}
+            leadData={leadData}
+            onRestart={handleRestart} />
+
           </motion.div>
-        )}
+        }
       </AnimatePresence>
-    </div>
-  );
+    </div>);
+
 };
 
 export default Index;
