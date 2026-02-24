@@ -118,8 +118,16 @@ const OutboundCadastro = () => {
     });
   };
 
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 2) return digits.length ? `(${digits}` : "";
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  };
+
   const handleChange = (field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    const newValue = field === "telefone" ? formatPhone(value) : value;
+    setFormData((prev) => ({ ...prev, [field]: newValue }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
