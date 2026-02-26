@@ -152,8 +152,8 @@ const AdminDashboard = () => {
         <Tabs value={fonteTab} onValueChange={(v) => setFonteTab(v as FonteTab)}>
           <TabsList>
             <TabsTrigger value="todos">Todos</TabsTrigger>
-            <TabsTrigger value="inbound">Inbound</TabsTrigger>
-            <TabsTrigger value="outbound">Outbound</TabsTrigger>
+            <TabsTrigger value="inbound">Outbound</TabsTrigger>
+            <TabsTrigger value="outbound">Inbound</TabsTrigger>
           </TabsList>
         </Tabs>
 
