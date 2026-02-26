@@ -50,7 +50,7 @@ const ObrigadaPage = () => {
           className="block bg-primary/10 border-2 border-primary rounded-xl p-6 hover:bg-primary/20 transition-colors"
         >
           <p className="text-lg font-display font-bold text-primary mb-2">
-            🛠️ Que ferramenta faz falta no seu dia a dia de trabalho?
+            Que ferramenta faz falta no seu dia a dia de trabalho?
           </p>
           <p className="text-sm text-primary-foreground leading-relaxed">
             <strong>Clique aqui e responda</strong> — descubra o que outros profissionais como você estão buscando.
