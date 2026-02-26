@@ -12,6 +12,7 @@ import LeadDetail from "./pages/LeadDetail";
 import ActionPlanPage from "./pages/ActionPlanPage";
 import TrackingTemplatePage from "./pages/TrackingTemplatePage";
 import OutboundCadastro from "./pages/OutboundCadastro";
+import ObrigadaPage from "./pages/ObrigadaPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/plano-acao" element={<ActionPlanPage />} />
           <Route path="/acompanhamento" element={<TrackingTemplatePage />} />
           <Route path="/mail" element={<OutboundCadastro />} />
+          <Route path="/obrigada" element={<ObrigadaPage />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route
             path="/admin-dashboard"
