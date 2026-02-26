@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       cargo: isOutbound ? sanitizeString(body.cargo || "", 100) : sanitizeString(body.cargo, 100),
       resultado_diagnostico: body.resultado_diagnostico || null,
       status: "novo",
-      fonte: isOutbound ? "outbound" : "organico",
+      fonte: isOutbound ? "outbound" : "inbound",
     };
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
