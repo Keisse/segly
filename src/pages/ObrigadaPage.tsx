@@ -35,7 +35,7 @@ const ObrigadaPage = () => {
           Informamos que não enviaremos mais e-mails sobre o diagnóstico.
         </p>
 
-        <h2 className="text-xl font-display font-bold text-foreground mb-4">Próximo passo</h2>
+        <h2 className="text-xl font-display font-bold text-foreground mb-4">Próximo passo:</h2>
 
         <motion.a
           href="https://aplicacao.allevoforbusiness.com/"
