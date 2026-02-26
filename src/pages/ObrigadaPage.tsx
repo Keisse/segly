@@ -29,17 +29,11 @@ const ObrigadaPage = () => {
           Obrigada por participar!
         </h1>
 
-        <p className="text-base text-muted-foreground leading-relaxed mb-6">
+        <p className="text-base text-muted-foreground leading-relaxed mb-8">
           Agradecemos por ter respondido o Diagnóstico de Execução de Alta Performance.
           Seu resultado já foi registrado com sucesso.
+          Informamos que não enviaremos mais e-mails sobre o diagnóstico.
         </p>
-
-        <div className="bg-muted/50 border border-border rounded-xl p-6 mb-8">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            📩 Informamos que <strong className="text-foreground">não enviaremos mais e-mails</strong> sobre
-            o diagnóstico.
-          </p>
-        </div>
 
         <motion.a
           href="https://aplicacao.allevoforbusiness.com/"
