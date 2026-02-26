@@ -37,8 +37,7 @@ const ObrigadaPage = () => {
         <div className="bg-muted/50 border border-border rounded-xl p-6 mb-8">
           <p className="text-sm text-muted-foreground leading-relaxed">
             📩 Informamos que <strong className="text-foreground">não enviaremos mais e-mails</strong> sobre
-            o diagnóstico. Caso queira saber mais sobre nossas soluções, entre em contato
-            diretamente com nossa equipe.
+            o diagnóstico.
           </p>
         </div>
 
