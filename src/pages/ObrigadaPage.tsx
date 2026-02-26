@@ -53,8 +53,8 @@ const ObrigadaPage = () => {
           <p className="text-lg font-display font-bold text-primary mb-2">
             🛠️ Que ferramenta faz falta no seu dia a dia de trabalho?
           </p>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Responda em 2 minutos e descubra o que outros profissionais como você estão buscando.
+          <p className="text-sm text-primary-foreground leading-relaxed">
+            <strong>Clique aqui e responda</strong> — descubra o que outros profissionais como você estão buscando.
           </p>
         </motion.a>
       </motion.div>
