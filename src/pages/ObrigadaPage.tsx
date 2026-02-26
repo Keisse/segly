@@ -46,7 +46,7 @@ const ObrigadaPage = () => {
           className="block bg-primary/10 border-2 border-primary rounded-xl px-8 py-6 hover:bg-primary/20 transition-colors text-center"
         >
           <p className="text-lg font-display font-bold text-primary mb-3">
-            Que ferramenta faz falta no seu dia a dia?
+            Qual ferramenta faz falta no seu dia a dia?
           </p>
           <p className="text-sm text-primary-foreground leading-relaxed font-bold">
             <span className="underline">Clique aqui e descubra</span> o que outros profissionais estão buscando.
