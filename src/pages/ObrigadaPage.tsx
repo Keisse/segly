@@ -48,8 +48,8 @@ const ObrigadaPage = () => {
           <p className="text-lg font-display font-bold text-primary mb-3">
             Que ferramenta faz falta no seu dia a dia?
           </p>
-          <p className="text-sm text-primary-foreground leading-relaxed">
-            <strong>Clique aqui e descubra</strong> o que outros profissionais estão buscando.
+          <p className="text-sm text-primary-foreground leading-relaxed font-bold">
+            <span className="underline">Clique aqui e descubra</span> o que outros profissionais estão buscando.
           </p>
         </motion.a>
       </motion.div>
