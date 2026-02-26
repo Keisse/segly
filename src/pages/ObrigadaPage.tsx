@@ -26,7 +26,7 @@ const ObrigadaPage = () => {
         </motion.div>
 
         <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-          Obrigado por participar!
+          Obrigada por participar!
         </h1>
 
         <p className="text-base text-muted-foreground leading-relaxed mb-6">
