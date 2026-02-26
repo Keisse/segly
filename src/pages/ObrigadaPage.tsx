@@ -43,13 +43,13 @@ const ObrigadaPage = () => {
           rel="noopener noreferrer"
           animate={{ scale: [1, 1.03, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="block bg-primary/10 border-2 border-primary rounded-xl p-6 hover:bg-primary/20 transition-colors"
+          className="block bg-primary/10 border-2 border-primary rounded-xl px-8 py-6 hover:bg-primary/20 transition-colors text-center"
         >
-          <p className="text-lg font-display font-bold text-primary mb-2">
-            Que ferramenta faz falta no seu dia a dia de trabalho?
+          <p className="text-lg font-display font-bold text-primary mb-3">
+            Que ferramenta faz falta no seu dia a dia?
           </p>
           <p className="text-sm text-primary-foreground leading-relaxed">
-            <strong>Clique aqui e descubra</strong> o que outros profissionais como você estão buscando.
+            <strong>Clique aqui e descubra</strong> o que outros profissionais estão buscando.
           </p>
         </motion.a>
       </motion.div>
