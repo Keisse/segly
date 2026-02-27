@@ -42,7 +42,7 @@ const ObrigadaPage = () => {
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           className="block bg-primary/10 border-2 border-primary rounded-xl px-8 py-6 hover:bg-primary/20 transition-colors text-left"
         >
-          <p className="text-base text-foreground leading-relaxed mb-4">
+          <p className="text-base text-foreground leading-relaxed mb-4 font-bold">
             Tenho outra experiência legal para compartilhar.
           </p>
           <p className="text-base text-foreground leading-relaxed mb-4">
