@@ -146,7 +146,7 @@ const DiagnosticoDiretoPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
-            <p className="text-lg md:text-xl text-muted-foreground mb-2">
+            <p className="text-sm md:text-base text-muted-foreground/70 mb-2">
               Descubra em que estágio você e sua empresa estão na
             </p>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-primary mb-4">
