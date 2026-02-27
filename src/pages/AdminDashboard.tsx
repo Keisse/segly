@@ -42,8 +42,8 @@ const AdminDashboard = () => {
       // Filter by fonte tab
       if (fonteTab !== "todos") {
         const leadFonte = (lead as any).fonte || "inbound";
-        if (fonteTab === "inbound" && leadFonte !== "inbound" && leadFonte !== "organico") return false;
         if (fonteTab === "outbound" && leadFonte !== "outbound") return false;
+        if (fonteTab === "inbound" && leadFonte !== "inbound" && leadFonte !== "organico") return false;
       }
       if (filters.status && lead.status !== filters.status) return false;
       if (filters.startDate && new Date(lead.created_at) < filters.startDate) return false;
@@ -152,8 +152,8 @@ const AdminDashboard = () => {
         <Tabs value={fonteTab} onValueChange={(v) => setFonteTab(v as FonteTab)}>
           <TabsList>
             <TabsTrigger value="todos">Todos</TabsTrigger>
-            <TabsTrigger value="inbound">Outbound</TabsTrigger>
-            <TabsTrigger value="outbound">Inbound</TabsTrigger>
+            <TabsTrigger value="outbound">Outbound</TabsTrigger>
+            <TabsTrigger value="inbound">Inbound</TabsTrigger>
           </TabsList>
         </Tabs>
 
