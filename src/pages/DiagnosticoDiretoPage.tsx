@@ -75,7 +75,7 @@ const DiagnosticoDiretoPage = () => {
           pillarScores: result.pillarScores,
           answers: answers,
         } as unknown as Json,
-        fonte: "diagnostico-direto",
+        fonte: "outbound",
       });
 
       const utmParams = Object.fromEntries(
