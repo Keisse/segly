@@ -144,14 +144,16 @@ const DiagnosticoDiretoPage = () => {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-10"
+            className="text-center mb-12"
           >
-            <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-2">
-              Responda as perguntas
+            <p className="text-lg md:text-xl text-muted-foreground mb-2">
+              Descubra em que estágio você e sua empresa estão na
+            </p>
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-primary mb-4">
+              Maturidade de Execução
             </h1>
-            <p className="text-muted-foreground">
-              Avalie cada afirmação de 1 (discordo totalmente) a 5 (concordo
-              totalmente)
+            <p className="text-muted-foreground leading-relaxed max-w-xl mx-auto">
+              Realize gratuitamente o <strong>Teste de Maturidade em Execução de Alta Performance</strong> e receba uma análise com recomendações práticas para você e seu time avançarem com sucesso em todos os projetos.
             </p>
           </motion.div>
 
