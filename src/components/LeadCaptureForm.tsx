@@ -201,7 +201,7 @@ const LeadCaptureForm = ({
       </div>
 
       <Button type="submit" size="lg" className="w-full text-lg py-6 font-semibold group mt-6">
-        Iniciar Diagnóstico
+        Ver meu diagnóstico
         <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
       </Button>
 
