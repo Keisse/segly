@@ -48,8 +48,11 @@ const ObrigadaPage = () => {
           <p className="text-base text-foreground leading-relaxed mb-4">
             Estamos criando um report sobre a <strong>verdadeira dor de um gerente de projetos</strong> em termos de ferramentas.
           </p>
+          <p className="text-base text-foreground leading-relaxed mb-1">
+            Você quer nos ajudar a construir esse relatório para publicarmos no LinkedIn?
+          </p>
           <p className="text-base text-foreground leading-relaxed mb-4">
-            Você quer nos ajudar a construir esse relatório para publicarmos no LinkedIn? Você será avisado em primeira mão.
+            Você será avisado em primeira mão.
           </p>
           <p className="text-lg font-display font-bold text-primary text-center">
             <span className="underline">Clique aqui para participar</span> →
