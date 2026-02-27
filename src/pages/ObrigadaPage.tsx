@@ -32,7 +32,6 @@ const ObrigadaPage = () => {
         <p className="text-base text-muted-foreground leading-relaxed mb-8">
           Agradecemos por ter respondido o Diagnóstico de Execução de Alta Performance.
           Seu resultado já foi registrado com sucesso.
-          Informamos que não enviaremos mais e-mails sobre o diagnóstico.
         </p>
 
         <motion.a
