@@ -191,7 +191,7 @@ const DiagnosticoDiretoPage = () => {
               Falta pouco para ver seu resultado 🎯
             </DialogTitle>
             <DialogDescription className="text-center text-muted-foreground">
-              Preencha seus dados para que o sistema relacione todas as respostas para gerar o melhor resultado.
+              Preencha seus dados para que o sistema relacione todas as respostas para gerar um resultado preciso.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-2">
