@@ -35,21 +35,25 @@ const ObrigadaPage = () => {
           Informamos que não enviaremos mais e-mails sobre o diagnóstico.
         </p>
 
-        <h2 className="text-xl font-display font-bold text-foreground mb-4">Próximo passo:</h2>
-
         <motion.a
           href="https://aplicacao.allevoforbusiness.com/"
           target="_blank"
           rel="noopener noreferrer"
           animate={{ scale: [1, 1.03, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="block bg-primary/10 border-2 border-primary rounded-xl px-8 py-6 hover:bg-primary/20 transition-colors text-center"
+          className="block bg-primary/10 border-2 border-primary rounded-xl px-8 py-6 hover:bg-primary/20 transition-colors text-left"
         >
-          <p className="text-lg font-display font-bold text-primary mb-3">
-            Qual ferramenta faz falta no seu dia a dia?
+          <p className="text-base text-foreground leading-relaxed mb-4">
+            Tenho outra experiência legal para compartilhar.
           </p>
-          <p className="text-sm text-primary-foreground leading-relaxed font-bold">
-            <span className="underline">Clique aqui e descubra</span> o que outros profissionais estão buscando.
+          <p className="text-base text-foreground leading-relaxed mb-4">
+            Estamos criando um report sobre a <strong>verdadeira dor de um gerente de projetos</strong> em termos de ferramentas.
+          </p>
+          <p className="text-base text-foreground leading-relaxed mb-4">
+            Você quer nos ajudar a construir esse relatório para publicarmos no LinkedIn? Quem responder terá acesso ao relatório direto no seu email.
+          </p>
+          <p className="text-lg font-display font-bold text-primary text-center">
+            <span className="underline">Clique aqui para participar</span> →
           </p>
         </motion.a>
       </motion.div>
