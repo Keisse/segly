@@ -113,7 +113,7 @@ const OutboundCadastro = () => {
           cargo: formData.cargo,
         },
         utmParams,
-        fonte: "outbound",
+        fonte: "inbound",
       },
     });
   };

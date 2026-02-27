@@ -98,7 +98,7 @@ const DiagnosticoPage = () => {
     if (!allAnswered || !state?.leadData || !result) return;
     setIsSubmitting(true);
     try {
-      const fonte = state.fonte || "inbound";
+      const fonte = state.fonte || "outbound";
       await insertLead.mutateAsync({
         nome: state.leadData.nome,
         telefone: state.leadData.telefone,
