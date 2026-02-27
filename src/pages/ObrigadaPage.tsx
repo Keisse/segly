@@ -52,7 +52,7 @@ const ObrigadaPage = () => {
             Você quer nos ajudar a construir esse relatório para publicarmos no LinkedIn?
           </p>
           <p className="text-base text-foreground leading-relaxed mb-4">
-            Você será avisado em primeira mão.
+            Você receberá o report em primeira mão.
           </p>
           <p className="text-lg font-display font-bold text-primary text-center">
             <span className="underline">Clique aqui para participar</span> →
