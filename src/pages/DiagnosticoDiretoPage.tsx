@@ -188,10 +188,10 @@ const DiagnosticoDiretoPage = () => {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display font-bold text-center">
-              Quase lá! 🎯
+              Falta pouco para ver seu resultado 🎯
             </DialogTitle>
             <DialogDescription className="text-center text-muted-foreground">
-              Preencha seus dados para ver seu resultado completo com score, análise de gaps e ações práticas.
+              Preencha seus dados para que o sistema cruze todas as informações para gerar o melhor resultado.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-2">
