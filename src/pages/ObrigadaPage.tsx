@@ -49,7 +49,7 @@ const ObrigadaPage = () => {
             Estamos criando um report sobre a <strong>verdadeira dor de um gerente de projetos</strong> em termos de ferramentas.
           </p>
           <p className="text-base text-foreground leading-relaxed mb-4">
-            Você quer nos ajudar a construir esse relatório para publicarmos no LinkedIn? Quem responder terá acesso ao relatório direto no seu email.
+            Você quer nos ajudar a construir esse relatório para publicarmos no LinkedIn? Quem responder terá acesso ao relatório em primeira mão.
           </p>
           <p className="text-lg font-display font-bold text-primary text-center">
             <span className="underline">Clique aqui para participar</span> →
