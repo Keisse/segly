@@ -201,7 +201,7 @@ const DiagnosticoDiretoPage = () => {
             {isSubmitting && (
               <div className="flex items-center justify-center gap-2 mt-4 text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Salvando...</span>
+                <span>Gerando diagnóstico...</span>
               </div>
             )}
           </div>
