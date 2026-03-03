@@ -133,6 +133,7 @@ const DiagnosticoPage = () => {
           answers: answers,
         },
         utm: state.utmParams,
+        fonte: "tráfego",
       });
 
       // Navigate to result page (back on Index with result state)

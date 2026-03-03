@@ -43,6 +43,7 @@ interface WebhookDiagnosticCompletePayload {
   lead: LeadData & { porte_empresa: string };
   diagnostic: DiagnosticResult;
   utm?: UtmParams;
+  fonte?: string;
 }
 
 type WebhookPayload = WebhookLeadCapturePayload | WebhookDiagnosticCompletePayload;
