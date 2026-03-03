@@ -58,6 +58,7 @@ interface WebhookPayload {
   allevo_score?: number;
   nivel_maturidade?: string;
   utm?: UtmParams;
+  fonte?: string;
 }
 
 Deno.serve(async (req) => {
@@ -126,6 +127,7 @@ Deno.serve(async (req) => {
         cargo: body.lead.cargo,
       },
       preencheu_diagnostico: isDiagnosticComplete ? "Sim" : "Não",
+      ...(body.fonte ? { fonte: body.fonte } : {}),
     };
 
     // Add UTM parameters if present
