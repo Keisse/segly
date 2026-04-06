@@ -78,9 +78,14 @@ const DiagnosticoDiretoPage = () => {
         fonte: "inbound",
       });
 
-      const utmParams = Object.fromEntries(
-        new URLSearchParams(window.location.search)
-      );
+      const searchParams = new URLSearchParams(window.location.search);
+      const utmParams = {
+        utm_campaign: searchParams.get("utm_campaign") || undefined,
+        utm_source: searchParams.get("utm_source") || undefined,
+        utm_medium: searchParams.get("utm_medium") || undefined,
+        utm_term: searchParams.get("utm_term") || undefined,
+        utm_content: searchParams.get("utm_content") || undefined,
+      };
 
       sendWebhook.mutate({
         type: "diagnostic_complete",
