@@ -15,11 +15,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Filter, Search, X } from "lucide-react";
+import { CalendarIcon, Download, Filter, Search, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import * as XLSX from "xlsx-js-style";
 import type { LeadStatus } from "@/types/lead";
 import { statusLabels } from "@/types/lead";
+import type { Lead } from "@/types/lead";
 
 const porteOptions = [
   "Autônomo",
@@ -69,10 +77,75 @@ interface FiltersState {
 interface DashboardFiltersProps {
   filters: FiltersState;
   onFiltersChange: (filters: FiltersState) => void;
+  filteredLeads: Lead[];
+  fonteTab: string;
 }
 
-const DashboardFilters = ({ filters, onFiltersChange }: DashboardFiltersProps) => {
+const DashboardFilters = ({ filters, onFiltersChange, filteredLeads, fonteTab }: DashboardFiltersProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const exportHeaders = [
+    "Data", "Nome", "Email", "Telefone", "Empresa",
+    "Porte", "Departamento", "Cargo", "Score (%)", "Status", "Fonte",
+  ];
+
+  const getExportRows = () =>
+    filteredLeads.map((lead) => [
+      new Date(lead.created_at).toLocaleDateString("pt-BR"),
+      lead.nome,
+      lead.email,
+      lead.telefone,
+      lead.empresa,
+      lead.porte_empresa,
+      lead.departamento,
+      lead.cargo,
+      lead.resultado_diagnostico?.percentage?.toFixed(1) || "N/A",
+      lead.status,
+      lead.fonte === "outbound" ? "Outbound" : "Inbound",
+    ]);
+
+  const handleExportCSV = () => {
+    if (!filteredLeads.length) return;
+    const rows = getExportRows();
+    const csvContent = [
+      exportHeaders.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `leads-${fonteTab}-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+  };
+
+  const handleExportXLS = () => {
+    if (!filteredLeads.length) return;
+    const rows = getExportRows();
+    const wsData = [exportHeaders, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Style header row
+    exportHeaders.forEach((_, i) => {
+      const cell = ws[XLSX.utils.encode_cell({ r: 0, c: i })];
+      if (cell) {
+        cell.s = {
+          font: { bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "4F46E5" } },
+          alignment: { horizontal: "center" },
+        };
+      }
+    });
+
+    // Auto column widths
+    ws["!cols"] = exportHeaders.map((h, i) => ({
+      wch: Math.max(h.length, ...rows.map((r) => String(r[i]).length)) + 2,
+    }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leads");
+    XLSX.writeFile(wb, `leads-${fonteTab}-${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
 
   const handleReset = () => {
     onFiltersChange({});
