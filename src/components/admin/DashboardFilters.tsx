@@ -242,6 +242,21 @@ const DashboardFilters = ({ filters, onFiltersChange, filteredLeads, fonteTab }:
             </Button>
           </>
         )}
+
+        <div className="h-6 w-px bg-border/50" />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={!filteredLeads.length} className="gap-2">
+              <Download className="w-4 h-4" />
+              Exportar
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-card border-border">
+            <DropdownMenuItem onClick={handleExportCSV}>Exportar CSV</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportXLS}>Exportar XLS</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Expanded filters */}

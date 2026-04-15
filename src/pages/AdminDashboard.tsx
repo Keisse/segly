@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Users, UserPlus, Calendar, TrendingUp, LogOut, Download } from "lucide-react";
+import { Users, UserPlus, Calendar, TrendingUp, LogOut } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardMetrics } from "@/hooks/useLeads";
@@ -61,40 +61,6 @@ const AdminDashboard = () => {
     navigate("/admin-login");
   };
 
-  const handleExportCSV = () => {
-    if (!filteredLeads.length) return;
-
-    const headers = [
-      "Data", "Nome", "Email", "Telefone", "Empresa",
-      "Porte", "Departamento", "Cargo", "Score (%)", "Status", "Fonte",
-    ];
-
-    const rows = filteredLeads.map((lead) => [
-      new Date(lead.created_at).toLocaleDateString("pt-BR"),
-      lead.nome,
-      lead.email,
-      lead.telefone,
-      lead.empresa,
-      lead.porte_empresa,
-      lead.departamento,
-      lead.cargo,
-      lead.resultado_diagnostico?.percentage?.toFixed(1) || "N/A",
-      lead.status,
-      (lead.fonte === "outbound" ? "Outbound" : "Inbound"),
-    ]);
-
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `leads-${fonteTab}-${new Date().toISOString().split("T")[0]}.csv`;
-    link.click();
-  };
 
   return (
     <div className="min-h-screen py-6 px-4">
@@ -118,10 +84,6 @@ const AdminDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <AddUserDialog />
-            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!filteredLeads.length}>
-              <Download className="w-4 h-4 mr-2" />
-              Exportar CSV
-            </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Sair
@@ -157,7 +119,7 @@ const AdminDashboard = () => {
           </TabsList>
         </Tabs>
 
-        <DashboardFilters filters={filters} onFiltersChange={setFilters} />
+        <DashboardFilters filters={filters} onFiltersChange={setFilters} filteredLeads={filteredLeads} fonteTab={fonteTab} />
 
         {/* Leads Table */}
         <div>
