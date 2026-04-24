@@ -3,7 +3,7 @@ import { useDashboardMetrics, useUpdateLeadStatus } from "@/hooks/useLeads";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { statusLabels, statusColors, type LeadStatus, type Lead } from "@/types/lead";
-import { formatName } from "@/lib/formatName";
+
 import { Link } from "react-router-dom";
 
 const COLUMNS: LeadStatus[] = ["novo", "em_analise", "contatado", "em_negociacao", "convertido", "perdido"];
@@ -58,7 +58,7 @@ const KanbanPage = () => {
                     className="p-3 cursor-move hover:border-primary/50 transition-colors"
                   >
                     <Link to={`/admin/lead/${lead.id}`} className="block space-y-1">
-                      <p className="text-sm font-medium truncate">{formatName(lead.nome)}</p>
+                      <p className="text-sm font-medium truncate uppercase">{lead.nome}</p>
                       <p className="text-xs text-muted-foreground truncate">{lead.empresa}</p>
                       <p className="text-xs text-muted-foreground truncate">{lead.cargo}</p>
                       {lead.resultado_diagnostico && (
