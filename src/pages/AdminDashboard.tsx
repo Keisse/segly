@@ -1,18 +1,13 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Users, UserPlus, Calendar, TrendingUp, LogOut } from "lucide-react";
+import { Users, UserPlus, Calendar, TrendingUp } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/useAuth";
 import { useDashboardMetrics } from "@/hooks/useLeads";
 import MetricCard from "@/components/admin/MetricCard";
 import LeadsChart from "@/components/admin/LeadsChart";
 import LeadsTable from "@/components/admin/LeadsTable";
 import DashboardFilters from "@/components/admin/DashboardFilters";
 import DistributionCharts from "@/components/admin/DistributionCharts";
-import AddUserDialog from "@/components/admin/AddUserDialog";
-import allevoLogo from "@/assets/allevo-logo.png";
 import type { LeadStatus } from "@/types/lead";
 
 interface FiltersState {
