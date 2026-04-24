@@ -1,18 +1,13 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Users, UserPlus, Calendar, TrendingUp, LogOut } from "lucide-react";
+import { Users, UserPlus, Calendar, TrendingUp } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/useAuth";
 import { useDashboardMetrics } from "@/hooks/useLeads";
 import MetricCard from "@/components/admin/MetricCard";
 import LeadsChart from "@/components/admin/LeadsChart";
 import LeadsTable from "@/components/admin/LeadsTable";
 import DashboardFilters from "@/components/admin/DashboardFilters";
 import DistributionCharts from "@/components/admin/DistributionCharts";
-import AddUserDialog from "@/components/admin/AddUserDialog";
-import allevoLogo from "@/assets/allevo-logo.png";
 import type { LeadStatus } from "@/types/lead";
 
 interface FiltersState {
@@ -28,18 +23,13 @@ interface FiltersState {
 type FonteTab = "todos" | "inbound" | "outbound";
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
   const { data: metrics, isLoading } = useDashboardMetrics();
   const [filters, setFilters] = useState<FiltersState>({});
   const [fonteTab, setFonteTab] = useState<FonteTab>("todos");
 
-  // Filter leads based on filters + fonte tab
   const filteredLeads = useMemo(() => {
     if (!metrics?.leads) return [];
-    
     return metrics.leads.filter((lead) => {
-      // Filter by fonte tab
       if (fonteTab !== "todos") {
         const leadFonte = (lead as any).fonte || "inbound";
         if (fonteTab === "outbound" && leadFonte !== "outbound") return false;
@@ -56,39 +46,19 @@ const AdminDashboard = () => {
     });
   }, [metrics?.leads, filters, fonteTab]);
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/admin-login");
-  };
-
-
   return (
-    <div className="min-h-screen py-6 px-4">
+    <div className="py-6 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
         >
-          <div className="flex items-center gap-4">
-            <img src={allevoLogo} alt="Allevo for Business" className="h-8" />
-            <div>
-              <h1 className="text-2xl font-display font-bold text-foreground">
-                Admin Dashboard
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Gerencie seus leads do diagnóstico
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <AddUserDialog />
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
+          <h1 className="text-2xl font-display font-bold text-foreground">
+            Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Gerencie seus leads do diagnóstico
+          </p>
         </motion.div>
 
         {/* Metrics Cards */}

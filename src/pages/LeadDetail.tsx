@@ -68,7 +68,7 @@ const LeadDetail = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Lead não encontrado</p>
-          <Button onClick={() => navigate("/admin-dashboard")}>
+          <Button onClick={() => navigate("/admin/dashboard")}>
             Voltar ao Dashboard
           </Button>
         </div>
@@ -115,7 +115,7 @@ const LeadDetail = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/admin-dashboard")}
+            onClick={() => navigate("/admin/dashboard")}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
