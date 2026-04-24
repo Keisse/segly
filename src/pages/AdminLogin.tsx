@@ -23,7 +23,7 @@ const AdminLogin = () => {
     try {
       await signIn(email, password);
       toast.success("Login realizado com sucesso!");
-      navigate("/admin-dashboard");
+      navigate("/admin/dashboard");
     } catch (error: any) {
       console.error("Auth error:", error);
       toast.error(error.message || "Erro ao autenticar. Tente novamente.");
