@@ -199,7 +199,7 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                   </TableCell>
                   <TableCell>
                     <button
-                      onClick={() => navigate(`/admin-dashboard/lead/${lead.id}`)}
+                      onClick={() => navigate(`/admin/lead/${lead.id}`)}
                       className="font-medium text-primary hover:underline text-left"
                     >
                       {capitalizeWords(lead.nome)}
@@ -269,7 +269,7 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => navigate(`/admin-dashboard/lead/${lead.id}`)}
+                        onClick={() => navigate(`/admin/lead/${lead.id}`)}
                         title="Ver detalhes"
                       >
                         <Eye className="w-4 h-4" />
