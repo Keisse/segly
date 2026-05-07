@@ -109,40 +109,65 @@ export default function CampanhasPage() {
                     {format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => copyLink(c.slug)} title="Copiar link">
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" asChild title="Abrir página">
-                        <a href={`/c/${c.slug}`} target="_blank" rel="noreferrer">
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => dup.mutate(c.id)} title="Duplicar">
-                        <Power className="w-4 h-4 rotate-90" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/campanhas/${c.id}`)} title="Editar">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive">
-                            <Trash2 className="w-4 h-4" />
+                    {(() => {
+                      const protectedSlugs: Record<string, string> = {
+                        "diagnostico": "/diagnostico",
+                        "diagnostico-direto": "/diagnostico-direto",
+                      };
+                      const isProtected = c.slug in protectedSlugs;
+                      const openHref = isProtected ? protectedSlugs[c.slug] : `/c/${c.slug}`;
+                      return (
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => copyLink(c.slug)} title="Copiar link">
+                            <Copy className="w-4 h-4" />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-card border-border">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Excluir <strong>{c.name}</strong> remove também perguntas e respostas vinculadas. Os leads permanecem.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <div className="space-y-2 py-2">
-                            <Label htmlFor={`pwd-${c.id}`}>Digite <strong>DELETEME</strong> para confirmar</Label>
-                            <Input
-                              id={`pwd-${c.id}`}
-                              value={deletePwd[c.id] || ""}
-                              onChange={(e) => setDeletePwd((s) => ({ ...s, [c.id]: e.target.value }))}
+                          <Button variant="ghost" size="icon" asChild title="Abrir página">
+                            <a href={openHref} target="_blank" rel="noreferrer">
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => dup.mutate(c.id)} title="Duplicar">
+                            <Power className="w-4 h-4 rotate-90" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate(`/admin/campanhas/${c.id}`)}
+                            title={isProtected ? "Campanha protegida do sistema" : "Editar"}
+                            disabled={isProtected}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {isProtected ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive"
+                              disabled
+                              title="Campanha protegida do sistema"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-card border-border">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Excluir <strong>{c.name}</strong> remove também perguntas e respostas vinculadas. Os leads permanecem.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="space-y-2 py-2">
+                                  <Label htmlFor={`pwd-${c.id}`}>Digite <strong>DELETEME</strong> para confirmar</Label>
+                                  <Input
+                                    id={`pwd-${c.id}`}
+                                    value={deletePwd[c.id] || ""}
+                                    onChange={(e) => setDeletePwd((s) => ({ ...s, [c.id]: e.target.value }))}
                               placeholder="DELETEME"
                               autoComplete="off"
                             />
@@ -164,7 +189,10 @@ export default function CampanhasPage() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
               ))}
