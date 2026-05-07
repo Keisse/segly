@@ -449,7 +449,6 @@ export default function CampanhaEditPage() {
                 )}
               </div>
             </div>
-            </div>
           </TabsContent>
         </Tabs>
       </div>
