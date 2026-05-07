@@ -180,10 +180,36 @@ export default function CampaignPublicPage() {
   };
 
   if (step === "done") {
+    const showScore = isChat && diagResult;
+    const pct = Math.round(diagResult?.percentage || 0);
+    const level = pct >= 80 ? "Estratégico" : pct >= 50 ? "Consolidação" : "Fundamentação";
+    const levelColor = pct >= 80 ? "text-emerald-400" : pct >= 50 ? "text-amber-400" : "text-red-400";
     return (
       <>
         <div className="min-h-screen flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-8 max-w-lg text-center">
+            {showScore && (
+              <div className="mb-6">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Seu score de maturidade</p>
+                <div className={`text-6xl font-display font-bold ${levelColor}`}>{pct}%</div>
+                <p className={`mt-2 text-sm font-medium ${levelColor}`}>Nível: {level}</p>
+                {diagResult.pillarScores?.length > 0 && (
+                  <div className="mt-6 space-y-2 text-left">
+                    {diagResult.pillarScores.map((p: any) => (
+                      <div key={p.pillarId}>
+                        <div className="flex justify-between text-xs">
+                          <span>{p.pillarName}</span>
+                          <span className="text-muted-foreground">{Math.round(p.percentage)}%</span>
+                        </div>
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: `${p.percentage}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <h1 className="text-3xl font-display font-bold mb-3">Obrigado!</h1>
             <p className="text-muted-foreground whitespace-pre-line">
               {campaign.thank_you_message || "Suas respostas foram enviadas com sucesso."}
