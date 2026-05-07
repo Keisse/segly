@@ -248,21 +248,12 @@ export default function CampaignPublicPage() {
         {step === "optin" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-6 space-y-4">
             <h2 className="text-xl font-semibold">Seus dados</h2>
-            {activeOptinKeys.map((k) => (
-              <div key={k}>
-                <Label>{optinLabels[k]} *</Label>
-                <Input
-                  type={k === "email" ? "email" : "text"}
-                  value={optin[k] || ""}
-                  onChange={(e) => setOptin((o) => ({ ...o, [k]: e.target.value }))}
-                />
-              </div>
-            ))}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep("questions")}>Voltar</Button>
-              <Button className="flex-1 gap-2" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Enviar
+            <div className="flex justify-center">
+              <LeadCaptureForm onSubmit={handleSubmit} />
+            </div>
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={() => setStep("questions")} disabled={submitting}>
+                Voltar
               </Button>
             </div>
           </motion.div>
