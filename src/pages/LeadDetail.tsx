@@ -163,27 +163,29 @@ const LeadDetail = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Score Badge */}
-              <div className="text-center">
-                <div
-                  className={`text-3xl font-bold ${
-                    maturityLevel === "iniciante"
-                      ? "text-red-400"
-                      : maturityLevel === "intermediario"
-                      ? "text-amber-400"
-                      : maturityLevel === "avancado"
-                      ? "text-blue-400"
-                      : "text-emerald-400"
-                  }`}
-                >
-                  {Math.round(score)}%
+              {/* Score Badge - apenas para leads com diagnóstico */}
+              {hasDiagnostic && (
+                <div className="text-center">
+                  <div
+                    className={`text-3xl font-bold ${
+                      maturityLevel === "iniciante"
+                        ? "text-red-400"
+                        : maturityLevel === "intermediario"
+                        ? "text-amber-400"
+                        : maturityLevel === "avancado"
+                        ? "text-blue-400"
+                        : "text-emerald-400"
+                    }`}
+                  >
+                    {Math.round(score)}%
+                  </div>
+                  <div
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${maturityColors[maturityLevel]}`}
+                  >
+                    {maturityLabels[maturityLevel]}
+                  </div>
                 </div>
-                <div
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${maturityColors[maturityLevel]}`}
-                >
-                  {maturityLabels[maturityLevel]}
-                </div>
-              </div>
+              )}
 
               {/* Status Dropdown */}
               <Select value={lead.status} onValueChange={handleStatusChange}>
