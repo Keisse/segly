@@ -404,21 +404,12 @@ export default function CampanhaEditPage() {
                   )}
                 </div>
               </div>
-              <div>
-                <Label className="mb-2 block">Campos do formulário de optin</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {(Object.keys(optinLabels) as Array<keyof OptinFields>).map((k) => (
-                    <label key={k} className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox
-                        checked={form.optin_fields?.[k] ?? true}
-                        onCheckedChange={(v) =>
-                          updateForm({ optin_fields: { ...(form.optin_fields || defaultOptinFields), [k]: !!v } })
-                        }
-                      />
-                      {optinLabels[k]}
-                    </label>
-                  ))}
-                </div>
+              <div className="rounded-md border border-border/50 bg-secondary/20 p-3 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground mb-1">Formulário de captura de dados</p>
+                <p>
+                  O formulário público é sempre o mesmo em todas as campanhas e coleta:
+                  Nome, Email, WhatsApp, Empresa, Porte da Empresa, Departamento e Cargo.
+                </p>
               </div>
               <div>
                 <Label>Mensagem de agradecimento</Label>
