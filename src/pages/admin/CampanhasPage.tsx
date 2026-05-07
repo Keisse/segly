@@ -41,8 +41,14 @@ export default function CampanhasPage() {
     setDeletePwd((s) => ({ ...s, [id]: "" }));
   };
 
+  const protectedSlugs: Record<string, string> = {
+    "diagnostico": "/diagnostico",
+    "diagnostico-direto": "/diagnostico-direto",
+  };
+
   const copyLink = (slug: string) => {
-    const url = `${window.location.origin}/c/${slug}`;
+    const path = protectedSlugs[slug] || `/c/${slug}`;
+    const url = `${window.location.origin}${path}`;
     navigator.clipboard.writeText(url);
     toast.success("Link copiado!");
   };
@@ -110,10 +116,6 @@ export default function CampanhasPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     {(() => {
-                      const protectedSlugs: Record<string, string> = {
-                        "diagnostico": "/diagnostico",
-                        "diagnostico-direto": "/diagnostico-direto",
-                      };
                       const isProtected = c.slug in protectedSlugs;
                       const openHref = isProtected ? protectedSlugs[c.slug] : `/c/${c.slug}`;
                       return (
@@ -126,7 +128,13 @@ export default function CampanhasPage() {
                               <ExternalLink className="w-4 h-4" />
                             </a>
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => dup.mutate(c.id)} title="Duplicar">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => dup.mutate(c.id)}
+                            title={isProtected ? "Campanha protegida do sistema" : "Duplicar"}
+                            disabled={isProtected}
+                          >
                             <Copy className="w-4 h-4" />
                           </Button>
                           <Button
