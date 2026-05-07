@@ -166,6 +166,7 @@ export default function CampanhaEditPage() {
     }
   };
 
+  const updateQuestion = (localId: string, patch: Partial<LocalQuestion>) =>
     setQuestions((qs) => qs.map((q) => (q.localId === localId ? { ...q, ...patch } : q)));
 
   const removeQuestion = (localId: string) =>
