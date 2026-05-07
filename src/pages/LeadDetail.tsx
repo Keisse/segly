@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useLead, useAddNote, useUpdateLeadStatus } from "@/hooks/useLeads";
+import { useLeadCampaignResponses } from "@/hooks/useCampaigns";
 import { useAuth } from "@/hooks/useAuth";
 import {
   statusLabels,
@@ -51,6 +52,7 @@ const LeadDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: lead, isLoading } = useLead(id || "");
+  const { data: campaignResponses = [] } = useLeadCampaignResponses(id || "");
   const addNote = useAddNote();
   const updateStatus = useUpdateLeadStatus();
   const [newNote, setNewNote] = useState("");
