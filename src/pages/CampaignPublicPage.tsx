@@ -137,6 +137,7 @@ export default function CampaignPublicPage() {
           })),
           answers: {},
         };
+        setDiagResult(leadInsert.resultado_diagnostico);
       }
 
       const leadId = crypto.randomUUID();
