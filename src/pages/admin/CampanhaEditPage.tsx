@@ -62,6 +62,7 @@ export default function CampanhaEditPage() {
   const [questions, setQuestions] = useState<LocalQuestion[]>([]);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [importFromId, setImportFromId] = useState<string>("");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (existing) {
