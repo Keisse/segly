@@ -126,7 +126,46 @@ export default function CampanhaEditPage() {
     ]);
   };
 
-  const updateQuestion = (localId: string, patch: Partial<LocalQuestion>) =>
+  const handleGenerateAI = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error("Descreva o que você quer gerar.");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-campaign-questions", {
+        body: { prompt: aiPrompt, count: aiCount, campaign_type: form.type },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const generated: any[] = data?.questions || [];
+      if (generated.length === 0) {
+        toast.error("A IA não retornou perguntas. Tente refinar o prompt.");
+        return;
+      }
+      setQuestions((qs) => [
+        ...qs,
+        ...generated.map((g, idx) => ({
+          localId: `ai-${Date.now()}-${idx}`,
+          question_text: g.question_text || "",
+          question_type: g.question_type || "multiple_choice",
+          options: Array.isArray(g.options) ? g.options : [],
+          scale_min: g.scale_min ?? null,
+          scale_max: g.scale_max ?? null,
+          is_required: g.is_required ?? true,
+          category: g.category || null,
+        })),
+      ]);
+      toast.success(`${generated.length} pergunta(s) adicionada(s).`);
+      setAiOpen(false);
+      setAiPrompt("");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao gerar perguntas");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
     setQuestions((qs) => qs.map((q) => (q.localId === localId ? { ...q, ...patch } : q)));
 
   const removeQuestion = (localId: string) =>
