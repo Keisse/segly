@@ -63,6 +63,10 @@ export default function CampanhaEditPage() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [importFromId, setImportFromId] = useState<string>("");
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiCount, setAiCount] = useState(5);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (existing) {
