@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Plus, Trash2, GripVertical, Copy, Upload } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, GripVertical, Copy, Upload, Globe, EyeOff, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -198,9 +198,54 @@ export default function CampanhaEditPage() {
               )}
             </div>
           </div>
-          <Button onClick={handleSave} disabled={create.isPending || update.isPending} className="gap-2">
-            <Save className="w-4 h-4" /> Salvar
-          </Button>
+          <div className="flex items-center gap-2">
+            {!isNew && form.status === "ativa" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => window.open(`/c/${form.slug}`, "_blank")}
+              >
+                <ExternalLink className="w-4 h-4" /> Ver página
+              </Button>
+            )}
+            {!isNew && (
+              form.status === "ativa" ? (
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={update.isPending}
+                  onClick={async () => {
+                    await update.mutateAsync({ id: id!, status: "inativa" });
+                    updateForm({ status: "inativa" });
+                    toast.success("Campanha despublicada");
+                  }}
+                >
+                  <EyeOff className="w-4 h-4" /> Despublicar
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  className="gap-2"
+                  disabled={update.isPending}
+                  onClick={async () => {
+                    if (!form.slug) {
+                      toast.error("Defina um slug antes de publicar");
+                      return;
+                    }
+                    await update.mutateAsync({ id: id!, status: "ativa" });
+                    updateForm({ status: "ativa" });
+                    toast.success("Campanha publicada em /c/" + form.slug);
+                  }}
+                >
+                  <Globe className="w-4 h-4" /> Publicar
+                </Button>
+              )
+            )}
+            <Button onClick={handleSave} disabled={create.isPending || update.isPending} variant="secondary" className="gap-2">
+              <Save className="w-4 h-4" /> Salvar
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="geral">
