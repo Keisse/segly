@@ -38,6 +38,9 @@ export interface Campaign {
   image_url: string | null;
   optin_fields: OptinFields;
   thank_you_message: string | null;
+  voucher_enabled?: boolean;
+  voucher_code?: string | null;
+  voucher_description?: string | null;
   created_at: string;
   updated_at: string;
 }
