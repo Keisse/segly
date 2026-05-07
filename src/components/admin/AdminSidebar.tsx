@@ -1,4 +1,4 @@
-import { LayoutDashboard, KanbanSquare, Sparkles, BookOpen, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Megaphone, BookOpen, Users, LogOut } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -18,7 +18,7 @@ import allevoLogo from "@/assets/allevo-logo.png";
 const items = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Kanban", url: "/admin/kanban", icon: KanbanSquare },
-  { title: "Editor de Perguntas", url: "/admin/perguntas", icon: Sparkles },
+  { title: "Campanhas", url: "/admin/campanhas", icon: Megaphone },
   { title: "Base de Conhecimento", url: "/admin/base-conhecimento", icon: BookOpen },
   { title: "Administradores", url: "/admin/administradores", icon: Users },
 ];
