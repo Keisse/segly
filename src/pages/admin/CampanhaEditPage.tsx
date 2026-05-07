@@ -381,27 +381,40 @@ export default function CampanhaEditPage() {
           {/* Aba 2 */}
           <TabsContent value="perguntas" className="space-y-4">
             <div className="glass-card p-4 flex flex-wrap items-center gap-3">
-              <Button onClick={addQuestion} size="sm" className="gap-2">
-                <Plus className="w-4 h-4" /> Adicionar pergunta
-              </Button>
-              <Button onClick={() => setAiOpen(true)} size="sm" variant="secondary" className="gap-2">
-                <Sparkles className="w-4 h-4" /> Gerar com IA
-              </Button>
-              <div className="flex items-center gap-2 ml-auto">
-                <Select value={importFromId} onValueChange={setImportFromId}>
-                  <SelectTrigger className="w-[260px]">
-                    <SelectValue placeholder="Importar de outra campanha..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allCampaigns.filter((c) => c.id !== id).map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="sm" onClick={handleImport} disabled={!importFromId}>
-                  Importar
-                </Button>
-              </div>
+              {form.type === "diagnostico_score" ? (
+                <>
+                  <Button onClick={() => setAiOpen(true)} size="sm" className="gap-2">
+                    <Sparkles className="w-4 h-4" /> Gerar diagnóstico com IA
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Para diagnósticos com score, as perguntas são geradas exclusivamente via IA.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Button onClick={addQuestion} size="sm" className="gap-2">
+                    <Plus className="w-4 h-4" /> Adicionar pergunta
+                  </Button>
+                  <Button onClick={() => setAiOpen(true)} size="sm" variant="secondary" className="gap-2">
+                    <Sparkles className="w-4 h-4" /> Gerar com IA
+                  </Button>
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Select value={importFromId} onValueChange={setImportFromId}>
+                      <SelectTrigger className="w-[260px]">
+                        <SelectValue placeholder="Importar de outra campanha..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allCampaigns.filter((c) => c.id !== id).map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" onClick={handleImport} disabled={!importFromId}>
+                      Importar
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
