@@ -111,6 +111,20 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    // Auto-attach campaign based on fonte (outbound -> /diagnostico, inbound -> /diagnostico-direto)
+    const campaignSlug = isOutbound ? "diagnostico" : "diagnostico-direto";
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("id, name, slug")
+      .eq("slug", campaignSlug)
+      .maybeSingle();
+
+    if (campaign) {
+      leadData.campaign_id = campaign.id;
+      leadData.campaign_slug = campaign.slug;
+      leadData.campaign_name = campaign.name;
+    }
+
     const { data, error } = await supabase
       .from("leads")
       .insert(leadData)
