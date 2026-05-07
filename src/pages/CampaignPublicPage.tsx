@@ -34,12 +34,11 @@ export default function CampaignPublicPage() {
   const [step, setStep] = useState<"questions" | "optin" | "done">("questions");
   const [submitting, setSubmitting] = useState(false);
 
-  const activeOptinKeys = useMemo(() => {
-    if (!campaign) return [];
-    return (Object.keys(campaign.optin_fields) as Array<keyof OptinFields>).filter(
-      (k) => campaign.optin_fields[k]
-    );
-  }, [campaign]);
+  const activeOptinKeys = useMemo(
+    () => (Object.keys(optinLabels) as Array<keyof OptinFields>),
+    []
+  );
+  const [voucherOpen, setVoucherOpen] = useState(false);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
