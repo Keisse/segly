@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Plus, Trash2, GripVertical, Copy, Upload, Globe, EyeOff, ExternalLink, Eye } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, GripVertical, Copy, Upload, Globe, EyeOff, ExternalLink, Eye, Sparkles, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,10 @@ export default function CampanhaEditPage() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [importFromId, setImportFromId] = useState<string>("");
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiCount, setAiCount] = useState(5);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (existing) {
@@ -120,6 +124,46 @@ export default function CampanhaEditPage() {
         is_required: true,
       },
     ]);
+  };
+
+  const handleGenerateAI = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error("Descreva o que você quer gerar.");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-campaign-questions", {
+        body: { prompt: aiPrompt, count: aiCount, campaign_type: form.type },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const generated: any[] = data?.questions || [];
+      if (generated.length === 0) {
+        toast.error("A IA não retornou perguntas. Tente refinar o prompt.");
+        return;
+      }
+      setQuestions((qs) => [
+        ...qs,
+        ...generated.map((g, idx) => ({
+          localId: `ai-${Date.now()}-${idx}`,
+          question_text: g.question_text || "",
+          question_type: g.question_type || "multiple_choice",
+          options: Array.isArray(g.options) ? g.options : [],
+          scale_min: g.scale_min ?? null,
+          scale_max: g.scale_max ?? null,
+          is_required: g.is_required ?? true,
+          category: g.category || null,
+        })),
+      ]);
+      toast.success(`${generated.length} pergunta(s) adicionada(s).`);
+      setAiOpen(false);
+      setAiPrompt("");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao gerar perguntas");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const updateQuestion = (localId: string, patch: Partial<LocalQuestion>) =>
@@ -340,6 +384,9 @@ export default function CampanhaEditPage() {
               <Button onClick={addQuestion} size="sm" className="gap-2">
                 <Plus className="w-4 h-4" /> Adicionar pergunta
               </Button>
+              <Button onClick={() => setAiOpen(true)} size="sm" variant="secondary" className="gap-2">
+                <Sparkles className="w-4 h-4" /> Gerar com IA
+              </Button>
               <div className="flex items-center gap-2 ml-auto">
                 <Select value={importFromId} onValueChange={setImportFromId}>
                   <SelectTrigger className="w-[260px]">
@@ -461,6 +508,51 @@ export default function CampanhaEditPage() {
             <DialogTitle>Pré-visualização da campanha</DialogTitle>
           </DialogHeader>
           <CampaignPreview form={form} questions={questions} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={aiOpen} onOpenChange={(o) => !aiLoading && setAiOpen(o)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" /> Gerar perguntas com IA
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm">Descreva o que você quer perguntar</Label>
+              <Textarea
+                rows={5}
+                placeholder="Ex: Crie uma pesquisa de clima organizacional sobre liderança e reconhecimento, com escala de 1 a 5."
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                disabled={aiLoading}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Dica: descreva o tema, o público-alvo e o tipo de resposta desejada (escala, múltipla escolha, NPS, etc.).
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm">Quantidade de perguntas</Label>
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                value={aiCount}
+                onChange={(e) => setAiCount(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                disabled={aiLoading}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setAiOpen(false)} disabled={aiLoading}>
+                Cancelar
+              </Button>
+              <Button onClick={handleGenerateAI} disabled={aiLoading} className="gap-2">
+                {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                Gerar
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
