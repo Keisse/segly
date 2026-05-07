@@ -36,7 +36,7 @@ const DiagnosticoPage = () => {
   // Redirect to home if no lead data (only in production, not in preview/dev)
   useEffect(() => {
     if (!state?.leadData && !window.location.search.includes("__lovable_token")) {
-      navigate("/", { replace: true });
+      navigate("/mail", { replace: true });
     }
   }, [state, navigate]);
 
