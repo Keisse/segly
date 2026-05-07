@@ -78,6 +78,7 @@ const LeadDetail = () => {
     );
   }
 
+  const hasDiagnostic = !!lead.resultado_diagnostico && (lead.resultado_diagnostico.pillarScores?.length ?? 0) > 0;
   const score = lead.resultado_diagnostico?.percentage ?? 0;
   const maturityLevel = getMaturityLevel(score);
   const pillarScores = lead.resultado_diagnostico?.pillarScores || [];
