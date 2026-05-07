@@ -481,10 +481,6 @@ function QuestionCard({
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-xs">Categoria/Pilar (opcional)</Label>
-              <Input value={question.category || ""} onChange={(e) => onChange({ category: e.target.value })} />
-            </div>
             <div className="flex items-center gap-2 mt-6">
               <Switch checked={question.is_required ?? true} onCheckedChange={(v) => onChange({ is_required: v })} />
               <span className="text-xs">Obrigatória</span>
