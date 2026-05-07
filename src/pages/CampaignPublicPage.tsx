@@ -248,6 +248,11 @@ export default function CampaignPublicPage() {
         {step === "optin" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-6 space-y-4">
             <h2 className="text-xl font-semibold">Seus dados</h2>
+            {campaign.voucher_enabled && campaign.voucher_code && (
+              <p className="text-sm text-primary font-medium">
+                Preencha todos os campos para receber o seu Voucher.
+              </p>
+            )}
             <div className="flex justify-center">
               <LeadCaptureForm onSubmit={handleSubmit} />
             </div>
