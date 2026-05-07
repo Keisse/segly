@@ -136,8 +136,11 @@ export default function CampaignPublicPage() {
         };
       }
 
-      const { data: lead, error } = await supabase.from("leads").insert(leadInsert).select().single();
+      const leadId = crypto.randomUUID();
+      leadInsert.id = leadId;
+      const { error } = await supabase.from("leads").insert(leadInsert);
       if (error) throw error;
+      const lead = { id: leadId };
 
       // insert responses
       const responses = questions
