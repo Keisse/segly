@@ -510,6 +510,51 @@ export default function CampanhaEditPage() {
           <CampaignPreview form={form} questions={questions} />
         </DialogContent>
       </Dialog>
+
+      <Dialog open={aiOpen} onOpenChange={(o) => !aiLoading && setAiOpen(o)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" /> Gerar perguntas com IA
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm">Descreva o que você quer perguntar</Label>
+              <Textarea
+                rows={5}
+                placeholder="Ex: Crie uma pesquisa de clima organizacional sobre liderança e reconhecimento, com escala de 1 a 5."
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                disabled={aiLoading}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Dica: descreva o tema, o público-alvo e o tipo de resposta desejada (escala, múltipla escolha, NPS, etc.).
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm">Quantidade de perguntas</Label>
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                value={aiCount}
+                onChange={(e) => setAiCount(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                disabled={aiLoading}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setAiOpen(false)} disabled={aiLoading}>
+                Cancelar
+              </Button>
+              <Button onClick={handleGenerateAI} disabled={aiLoading} className="gap-2">
+                {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                Gerar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
