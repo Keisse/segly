@@ -42,7 +42,7 @@ export default function CampanhasPage() {
   };
 
   const protectedSlugs: Record<string, string> = {
-    "diagnostico": "/diagnostico",
+    "diagnostico": "/mail",
     "diagnostico-direto": "/diagnostico-direto",
   };
 
