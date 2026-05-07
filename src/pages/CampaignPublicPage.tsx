@@ -165,6 +165,9 @@ export default function CampaignPublicPage() {
         await supabase.from("campaign_responses").insert(responses);
       }
       setStep("done");
+      if (campaign.voucher_enabled && campaign.voucher_code) {
+        setVoucherOpen(true);
+      }
     } catch (e: any) {
       toast.error(e.message || "Erro ao enviar");
     } finally {
