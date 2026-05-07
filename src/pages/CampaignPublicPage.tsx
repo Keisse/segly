@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useCampaignBySlug, useCampaignQuestions } from "@/hooks/useCampaigns";
 import { supabase } from "@/integrations/supabase/client";
 import type { CampaignQuestion, OptinFields } from "@/types/campaign";
+import LeadCaptureForm, { type LeadData } from "@/components/LeadCaptureForm";
 import { toast } from "sonner";
 
 type AnswerValue = string | string[] | number;
@@ -74,24 +75,17 @@ export default function CampaignPublicPage() {
     return true;
   };
 
-  const handleSubmit = async () => {
-    // validate optin
-    for (const k of activeOptinKeys) {
-      if (!optin[k] || optin[k].trim() === "") {
-        toast.error(`Preencha: ${optinLabels[k]}`);
-        return;
-      }
-    }
+  const handleSubmit = async (lead: LeadData) => {
     setSubmitting(true);
     try {
       const leadInsert: any = {
-        nome: optin.nome || "Anônimo",
-        email: optin.email || "",
-        telefone: optin.telefone || "",
-        empresa: optin.empresa || "",
-        porte_empresa: optin.porte_empresa || "",
-        departamento: optin.departamento || "",
-        cargo: optin.cargo || "",
+        nome: lead.nome,
+        email: lead.email,
+        telefone: lead.telefone,
+        empresa: lead.empresa,
+        porte_empresa: lead.porte,
+        departamento: lead.departamento,
+        cargo: lead.cargo,
         fonte: "inbound",
         campaign_id: campaign.id,
         campaign_slug: campaign.slug,
@@ -140,7 +134,6 @@ export default function CampaignPublicPage() {
       leadInsert.id = leadId;
       const { error } = await supabase.from("leads").insert(leadInsert);
       if (error) throw error;
-      const lead = { id: leadId };
 
       // insert responses
       const responses = questions
@@ -155,7 +148,7 @@ export default function CampaignPublicPage() {
             if (opt?.value !== undefined) numVal = opt.value;
           }
           return {
-            lead_id: lead.id,
+            lead_id: leadId,
             campaign_id: campaign.id,
             question_id: q.id,
             answer_text: text,
@@ -255,21 +248,12 @@ export default function CampaignPublicPage() {
         {step === "optin" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-6 space-y-4">
             <h2 className="text-xl font-semibold">Seus dados</h2>
-            {activeOptinKeys.map((k) => (
-              <div key={k}>
-                <Label>{optinLabels[k]} *</Label>
-                <Input
-                  type={k === "email" ? "email" : "text"}
-                  value={optin[k] || ""}
-                  onChange={(e) => setOptin((o) => ({ ...o, [k]: e.target.value }))}
-                />
-              </div>
-            ))}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep("questions")}>Voltar</Button>
-              <Button className="flex-1 gap-2" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Enviar
+            <div className="flex justify-center">
+              <LeadCaptureForm onSubmit={handleSubmit} />
+            </div>
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={() => setStep("questions")} disabled={submitting}>
+                Voltar
               </Button>
             </div>
           </motion.div>
