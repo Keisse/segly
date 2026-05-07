@@ -178,14 +178,45 @@ export default function CampaignPublicPage() {
 
   if (step === "done") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-8 max-w-lg text-center">
-          <h1 className="text-3xl font-display font-bold mb-3">Obrigado!</h1>
-          <p className="text-muted-foreground whitespace-pre-line">
-            {campaign.thank_you_message || "Suas respostas foram enviadas com sucesso."}
-          </p>
-        </motion.div>
-      </div>
+      <>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-8 max-w-lg text-center">
+            <h1 className="text-3xl font-display font-bold mb-3">Obrigado!</h1>
+            <p className="text-muted-foreground whitespace-pre-line">
+              {campaign.thank_you_message || "Suas respostas foram enviadas com sucesso."}
+            </p>
+            {campaign.voucher_enabled && campaign.voucher_code && (
+              <Button className="mt-6" onClick={() => setVoucherOpen(true)}>
+                Ver meu cupom
+              </Button>
+            )}
+          </motion.div>
+        </div>
+        <Dialog open={voucherOpen} onOpenChange={setVoucherOpen}>
+          <DialogContent className="text-center">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Seu cupom de desconto</DialogTitle>
+              {campaign.voucher_description && (
+                <DialogDescription>{campaign.voucher_description}</DialogDescription>
+              )}
+            </DialogHeader>
+            <div className="my-4 rounded-lg border-2 border-dashed border-primary bg-primary/10 p-6">
+              <p className="text-3xl font-mono font-bold text-primary tracking-widest">
+                {campaign.voucher_code}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(campaign.voucher_code || "");
+                toast.success("Cupom copiado!");
+              }}
+            >
+              Copiar código
+            </Button>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
