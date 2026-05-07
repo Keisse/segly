@@ -30,6 +30,16 @@ export default function CampanhasPage() {
   const del = useDeleteCampaign();
   const dup = useDuplicateCampaign();
   const upd = useUpdateCampaign();
+  const [deletePwd, setDeletePwd] = useState<Record<string, string>>({});
+
+  const handleDelete = (id: string) => {
+    if (deletePwd[id] !== "DELETEME") {
+      toast.error("Senha de exclusão incorreta");
+      return;
+    }
+    del.mutate(id);
+    setDeletePwd((s) => ({ ...s, [id]: "" }));
+  };
 
   const copyLink = (slug: string) => {
     const url = `${window.location.origin}/c/${slug}`;
