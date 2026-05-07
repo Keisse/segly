@@ -384,6 +384,9 @@ export default function CampanhaEditPage() {
               <Button onClick={addQuestion} size="sm" className="gap-2">
                 <Plus className="w-4 h-4" /> Adicionar pergunta
               </Button>
+              <Button onClick={() => setAiOpen(true)} size="sm" variant="secondary" className="gap-2">
+                <Sparkles className="w-4 h-4" /> Gerar com IA
+              </Button>
               <div className="flex items-center gap-2 ml-auto">
                 <Select value={importFromId} onValueChange={setImportFromId}>
                   <SelectTrigger className="w-[260px]">
