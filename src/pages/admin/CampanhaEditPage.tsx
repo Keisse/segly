@@ -415,7 +415,39 @@ export default function CampanhaEditPage() {
                   value={form.thank_you_message || ""}
                   onChange={(e) => updateForm({ thank_you_message: e.target.value })}
                 />
+              <div className="border-t border-border/50 pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Voucher / Cupom</Label>
+                    <p className="text-xs text-muted-foreground">Oferecer um cupom de desconto ao concluir.</p>
+                  </div>
+                  <Switch
+                    checked={!!form.voucher_enabled}
+                    onCheckedChange={(v) => updateForm({ voucher_enabled: v })}
+                  />
+                </div>
+                {form.voucher_enabled && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Código do voucher</Label>
+                      <Input
+                        value={form.voucher_code || ""}
+                        onChange={(e) => updateForm({ voucher_code: e.target.value })}
+                        placeholder="ex: BEMVINDO10"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Descrição do voucher</Label>
+                      <Input
+                        value={form.voucher_description || ""}
+                        onChange={(e) => updateForm({ voucher_description: e.target.value })}
+                        placeholder="ex: 10% de desconto no primeiro mês"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
             </div>
           </TabsContent>
         </Tabs>
