@@ -233,6 +233,7 @@ const LeadDetail = () => {
           </div>
         </motion.div>
 
+        {hasDiagnostic && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Radar Chart */}
           <motion.div
