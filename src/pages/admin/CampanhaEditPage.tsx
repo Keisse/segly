@@ -265,10 +265,25 @@ export default function CampanhaEditPage() {
                 </div>
                 <div>
                   <Label>Slug da URL *</Label>
-                  <Input
-                    value={form.slug || ""}
-                    onChange={(e) => { setSlugManuallyEdited(true); updateForm({ slug: slugify(e.target.value) }); }}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      value={form.slug || ""}
+                      onChange={(e) => { setSlugManuallyEdited(true); updateForm({ slug: slugify(e.target.value) }); }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      title="Copiar URL"
+                      onClick={() => {
+                        const url = `${window.location.origin}/c/${form.slug || ""}`;
+                        navigator.clipboard.writeText(url);
+                        toast.success("URL copiada");
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1">URL: {window.location.origin}/c/{form.slug || "..."}</p>
                 </div>
               </div>
