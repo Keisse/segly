@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useCampaignBySlug, useCampaignQuestions } from "@/hooks/useCampaigns";
 import { supabase } from "@/integrations/supabase/client";
 import type { CampaignQuestion, OptinFields } from "@/types/campaign";
+import LeadCaptureForm, { type LeadData } from "@/components/LeadCaptureForm";
 import { toast } from "sonner";
 
 type AnswerValue = string | string[] | number;
