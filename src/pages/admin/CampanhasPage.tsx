@@ -137,9 +137,28 @@ export default function CampanhasPage() {
                               Excluir <strong>{c.name}</strong> remove também perguntas e respostas vinculadas. Os leads permanecem.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
+                          <div className="space-y-2 py-2">
+                            <Label htmlFor={`pwd-${c.id}`}>Digite <strong>DELETEME</strong> para confirmar</Label>
+                            <Input
+                              id={`pwd-${c.id}`}
+                              value={deletePwd[c.id] || ""}
+                              onChange={(e) => setDeletePwd((s) => ({ ...s, [c.id]: e.target.value }))}
+                              placeholder="DELETEME"
+                              autoComplete="off"
+                            />
+                          </div>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => del.mutate(c.id)} className="bg-destructive">
+                            <AlertDialogCancel onClick={() => setDeletePwd((s) => ({ ...s, [c.id]: "" }))}>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={(e) => {
+                                if (deletePwd[c.id] !== "DELETEME") {
+                                  e.preventDefault();
+                                }
+                                handleDelete(c.id);
+                              }}
+                              disabled={deletePwd[c.id] !== "DELETEME"}
+                              className="bg-destructive"
+                            >
                               Excluir
                             </AlertDialogAction>
                           </AlertDialogFooter>
