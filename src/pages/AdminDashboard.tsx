@@ -2,7 +2,11 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Users, UserPlus, Calendar, TrendingUp } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useDashboardMetrics } from "@/hooks/useLeads";
+import { useCampaigns } from "@/hooks/useCampaigns";
 import MetricCard from "@/components/admin/MetricCard";
 import LeadsChart from "@/components/admin/LeadsChart";
 import LeadsTable from "@/components/admin/LeadsTable";
@@ -24,8 +28,10 @@ type FonteTab = "todos" | "inbound" | "outbound";
 
 const AdminDashboard = () => {
   const { data: metrics, isLoading } = useDashboardMetrics();
+  const { data: campaigns = [] } = useCampaigns();
   const [filters, setFilters] = useState<FiltersState>({});
   const [fonteTab, setFonteTab] = useState<FonteTab>("todos");
+  const [campaignFilter, setCampaignFilter] = useState<string>("all");
 
   const filteredLeads = useMemo(() => {
     if (!metrics?.leads) return [];
@@ -35,6 +41,7 @@ const AdminDashboard = () => {
         if (fonteTab === "outbound" && leadFonte !== "outbound") return false;
         if (fonteTab === "inbound" && leadFonte !== "inbound" && leadFonte !== "organico") return false;
       }
+      if (campaignFilter !== "all" && lead.campaign_id !== campaignFilter) return false;
       if (filters.status && lead.status !== filters.status) return false;
       if (filters.startDate && new Date(lead.created_at) < filters.startDate) return false;
       if (filters.endDate && new Date(lead.created_at) > filters.endDate) return false;
@@ -44,7 +51,24 @@ const AdminDashboard = () => {
       if (filters.searchName && !lead.nome.toLowerCase().includes(filters.searchName.toLowerCase())) return false;
       return true;
     });
-  }, [metrics?.leads, filters, fonteTab]);
+  }, [metrics?.leads, filters, fonteTab, campaignFilter]);
+
+  const todayStart = useMemo(() => {
+    const d = new Date(); d.setHours(0,0,0,0); return d;
+  }, []);
+  const weekStart = useMemo(() => {
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - d.getDay()); return d;
+  }, []);
+  const monthStart = useMemo(() => {
+    const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
+  }, []);
+
+  const computedMetrics = useMemo(() => ({
+    total: filteredLeads.length,
+    today: filteredLeads.filter((l) => new Date(l.created_at) >= todayStart).length,
+    thisWeek: filteredLeads.filter((l) => new Date(l.created_at) >= weekStart).length,
+    thisMonth: filteredLeads.filter((l) => new Date(l.created_at) >= monthStart).length,
+  }), [filteredLeads, todayStart, weekStart, monthStart]);
 
   return (
     <div className="py-6 px-4">
