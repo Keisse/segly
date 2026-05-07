@@ -134,7 +134,6 @@ export default function CampaignPublicPage() {
       leadInsert.id = leadId;
       const { error } = await supabase.from("leads").insert(leadInsert);
       if (error) throw error;
-      const lead = { id: leadId };
 
       // insert responses
       const responses = questions
@@ -149,7 +148,7 @@ export default function CampaignPublicPage() {
             if (opt?.value !== undefined) numVal = opt.value;
           }
           return {
-            lead_id: lead.id,
+            lead_id: leadId,
             campaign_id: campaign.id,
             question_id: q.id,
             answer_text: text,
