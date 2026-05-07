@@ -262,7 +262,7 @@ export default function CampaignPublicPage() {
           )}
         </motion.header>
 
-        {step === "questions" && (
+        {step === "questions" && !isChat && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             {questions.map((q, i) => (
               <QuestionRenderer key={q.id} question={q} index={i} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} />
@@ -278,6 +278,85 @@ export default function CampaignPublicPage() {
             >
               Continuar
             </Button>
+          </motion.div>
+        )}
+
+        {step === "questions" && isChat && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            {questions.length === 0 && (
+              <div className="glass-card p-6 text-center text-muted-foreground">
+                Esta campanha ainda não tem perguntas.
+              </div>
+            )}
+            <div className="glass-card p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              {questions.slice(0, chatIdx + 1).map((q, i) => {
+                const answered = answers[q.id] !== undefined;
+                const isCurrent = i === chatIdx;
+                return (
+                  <div key={q.id} className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 bg-secondary/40 rounded-lg p-3">
+                        {q.category && <p className="text-xs text-primary mb-1">{q.category}</p>}
+                        <p className="text-sm font-medium">
+                          {i + 1}. {q.question_text}
+                        </p>
+                        {(isCurrent || !answered) && (
+                          <div className="mt-3">
+                            <QuestionRenderer
+                              question={q}
+                              index={i}
+                              value={answers[q.id]}
+                              onChange={(v) => setAnswer(q.id, v)}
+                              compact
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {answered && !isCurrent && (
+                      <div className="flex justify-end">
+                        <div className="bg-primary/15 rounded-lg p-2 text-sm max-w-md">
+                          {Array.isArray(answers[q.id]) ? (answers[q.id] as string[]).join(", ") : String(answers[q.id])}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef} />
+            </div>
+            <div className="flex justify-between gap-2">
+              <Button
+                variant="outline"
+                disabled={chatIdx === 0}
+                onClick={() => setChatIdx((i) => Math.max(0, i - 1))}
+              >
+                Voltar
+              </Button>
+              {chatIdx < questions.length - 1 ? (
+                <Button
+                  onClick={() => {
+                    const q = questions[chatIdx];
+                    if (q.is_required && (answers[q.id] === undefined || answers[q.id] === "" || (Array.isArray(answers[q.id]) && (answers[q.id] as string[]).length === 0))) {
+                      toast.error("Responda esta pergunta para continuar.");
+                      return;
+                    }
+                    setChatIdx((i) => i + 1);
+                  }}
+                >
+                  Próxima
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => { if (validateQuestions()) setStep("optin"); }}
+                >
+                  Finalizar diagnóstico
+                </Button>
+              )}
+            </div>
           </motion.div>
         )}
 
