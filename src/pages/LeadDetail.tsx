@@ -78,6 +78,7 @@ const LeadDetail = () => {
     );
   }
 
+  const hasDiagnostic = !!lead.resultado_diagnostico && (lead.resultado_diagnostico.pillarScores?.length ?? 0) > 0;
   const score = lead.resultado_diagnostico?.percentage ?? 0;
   const maturityLevel = getMaturityLevel(score);
   const pillarScores = lead.resultado_diagnostico?.pillarScores || [];
@@ -162,27 +163,29 @@ const LeadDetail = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Score Badge */}
-              <div className="text-center">
-                <div
-                  className={`text-3xl font-bold ${
-                    maturityLevel === "iniciante"
-                      ? "text-red-400"
-                      : maturityLevel === "intermediario"
-                      ? "text-amber-400"
-                      : maturityLevel === "avancado"
-                      ? "text-blue-400"
-                      : "text-emerald-400"
-                  }`}
-                >
-                  {Math.round(score)}%
+              {/* Score Badge - apenas para leads com diagnóstico */}
+              {hasDiagnostic && (
+                <div className="text-center">
+                  <div
+                    className={`text-3xl font-bold ${
+                      maturityLevel === "iniciante"
+                        ? "text-red-400"
+                        : maturityLevel === "intermediario"
+                        ? "text-amber-400"
+                        : maturityLevel === "avancado"
+                        ? "text-blue-400"
+                        : "text-emerald-400"
+                    }`}
+                  >
+                    {Math.round(score)}%
+                  </div>
+                  <div
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${maturityColors[maturityLevel]}`}
+                  >
+                    {maturityLabels[maturityLevel]}
+                  </div>
                 </div>
-                <div
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${maturityColors[maturityLevel]}`}
-                >
-                  {maturityLabels[maturityLevel]}
-                </div>
-              </div>
+              )}
 
               {/* Status Dropdown */}
               <Select value={lead.status} onValueChange={handleStatusChange}>
@@ -230,6 +233,7 @@ const LeadDetail = () => {
           </div>
         </motion.div>
 
+        {hasDiagnostic && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Radar Chart */}
           <motion.div
@@ -318,6 +322,7 @@ const LeadDetail = () => {
             </div>
           </motion.div>
         </div>
+        )}
 
         {/* Sales Intelligence Section */}
         <SalesIntelligenceSection lead={lead} />

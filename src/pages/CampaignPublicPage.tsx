@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,12 +35,21 @@ export default function CampaignPublicPage() {
   const [optin, setOptin] = useState<Record<string, string>>({});
   const [step, setStep] = useState<"questions" | "optin" | "done">("questions");
   const [submitting, setSubmitting] = useState(false);
+  const [chatIdx, setChatIdx] = useState(0);
+  const [diagResult, setDiagResult] = useState<any>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const isChat = campaign?.type === "diagnostico_score";
 
   const activeOptinKeys = useMemo(
     () => (Object.keys(optinLabels) as Array<keyof OptinFields>),
     []
   );
   const [voucherOpen, setVoucherOpen] = useState(false);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatIdx, step]);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -128,6 +137,7 @@ export default function CampaignPublicPage() {
           })),
           answers: {},
         };
+        setDiagResult(leadInsert.resultado_diagnostico);
       }
 
       const leadId = crypto.randomUUID();
@@ -170,10 +180,36 @@ export default function CampaignPublicPage() {
   };
 
   if (step === "done") {
+    const showScore = isChat && diagResult;
+    const pct = Math.round(diagResult?.percentage || 0);
+    const level = pct >= 80 ? "Estratégico" : pct >= 50 ? "Consolidação" : "Fundamentação";
+    const levelColor = pct >= 80 ? "text-emerald-400" : pct >= 50 ? "text-amber-400" : "text-red-400";
     return (
       <>
         <div className="min-h-screen flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-8 max-w-lg text-center">
+            {showScore && (
+              <div className="mb-6">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Seu score de maturidade</p>
+                <div className={`text-6xl font-display font-bold ${levelColor}`}>{pct}%</div>
+                <p className={`mt-2 text-sm font-medium ${levelColor}`}>Nível: {level}</p>
+                {diagResult.pillarScores?.length > 0 && (
+                  <div className="mt-6 space-y-2 text-left">
+                    {diagResult.pillarScores.map((p: any) => (
+                      <div key={p.pillarId}>
+                        <div className="flex justify-between text-xs">
+                          <span>{p.pillarName}</span>
+                          <span className="text-muted-foreground">{Math.round(p.percentage)}%</span>
+                        </div>
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: `${p.percentage}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <h1 className="text-3xl font-display font-bold mb-3">Obrigado!</h1>
             <p className="text-muted-foreground whitespace-pre-line">
               {campaign.thank_you_message || "Suas respostas foram enviadas com sucesso."}
@@ -226,7 +262,7 @@ export default function CampaignPublicPage() {
           )}
         </motion.header>
 
-        {step === "questions" && (
+        {step === "questions" && !isChat && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             {questions.map((q, i) => (
               <QuestionRenderer key={q.id} question={q} index={i} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} />
@@ -242,6 +278,85 @@ export default function CampaignPublicPage() {
             >
               Continuar
             </Button>
+          </motion.div>
+        )}
+
+        {step === "questions" && isChat && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            {questions.length === 0 && (
+              <div className="glass-card p-6 text-center text-muted-foreground">
+                Esta campanha ainda não tem perguntas.
+              </div>
+            )}
+            <div className="glass-card p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              {questions.slice(0, chatIdx + 1).map((q, i) => {
+                const answered = answers[q.id] !== undefined;
+                const isCurrent = i === chatIdx;
+                return (
+                  <div key={q.id} className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 bg-secondary/40 rounded-lg p-3">
+                        {q.category && <p className="text-xs text-primary mb-1">{q.category}</p>}
+                        <p className="text-sm font-medium">
+                          {i + 1}. {q.question_text}
+                        </p>
+                        {(isCurrent || !answered) && (
+                          <div className="mt-3">
+                            <QuestionRenderer
+                              question={q}
+                              index={i}
+                              value={answers[q.id]}
+                              onChange={(v) => setAnswer(q.id, v)}
+                              compact
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {answered && !isCurrent && (
+                      <div className="flex justify-end">
+                        <div className="bg-primary/15 rounded-lg p-2 text-sm max-w-md">
+                          {Array.isArray(answers[q.id]) ? (answers[q.id] as string[]).join(", ") : String(answers[q.id])}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef} />
+            </div>
+            <div className="flex justify-between gap-2">
+              <Button
+                variant="outline"
+                disabled={chatIdx === 0}
+                onClick={() => setChatIdx((i) => Math.max(0, i - 1))}
+              >
+                Voltar
+              </Button>
+              {chatIdx < questions.length - 1 ? (
+                <Button
+                  onClick={() => {
+                    const q = questions[chatIdx];
+                    if (q.is_required && (answers[q.id] === undefined || answers[q.id] === "" || (Array.isArray(answers[q.id]) && (answers[q.id] as string[]).length === 0))) {
+                      toast.error("Responda esta pergunta para continuar.");
+                      return;
+                    }
+                    setChatIdx((i) => i + 1);
+                  }}
+                >
+                  Próxima
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => { if (validateQuestions()) setStep("optin"); }}
+                >
+                  Finalizar diagnóstico
+                </Button>
+              )}
+            </div>
           </motion.div>
         )}
 
@@ -269,24 +384,26 @@ export default function CampaignPublicPage() {
 }
 
 function QuestionRenderer({
-  question, index, value, onChange,
+  question, index, value, onChange, compact,
 }: {
   question: CampaignQuestion;
   index: number;
   value: AnswerValue | undefined;
   onChange: (v: AnswerValue) => void;
+  compact?: boolean;
 }) {
   const t = question.question_type;
   return (
-    <div className="glass-card p-5 space-y-3">
-      <div>
-        {question.category && <p className="text-xs text-primary mb-1">{question.category}</p>}
-        <p className="font-medium">
-          {index + 1}. {question.question_text}
-          {question.is_required && <span className="text-destructive"> *</span>}
-        </p>
-      </div>
-
+    <div className={compact ? "space-y-3" : "glass-card p-5 space-y-3"}>
+      {!compact && (
+        <div>
+          {question.category && <p className="text-xs text-primary mb-1">{question.category}</p>}
+          <p className="font-medium">
+            {index + 1}. {question.question_text}
+            {question.is_required && <span className="text-destructive"> *</span>}
+          </p>
+        </div>
+      )}
       {t === "multiple_choice" && (
         <RadioGroup value={(value as string) || ""} onValueChange={onChange}>
           {question.options.map((o, i) => (
