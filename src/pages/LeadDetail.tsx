@@ -319,10 +319,10 @@ const LeadDetail = () => {
                   </div>
                 );
               })}
-        </div>
-        )}
+            </div>
           </motion.div>
         </div>
+        )}
 
         {/* Sales Intelligence Section */}
         <SalesIntelligenceSection lead={lead} />
