@@ -87,10 +87,10 @@ const AdminDashboard = () => {
 
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard title="Total de Leads" value={isLoading ? "..." : metrics?.total || 0} icon={Users} delay={0} />
-          <MetricCard title="Leads Hoje" value={isLoading ? "..." : metrics?.today || 0} icon={UserPlus} delay={0.1} />
-          <MetricCard title="Esta Semana" value={isLoading ? "..." : metrics?.thisWeek || 0} icon={Calendar} delay={0.2} />
-          <MetricCard title="Este Mês" value={isLoading ? "..." : metrics?.thisMonth || 0} icon={TrendingUp} delay={0.3} />
+          <MetricCard title="Total de Leads" value={isLoading ? "..." : computedMetrics.total} icon={Users} delay={0} />
+          <MetricCard title="Leads Hoje" value={isLoading ? "..." : computedMetrics.today} icon={UserPlus} delay={0.1} />
+          <MetricCard title="Esta Semana" value={isLoading ? "..." : computedMetrics.thisWeek} icon={Calendar} delay={0.2} />
+          <MetricCard title="Este Mês" value={isLoading ? "..." : computedMetrics.thisMonth} icon={TrendingUp} delay={0.3} />
         </div>
 
         {/* Chart */}
@@ -104,14 +104,27 @@ const AdminDashboard = () => {
           />
         )}
 
-        {/* Fonte Tabs + Filters */}
-        <Tabs value={fonteTab} onValueChange={(v) => setFonteTab(v as FonteTab)}>
-          <TabsList>
-            <TabsTrigger value="todos">Todos</TabsTrigger>
-            <TabsTrigger value="outbound">Outbound</TabsTrigger>
-            <TabsTrigger value="inbound">Inbound</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Fonte Tabs + Campaign Filter */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Tabs value={fonteTab} onValueChange={(v) => setFonteTab(v as FonteTab)}>
+            <TabsList>
+              <TabsTrigger value="todos">Todos</TabsTrigger>
+              <TabsTrigger value="outbound">Outbound</TabsTrigger>
+              <TabsTrigger value="inbound">Inbound</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Select value={campaignFilter} onValueChange={setCampaignFilter}>
+            <SelectTrigger className="w-[260px] bg-card">
+              <SelectValue placeholder="Campanha" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              <SelectItem value="all">Todas as campanhas</SelectItem>
+              {campaigns.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <DashboardFilters filters={filters} onFiltersChange={setFilters} filteredLeads={filteredLeads} fonteTab={fonteTab} />
 
