@@ -104,16 +104,9 @@ const AdminDashboard = () => {
           />
         )}
 
-        {/* Fonte Tabs + Campaign Filter */}
+        {/* Campaign Filter */}
         <h2 className="text-lg font-semibold text-foreground">Campanhas</h2>
         <div className="flex flex-wrap items-center gap-3">
-          <Tabs value={fonteTab} onValueChange={(v) => setFonteTab(v as FonteTab)}>
-            <TabsList>
-              <TabsTrigger value="todos">Todos</TabsTrigger>
-              <TabsTrigger value="outbound">Outbound</TabsTrigger>
-              <TabsTrigger value="inbound">Inbound</TabsTrigger>
-            </TabsList>
-          </Tabs>
           <Select value={campaignFilter} onValueChange={setCampaignFilter}>
             <SelectTrigger className="w-[260px] bg-card">
               <SelectValue placeholder="Campanha" />
