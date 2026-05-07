@@ -384,24 +384,26 @@ export default function CampaignPublicPage() {
 }
 
 function QuestionRenderer({
-  question, index, value, onChange,
+  question, index, value, onChange, compact,
 }: {
   question: CampaignQuestion;
   index: number;
   value: AnswerValue | undefined;
   onChange: (v: AnswerValue) => void;
+  compact?: boolean;
 }) {
   const t = question.question_type;
   return (
-    <div className="glass-card p-5 space-y-3">
-      <div>
-        {question.category && <p className="text-xs text-primary mb-1">{question.category}</p>}
-        <p className="font-medium">
-          {index + 1}. {question.question_text}
-          {question.is_required && <span className="text-destructive"> *</span>}
-        </p>
-      </div>
-
+    <div className={compact ? "space-y-3" : "glass-card p-5 space-y-3"}>
+      {!compact && (
+        <div>
+          {question.category && <p className="text-xs text-primary mb-1">{question.category}</p>}
+          <p className="font-medium">
+            {index + 1}. {question.question_text}
+            {question.is_required && <span className="text-destructive"> *</span>}
+          </p>
+        </div>
+      )}
       {t === "multiple_choice" && (
         <RadioGroup value={(value as string) || ""} onValueChange={onChange}>
           {question.options.map((o, i) => (
