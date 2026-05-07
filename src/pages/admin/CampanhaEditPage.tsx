@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Plus, Trash2, GripVertical, Copy, Upload, Globe, EyeOff, ExternalLink } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, GripVertical, Copy, Upload, Globe, EyeOff, ExternalLink, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,6 +62,7 @@ export default function CampanhaEditPage() {
   const [questions, setQuestions] = useState<LocalQuestion[]>([]);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [importFromId, setImportFromId] = useState<string>("");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (existing) {
@@ -199,6 +202,14 @@ export default function CampanhaEditPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setPreviewOpen(true)}
+            >
+              <Eye className="w-4 h-4" /> Visualizar
+            </Button>
             {!isNew && form.status === "ativa" && (
               <Button
                 variant="outline"
@@ -452,8 +463,151 @@ export default function CampanhaEditPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pré-visualização da campanha</DialogTitle>
+          </DialogHeader>
+          <CampaignPreview form={form} questions={questions} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function CampaignPreview({
+  form,
+  questions,
+}: {
+  form: Partial<Campaign>;
+  questions: LocalQuestion[];
+}) {
+  const optinKeys = (Object.keys(form.optin_fields || defaultOptinFields) as Array<keyof OptinFields>).filter(
+    (k) => (form.optin_fields || defaultOptinFields)[k]
+  );
+  const optinLabelsPub: Record<keyof OptinFields, string> = {
+    nome: "Nome completo", email: "Email corporativo", telefone: "WhatsApp",
+    empresa: "Empresa", porte_empresa: "Porte da empresa",
+    departamento: "Departamento", cargo: "Cargo",
+  };
+
+  return (
+    <div className="space-y-6 py-2">
+      <div className="text-center space-y-2">
+        {form.image_url && <img src={form.image_url} alt="" className="h-16 mx-auto" />}
+        <h2 className="text-2xl font-display font-bold">
+          {form.public_title || form.name || "Título da campanha"}
+        </h2>
+        {form.public_subtitle && (
+          <p className="text-sm text-muted-foreground">{form.public_subtitle}</p>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Perguntas</p>
+        {questions.length === 0 && (
+          <div className="glass-card p-4 text-center text-sm text-muted-foreground">
+            Nenhuma pergunta adicionada.
+          </div>
+        )}
+        {questions.map((q, i) => (
+          <div key={q.localId} className="glass-card p-4 space-y-2">
+            {q.category && <p className="text-xs text-primary">{q.category}</p>}
+            <p className="font-medium text-sm">
+              {i + 1}. {q.question_text || <span className="italic text-muted-foreground">Sem texto</span>}
+              {q.is_required && <span className="text-destructive"> *</span>}
+            </p>
+            <PreviewQuestionBody q={q} />
+          </div>
+        ))}
+      </div>
+
+      <div className="glass-card p-4 space-y-2">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Formulário de optin</p>
+        {optinKeys.map((k) => (
+          <div key={k}>
+            <Label className="text-xs">{optinLabelsPub[k]} *</Label>
+            <Input disabled placeholder={optinLabelsPub[k]} />
+          </div>
+        ))}
+      </div>
+
+      {form.voucher_enabled && form.voucher_code && (
+        <div className="glass-card p-4 border border-primary/40">
+          <p className="text-xs text-muted-foreground">Voucher oferecido ao concluir</p>
+          <p className="font-mono font-bold text-primary">{form.voucher_code}</p>
+          {form.voucher_description && (
+            <p className="text-xs text-muted-foreground">{form.voucher_description}</p>
+          )}
+        </div>
+      )}
+
+      <div className="glass-card p-4 text-center">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Mensagem final</p>
+        <p className="text-sm whitespace-pre-line">
+          {form.thank_you_message || "Suas respostas foram enviadas com sucesso."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function PreviewQuestionBody({ q }: { q: LocalQuestion }) {
+  const t = q.question_type;
+  if (t === "multiple_choice" || t === "yes_no") {
+    const opts = t === "yes_no" ? [{ text: "Sim" }, { text: "Não" }] : (q.options || []);
+    return (
+      <RadioGroup disabled className={t === "yes_no" ? "flex gap-4" : ""}>
+        {opts.map((o, i) => (
+          <label key={i} className="flex items-center gap-2 text-sm">
+            <RadioGroupItem value={o.text} disabled />
+            <span>{o.text}</span>
+          </label>
+        ))}
+      </RadioGroup>
+    );
+  }
+  if (t === "checkbox") {
+    return (
+      <div className="space-y-1">
+        {(q.options || []).map((o, i) => (
+          <label key={i} className="flex items-center gap-2 text-sm">
+            <Checkbox disabled /><span>{o.text}</span>
+          </label>
+        ))}
+      </div>
+    );
+  }
+  if (t === "dropdown") {
+    return <Input disabled placeholder="Selecione..." />;
+  }
+  if (t === "scale") {
+    const min = q.scale_min ?? 1, max = q.scale_max ?? 5;
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {Array.from({ length: max - min + 1 }, (_, i) => (
+          <div key={i} className="w-9 h-9 rounded border border-border flex items-center justify-center text-sm">
+            {min + i}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (t === "nps") {
+    return (
+      <div className="flex flex-wrap gap-1">
+        {Array.from({ length: 11 }, (_, n) => (
+          <div key={n} className="w-8 h-8 rounded border border-border flex items-center justify-center text-xs">
+            {n}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (t === "short_text") return <Input disabled />;
+  if (t === "long_text") return <Textarea disabled rows={2} />;
+  return null;
 }
 
 function QuestionCard({
