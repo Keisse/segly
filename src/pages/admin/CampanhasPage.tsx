@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Copy, Edit, Trash2, ExternalLink, Power } from "lucide-react";
+import { Plus, Copy, Edit, Trash2, ExternalLink, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
