@@ -105,6 +105,7 @@ const AdminDashboard = () => {
         )}
 
         {/* Fonte Tabs + Campaign Filter */}
+        <h2 className="text-lg font-semibold text-foreground">Campanhas</h2>
         <div className="flex flex-wrap items-center gap-3">
           <Tabs value={fonteTab} onValueChange={(v) => setFonteTab(v as FonteTab)}>
             <TabsList>
