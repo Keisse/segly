@@ -41,8 +41,14 @@ export default function CampanhasPage() {
     setDeletePwd((s) => ({ ...s, [id]: "" }));
   };
 
+  const protectedSlugs: Record<string, string> = {
+    "diagnostico": "/diagnostico",
+    "diagnostico-direto": "/diagnostico-direto",
+  };
+
   const copyLink = (slug: string) => {
-    const url = `${window.location.origin}/c/${slug}`;
+    const path = protectedSlugs[slug] || `/c/${slug}`;
+    const url = `${window.location.origin}${path}`;
     navigator.clipboard.writeText(url);
     toast.success("Link copiado!");
   };
