@@ -189,7 +189,10 @@ export default function CampanhasPage() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
               ))}
