@@ -466,7 +466,7 @@ function QuestionCard({
             value={question.question_text || ""}
             onChange={(e) => onChange({ question_text: e.target.value })}
           />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Tipo</Label>
               <Select
