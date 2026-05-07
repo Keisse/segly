@@ -449,21 +449,6 @@ export default function CampanhaEditPage() {
                 <Label>Subtítulo / descrição pública</Label>
                 <Textarea value={form.public_subtitle || ""} onChange={(e) => updateForm({ public_subtitle: e.target.value })} />
               </div>
-              <div>
-                <Label>Imagem ou logo</Label>
-                <div className="flex items-center gap-3 mt-1">
-                  {form.image_url && <img src={form.image_url} alt="" className="h-16" />}
-                  <label className="cursor-pointer">
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                    <Button asChild variant="outline" size="sm" type="button">
-                      <span><Upload className="w-4 h-4 mr-2" />Upload</span>
-                    </Button>
-                  </label>
-                  {form.image_url && (
-                    <Button variant="ghost" size="sm" onClick={() => updateForm({ image_url: "" })}>Remover</Button>
-                  )}
-                </div>
-              </div>
               <div className="rounded-md border border-border/50 bg-secondary/20 p-3 text-sm text-muted-foreground">
                 <p className="font-medium text-foreground mb-1">Formulário de captura de dados</p>
                 <p>
