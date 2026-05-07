@@ -133,6 +133,9 @@ export type Database = {
           thank_you_message: string | null
           type: Database["public"]["Enums"]["campaign_type"]
           updated_at: string
+          voucher_code: string | null
+          voucher_description: string | null
+          voucher_enabled: boolean
         }
         Insert: {
           created_at?: string
@@ -150,6 +153,9 @@ export type Database = {
           thank_you_message?: string | null
           type?: Database["public"]["Enums"]["campaign_type"]
           updated_at?: string
+          voucher_code?: string | null
+          voucher_description?: string | null
+          voucher_enabled?: boolean
         }
         Update: {
           created_at?: string
@@ -167,6 +173,9 @@ export type Database = {
           thank_you_message?: string | null
           type?: Database["public"]["Enums"]["campaign_type"]
           updated_at?: string
+          voucher_code?: string | null
+          voucher_description?: string | null
+          voucher_enabled?: boolean
         }
         Relationships: []
       }

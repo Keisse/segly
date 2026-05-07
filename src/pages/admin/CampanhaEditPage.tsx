@@ -265,10 +265,25 @@ export default function CampanhaEditPage() {
                 </div>
                 <div>
                   <Label>Slug da URL *</Label>
-                  <Input
-                    value={form.slug || ""}
-                    onChange={(e) => { setSlugManuallyEdited(true); updateForm({ slug: slugify(e.target.value) }); }}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      value={form.slug || ""}
+                      onChange={(e) => { setSlugManuallyEdited(true); updateForm({ slug: slugify(e.target.value) }); }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      title="Copiar URL"
+                      onClick={() => {
+                        const url = `${window.location.origin}/c/${form.slug || ""}`;
+                        navigator.clipboard.writeText(url);
+                        toast.success("URL copiada");
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1">URL: {window.location.origin}/c/{form.slug || "..."}</p>
                 </div>
               </div>
@@ -401,6 +416,38 @@ export default function CampanhaEditPage() {
                   onChange={(e) => updateForm({ thank_you_message: e.target.value })}
                 />
               </div>
+              <div className="border-t border-border/50 pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Voucher / Cupom</Label>
+                    <p className="text-xs text-muted-foreground">Oferecer um cupom de desconto ao concluir.</p>
+                  </div>
+                  <Switch
+                    checked={!!form.voucher_enabled}
+                    onCheckedChange={(v) => updateForm({ voucher_enabled: v })}
+                  />
+                </div>
+                {form.voucher_enabled && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Código do voucher</Label>
+                      <Input
+                        value={form.voucher_code || ""}
+                        onChange={(e) => updateForm({ voucher_code: e.target.value })}
+                        placeholder="ex: BEMVINDO10"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Descrição do voucher</Label>
+                      <Input
+                        value={form.voucher_description || ""}
+                        onChange={(e) => updateForm({ voucher_description: e.target.value })}
+                        placeholder="ex: 10% de desconto no primeiro mês"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
@@ -451,7 +498,7 @@ function QuestionCard({
             value={question.question_text || ""}
             onChange={(e) => onChange({ question_text: e.target.value })}
           />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Tipo</Label>
               <Select
@@ -465,10 +512,6 @@ function QuestionCard({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Categoria/Pilar (opcional)</Label>
-              <Input value={question.category || ""} onChange={(e) => onChange({ category: e.target.value })} />
             </div>
             <div className="flex items-center gap-2 mt-6">
               <Switch checked={question.is_required ?? true} onCheckedChange={(v) => onChange({ is_required: v })} />
