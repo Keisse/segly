@@ -319,7 +319,8 @@ const LeadDetail = () => {
                   </div>
                 );
               })}
-            </div>
+        </div>
+        )}
           </motion.div>
         </div>
 
