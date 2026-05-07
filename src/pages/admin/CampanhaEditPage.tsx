@@ -415,6 +415,7 @@ export default function CampanhaEditPage() {
                   value={form.thank_you_message || ""}
                   onChange={(e) => updateForm({ thank_you_message: e.target.value })}
                 />
+              </div>
               <div className="border-t border-border/50 pt-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
