@@ -75,24 +75,17 @@ export default function CampaignPublicPage() {
     return true;
   };
 
-  const handleSubmit = async () => {
-    // validate optin
-    for (const k of activeOptinKeys) {
-      if (!optin[k] || optin[k].trim() === "") {
-        toast.error(`Preencha: ${optinLabels[k]}`);
-        return;
-      }
-    }
+  const handleSubmit = async (lead: LeadData) => {
     setSubmitting(true);
     try {
       const leadInsert: any = {
-        nome: optin.nome || "Anônimo",
-        email: optin.email || "",
-        telefone: optin.telefone || "",
-        empresa: optin.empresa || "",
-        porte_empresa: optin.porte_empresa || "",
-        departamento: optin.departamento || "",
-        cargo: optin.cargo || "",
+        nome: lead.nome,
+        email: lead.email,
+        telefone: lead.telefone,
+        empresa: lead.empresa,
+        porte_empresa: lead.porte,
+        departamento: lead.departamento,
+        cargo: lead.cargo,
         fonte: "inbound",
         campaign_id: campaign.id,
         campaign_slug: campaign.slug,
