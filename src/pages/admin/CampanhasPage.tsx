@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Copy, Edit, Trash2, ExternalLink, Power } from "lucide-react";
+import { Plus, Copy, Edit, Trash2, ExternalLink, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -119,7 +119,7 @@ export default function CampanhasPage() {
                       return (
                         <div className="flex items-center justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => copyLink(c.slug)} title="Copiar link">
-                            <Copy className="w-4 h-4" />
+                            <LinkIcon className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="icon" asChild title="Abrir página">
                             <a href={openHref} target="_blank" rel="noreferrer">
@@ -127,7 +127,7 @@ export default function CampanhasPage() {
                             </a>
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => dup.mutate(c.id)} title="Duplicar">
-                            <Power className="w-4 h-4 rotate-90" />
+                            <Copy className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
