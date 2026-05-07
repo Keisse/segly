@@ -359,7 +359,7 @@ const LeadDetail = () => {
                 ).map(([cat, items]) => (
                   <div key={cat} className="space-y-2">
                     <p className="text-xs font-medium text-primary">{cat}</p>
-                    {items.map((r: any) => (
+                    {(items as any[]).map((r: any) => (
                       <div key={r.id} className="bg-secondary/30 rounded-lg p-3">
                         <p className="text-xs text-muted-foreground mb-1">
                           {r.question?.question_text || "—"}
