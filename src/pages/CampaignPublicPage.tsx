@@ -35,12 +35,21 @@ export default function CampaignPublicPage() {
   const [optin, setOptin] = useState<Record<string, string>>({});
   const [step, setStep] = useState<"questions" | "optin" | "done">("questions");
   const [submitting, setSubmitting] = useState(false);
+  const [chatIdx, setChatIdx] = useState(0);
+  const [diagResult, setDiagResult] = useState<any>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const isChat = campaign?.type === "diagnostico_score";
 
   const activeOptinKeys = useMemo(
     () => (Object.keys(optinLabels) as Array<keyof OptinFields>),
     []
   );
   const [voucherOpen, setVoucherOpen] = useState(false);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatIdx, step]);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
