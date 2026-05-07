@@ -95,7 +95,7 @@ export default function CampanhasPage() {
               {campaigns.map((c) => (
                 <TableRow key={c.id} className="border-border/50">
                   <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground font-mono">/c/{c.slug}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground font-mono">{c.slug in protectedSlugs ? protectedSlugs[c.slug] : `/c/${c.slug}`}</TableCell>
                   <TableCell className="text-xs">{campaignTypeLabels[c.type]}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
