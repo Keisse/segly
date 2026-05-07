@@ -178,6 +178,7 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
               <TableHead>Porte</TableHead>
               <TableHead>Departamento</TableHead>
               <TableHead>Cargo</TableHead>
+              <TableHead>Campanha</TableHead>
               <TableHead>Score</TableHead>
               <TableHead>Responsável</TableHead>
               <TableHead>Status</TableHead>
@@ -209,6 +210,9 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                   <TableCell className="text-sm">{lead.porte_empresa}</TableCell>
                   <TableCell className="text-sm">{lead.departamento}</TableCell>
                   <TableCell className="text-sm">{lead.cargo}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {lead.campaign_name || "—"}
+                  </TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${maturityColors[maturityLevel]}`}>
                       {Math.round(score)}% - {maturityLabels[maturityLevel]}

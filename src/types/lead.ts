@@ -14,6 +14,9 @@ export interface Lead {
   historico: HistoricoItem[];
   responsavel: string | null;
   fonte: string;
+  campaign_id: string | null;
+  campaign_slug: string | null;
+  campaign_name: string | null;
 }
 
 export interface ResultadoDiagnostico {

@@ -22,6 +22,9 @@ function transformLead(row: any): Lead {
     historico: (row.historico as HistoricoItem[]) || [],
     responsavel: row.responsavel || null,
     fonte: row.fonte || "inbound",
+    campaign_id: row.campaign_id || null,
+    campaign_slug: row.campaign_slug || null,
+    campaign_name: row.campaign_name || null,
   };
 }
 

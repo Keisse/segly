@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useLead, useAddNote, useUpdateLeadStatus } from "@/hooks/useLeads";
+import { useLeadCampaignResponses } from "@/hooks/useCampaigns";
 import { useAuth } from "@/hooks/useAuth";
 import {
   statusLabels,
@@ -51,6 +52,7 @@ const LeadDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: lead, isLoading } = useLead(id || "");
+  const { data: campaignResponses = [] } = useLeadCampaignResponses(id || "");
   const addNote = useAddNote();
   const updateStatus = useUpdateLeadStatus();
   const [newNote, setNewNote] = useState("");
@@ -319,6 +321,58 @@ const LeadDetail = () => {
 
         {/* Sales Intelligence Section */}
         <SalesIntelligenceSection lead={lead} />
+
+        {/* Campaign Origin & Responses */}
+        {(lead.campaign_name || campaignResponses.length > 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="glass-card p-6 space-y-4"
+          >
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Campanha de Origem</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {lead.campaign_name || "—"}
+                {lead.campaign_slug && (
+                  <a
+                    href={`/c/${lead.campaign_slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-2 text-primary hover:underline text-xs"
+                  >
+                    /c/{lead.campaign_slug}
+                  </a>
+                )}
+              </p>
+            </div>
+
+            {campaignResponses.length > 0 && (
+              <div className="space-y-3 pt-3 border-t border-border/50">
+                <h3 className="text-sm font-semibold">Respostas</h3>
+                {Object.entries(
+                  campaignResponses.reduce((acc: Record<string, any[]>, r: any) => {
+                    const cat = r.question?.category || "Geral";
+                    (acc[cat] = acc[cat] || []).push(r);
+                    return acc;
+                  }, {})
+                ).map(([cat, items]) => (
+                  <div key={cat} className="space-y-2">
+                    <p className="text-xs font-medium text-primary">{cat}</p>
+                    {(items as any[]).map((r: any) => (
+                      <div key={r.id} className="bg-secondary/30 rounded-lg p-3">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {r.question?.question_text || "—"}
+                        </p>
+                        <p className="text-sm text-foreground">{r.answer_text || "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* Notes Section */}
         <motion.div

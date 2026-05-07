@@ -14,6 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_questions: {
+        Row: {
+          campaign_id: string
+          category: string | null
+          created_at: string
+          id: string
+          is_required: boolean
+          options: Json
+          question_text: string
+          question_type: Database["public"]["Enums"]["campaign_question_type"]
+          scale_max: number | null
+          scale_min: number | null
+          sort_order: number
+        }
+        Insert: {
+          campaign_id: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          options?: Json
+          question_text: string
+          question_type?: Database["public"]["Enums"]["campaign_question_type"]
+          scale_max?: number | null
+          scale_min?: number | null
+          sort_order?: number
+        }
+        Update: {
+          campaign_id?: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          options?: Json
+          question_text?: string
+          question_type?: Database["public"]["Enums"]["campaign_question_type"]
+          scale_max?: number | null
+          scale_min?: number | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_questions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_responses: {
+        Row: {
+          answer_text: string | null
+          answer_value: number | null
+          campaign_id: string
+          created_at: string
+          id: string
+          lead_id: string
+          question_id: string
+        }
+        Insert: {
+          answer_text?: string | null
+          answer_value?: number | null
+          campaign_id: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          question_id: string
+        }
+        Update: {
+          answer_text?: string | null
+          answer_value?: number | null
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_responses_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_responses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_responses_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          optin_fields: Json
+          public_subtitle: string | null
+          public_title: string | null
+          slug: string
+          status: Database["public"]["Enums"]["campaign_status"]
+          tag: string | null
+          thank_you_message: string | null
+          type: Database["public"]["Enums"]["campaign_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          optin_fields?: Json
+          public_subtitle?: string | null
+          public_title?: string | null
+          slug: string
+          status?: Database["public"]["Enums"]["campaign_status"]
+          tag?: string | null
+          thank_you_message?: string | null
+          type?: Database["public"]["Enums"]["campaign_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          optin_fields?: Json
+          public_subtitle?: string | null
+          public_title?: string | null
+          slug?: string
+          status?: Database["public"]["Enums"]["campaign_status"]
+          tag?: string | null
+          thank_you_message?: string | null
+          type?: Database["public"]["Enums"]["campaign_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       knowledge_base: {
         Row: {
           content: string | null
@@ -90,6 +246,9 @@ export type Database = {
       }
       leads: {
         Row: {
+          campaign_id: string | null
+          campaign_name: string | null
+          campaign_slug: string | null
           cargo: string
           created_at: string
           departamento: string
@@ -107,6 +266,9 @@ export type Database = {
           telefone: string
         }
         Insert: {
+          campaign_id?: string | null
+          campaign_name?: string | null
+          campaign_slug?: string | null
           cargo: string
           created_at?: string
           departamento: string
@@ -124,6 +286,9 @@ export type Database = {
           telefone: string
         }
         Update: {
+          campaign_id?: string | null
+          campaign_name?: string | null
+          campaign_slug?: string | null
           cargo?: string
           created_at?: string
           departamento?: string
@@ -140,7 +305,15 @@ export type Database = {
           status?: string
           telefone?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       question_sets: {
         Row: {
@@ -212,6 +385,17 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      campaign_question_type:
+        | "multiple_choice"
+        | "checkbox"
+        | "scale"
+        | "short_text"
+        | "long_text"
+        | "yes_no"
+        | "dropdown"
+        | "nps"
+      campaign_status: "ativa" | "inativa"
+      campaign_type: "diagnostico_score" | "formulario_captura" | "pesquisa"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -340,6 +524,18 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      campaign_question_type: [
+        "multiple_choice",
+        "checkbox",
+        "scale",
+        "short_text",
+        "long_text",
+        "yes_no",
+        "dropdown",
+        "nps",
+      ],
+      campaign_status: ["ativa", "inativa"],
+      campaign_type: ["diagnostico_score", "formulario_captura", "pesquisa"],
     },
   },
 } as const
