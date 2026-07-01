@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Lock, Mail, ArrowRight, Loader2 } from "lucide-react";
-import allevoLogo from "@/assets/allevo-logo.png";
+import seglyLogoAsset from "@/assets/segly-logo.png.asset.json";
+const seglyLogo = seglyLogoAsset.url;
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -42,8 +43,8 @@ const AdminLogin = () => {
         <div className="glass-card p-8">
           <div className="text-center mb-8">
             <img
-              src={allevoLogo}
-              alt="Allevo for Business"
+              src={seglyLogo}
+              alt="Segly"
               className="h-10 mx-auto mb-6"
             />
             <h1 className="text-2xl font-display font-bold text-foreground mb-2">
