@@ -19,7 +19,7 @@ const seglyLogo = seglyLogoAsset.url;
 const items = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Pipeline", url: "/admin/kanban", icon: KanbanSquare },
-  { title: "Alterar campanhas", url: "/admin/campanhas", icon: Megaphone },
+  { title: "Criar campanhas", url: "/admin/campanhas", icon: Megaphone },
   { title: "Base de Conhecimento", url: "/admin/base-conhecimento", icon: BookOpen },
   { title: "Administradores", url: "/admin/administradores", icon: Users },
 ];
