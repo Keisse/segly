@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import allevoLogo from "@/assets/allevo-logo.png";
+import seglyLogoAsset from "@/assets/segly-logo.png.asset.json";
+const seglyLogo = seglyLogoAsset.url;
 
 const items = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
@@ -38,7 +39,7 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="p-4 flex items-center justify-center border-b border-sidebar-border">
-          <img src={allevoLogo} alt="Allevo" className={collapsed ? "h-6" : "h-8"} />
+          <img src={seglyLogo} alt="Segly" className={collapsed ? "h-6" : "h-8"} />
         </div>
         <SidebarGroup>
           <SidebarGroupLabel>Painel</SidebarGroupLabel>
