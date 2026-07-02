@@ -1,4 +1,5 @@
-import { LayoutDashboard, KanbanSquare, Megaphone, BookOpen, Users, LogOut, Compass } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Megaphone, BookOpen, Users, LogOut } from "lucide-react";
+import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {

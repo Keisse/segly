@@ -1,4 +1,4 @@
-import { Compass } from "lucide-react";
+import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import {
   Dialog,
   DialogContent,
