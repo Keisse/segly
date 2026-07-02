@@ -17,6 +17,9 @@ export interface Lead {
   campaign_id: string | null;
   campaign_slug: string | null;
   campaign_name: string | null;
+  owner_id: string | null;
+  pipeline_id: string | null;
+  stage_id: string | null;
 }
 
 export interface ResultadoDiagnostico {

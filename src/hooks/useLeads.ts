@@ -25,6 +25,9 @@ function transformLead(row: any): Lead {
     campaign_id: row.campaign_id || null,
     campaign_slug: row.campaign_slug || null,
     campaign_name: row.campaign_name || null,
+    owner_id: row.owner_id || null,
+    pipeline_id: row.pipeline_id || null,
+    stage_id: row.stage_id || null,
   };
 }
 
