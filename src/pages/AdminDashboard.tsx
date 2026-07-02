@@ -1,10 +1,19 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, UserPlus, Calendar, TrendingUp } from "lucide-react";
+import { Users, UserPlus, Calendar, TrendingUp, CalendarIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useDashboardMetrics } from "@/hooks/useLeads";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import MetricCard from "@/components/admin/MetricCard";
