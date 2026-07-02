@@ -15,7 +15,7 @@ export function fireConfetti(stageName?: string) {
   confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
   setTimeout(() => confetti({ particleCount: 80, spread: 100, origin: { x: 0.2, y: 0.7 } }), 200);
   setTimeout(() => confetti({ particleCount: 80, spread: 100, origin: { x: 0.8, y: 0.7 } }), 400);
-  if (stageName) toast.success(`🎉 Etapa "${stageName}" concluída!`);
+  toast.success("🎉 Novo cliente ganho!");
 }
 
 type Payload = {
