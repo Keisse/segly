@@ -36,10 +36,8 @@ export function PrincipioDoDiaDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-w-md p-0 overflow-hidden border-none bg-transparent shadow-none"
-        showCloseButton={false}
-      >
+      <DialogContent className="max-w-md p-0 overflow-hidden border-none bg-transparent shadow-none [&>button]:hidden">
+
         <div className="relative rounded-2xl bg-card border border-border shadow-2xl p-6 pt-8 text-center">
           <button
             onClick={() => onOpenChange(false)}
