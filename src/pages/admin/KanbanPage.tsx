@@ -69,8 +69,6 @@ const KanbanPage = () => {
     const next = new URLSearchParams(searchParams);
     next.set("pipeline", id);
     setSearchParams(next);
-    setPopOpen(false);
-    setQuery("");
   };
 
   return (
@@ -80,81 +78,12 @@ const KanbanPage = () => {
         <p className="text-sm text-muted-foreground">Arraste os cards entre etapas para movê-los.</p>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <Popover open={popOpen} onOpenChange={setPopOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="justify-between min-w-[240px]" disabled={loadingPipelines}>
-              <span className="inline-flex items-center gap-2 truncate">
-                {selected ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: selected.cor ?? "#1D9E75" }} />
-                    <span className="truncate">{selected.nome}</span>
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">Selecionar pipeline</span>
-                )}
-              </span>
-              <ChevronDown className="w-4 h-4 opacity-60 ml-2 shrink-0" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="p-0 w-[280px]">
-            {pipelines.length > 8 && (
-              <div className="p-2 border-b border-border">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    autoFocus
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Buscar pipeline…"
-                    className="h-8 pl-7 text-sm"
-                  />
-                </div>
-              </div>
-            )}
-            <div className="max-h-72 overflow-auto py-1">
-              {loadingPipelines ? (
-                <p className="px-3 py-4 text-xs text-muted-foreground">Carregando…</p>
-              ) : filtered.length === 0 ? (
-                <p className="px-3 py-6 text-xs text-center text-muted-foreground">
-                  {pipelines.length === 0 ? "Nenhum pipeline disponível." : "Nenhum resultado."}
-                </p>
-              ) : (
-                filtered.map((p) => {
-                  const active = p.id === activePipelineId;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => selectPipeline(p.id)}
-                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-muted/60 transition-colors ${active ? "bg-muted/40 font-medium" : ""}`}
-                    >
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.cor ?? "#1D9E75" }} />
-                      <span className="truncate">{p.nome}</span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
-        {isAdmin && (
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-1" /> Novo pipeline
-              </Button>
-            </DialogTrigger>
-            <CreatePipelineDialog
-              onCreated={(id) => {
-                setCreateOpen(false);
-                const next = new URLSearchParams(searchParams);
-                next.set("pipeline", id);
-                setSearchParams(next);
-              }}
-            />
-          </Dialog>
-        )}
-      </div>
+      <PipelineTabs
+        pipelines={pipelines}
+        activeId={activePipelineId}
+        onSelect={selectPipeline}
+      />
+
 
       {!activePipelineId ? (
         <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p>
