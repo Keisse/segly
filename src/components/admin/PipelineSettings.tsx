@@ -100,27 +100,22 @@ export function PipelineSettings() {
       }
       for (let i = 0; i < draft.length; i++) {
         const s = draft[i];
+        const payload = {
+          pipeline_id: selectedId,
+          nome: s.nome,
+          cor: s.cor,
+          ordem: i,
+          wip_limit: s.wip_limit,
+          is_won: s.is_won,
+          is_lost: s.is_lost,
+          celebrate_enabled: s.celebrate_enabled,
+          celebrate_type: s.celebrate_type,
+          celebrate_audience: s.celebrate_audience,
+        };
         if (s._new) {
-          await upsertStage.mutateAsync({
-            pipeline_id: selectedId,
-            nome: s.nome,
-            cor: s.cor,
-            ordem: i,
-            wip_limit: s.wip_limit,
-            is_won: s.is_won,
-            is_lost: s.is_lost,
-          });
+          await upsertStage.mutateAsync(payload);
         } else if (s._dirty || s.ordem !== i) {
-          await upsertStage.mutateAsync({
-            id: s.id,
-            pipeline_id: selectedId,
-            nome: s.nome,
-            cor: s.cor,
-            ordem: i,
-            wip_limit: s.wip_limit,
-            is_won: s.is_won,
-            is_lost: s.is_lost,
-          });
+          await upsertStage.mutateAsync({ id: s.id, ...payload });
         }
       }
       setRemoved([]);
@@ -132,7 +127,26 @@ export function PipelineSettings() {
     }
   };
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">Carregando pipelines…</p>;
+  const { data: role, isLoading: roleLoading } = useMyRole();
+  const isAdmin = role === "admin";
+
+  if (isLoading || roleLoading) return <p className="text-sm text-muted-foreground">Carregando pipelines…</p>;
+
+  if (!isAdmin) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Lock className="w-5 h-5 text-muted-foreground" />
+            <CardTitle>Permissão insuficiente</CardTitle>
+          </div>
+          <CardDescription>
+            Apenas administradores podem criar, editar ou excluir pipelines e etapas. Peça a um administrador da sua organização para ajustar esta configuração.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
