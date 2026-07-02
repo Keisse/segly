@@ -7,7 +7,7 @@ import {
   LogOut,
   Users,
   Handshake,
-  UserCircle,
+  Settings,
   Settings,
   Compass,
 } from "lucide-react";
