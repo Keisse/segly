@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, Search, Plus, Mail, MessageCircle, User } from "lucide-react";
+import { ChevronDown, Search, Plus, PartyPopper, Mail, MessageCircle, User } from "lucide-react";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { capitalizeWords } from "@/lib/formatName";
 import { CreatePipelineDialog } from "@/components/admin/PipelineSettings";
