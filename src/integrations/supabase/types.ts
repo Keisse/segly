@@ -803,6 +803,7 @@ export type Database = {
           estado: string | null
           genero: string | null
           id: string
+          is_active: boolean
           lider_id: string | null
           numero: string | null
           organization_id: string | null
@@ -827,6 +828,7 @@ export type Database = {
           estado?: string | null
           genero?: string | null
           id: string
+          is_active?: boolean
           lider_id?: string | null
           numero?: string | null
           organization_id?: string | null
@@ -851,6 +853,7 @@ export type Database = {
           estado?: string | null
           genero?: string | null
           id?: string
+          is_active?: boolean
           lider_id?: string | null
           numero?: string | null
           organization_id?: string | null
@@ -941,7 +944,19 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_lider: { Args: never; Returns: boolean }
+      list_org_members: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          email: string
+          id: string
+          is_active: boolean
+        }[]
+      }
       my_org: { Args: never; Returns: string }
+      same_org: { Args: { _user_id: string }; Returns: boolean }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user" | "lider" | "moderator"
