@@ -1,4 +1,4 @@
-import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
+import { Compass } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ export function NossoPropositoDialog({ open, onOpenChange }: NossoPropositoDialo
               className="flex items-center justify-center h-14 w-14 rounded-full mx-auto"
               style={{ backgroundColor: "rgba(47, 177, 132, 0.1)" }}
             >
-              <PrayingHandsIcon size={28} strokeWidth={1.75} style={{ color: "#2FB184" }} />
+              <Compass size={28} strokeWidth={1.75} style={{ color: "#2FB184" }} />
             </div>
             <DialogTitle className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
               Mais do que organizar vendas
