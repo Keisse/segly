@@ -220,12 +220,12 @@ export function PipelineSettings() {
         <Card>
           <CardHeader>
             <CardTitle>Etapas de "{selected.nome}"</CardTitle>
-            <CardDescription>Ordene, edite cor, limite WIP e marque etapas como Ganho/Perdido. Clique em Salvar para aplicar.</CardDescription>
+            <CardDescription>Ordene, edite cor, ative celebração e defina o público. Clique em Salvar para aplicar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {draft.map((s, i) => (
               <div key={s.id} className="rounded-md border border-border">
-                <div className="flex items-center gap-2 p-2">
+                <div className="flex items-center gap-2 p-2 flex-wrap">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
                   <input
                     type="color"
@@ -233,70 +233,27 @@ export function PipelineSettings() {
                     onChange={(e) => patch(s.id, { cor: e.target.value })}
                     className="h-8 w-10 rounded border border-border bg-transparent"
                   />
-                  <Input className="flex-1" value={s.nome} onChange={(e) => patch(s.id, { nome: e.target.value })} />
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="WIP"
-                    className="w-20"
-                    value={s.wip_limit ?? ""}
-                    onChange={(e) => patch(s.id, { wip_limit: e.target.value ? Number(e.target.value) : null })}
-                  />
-                  <label className="flex items-center gap-1 text-xs">
-                    <input type="checkbox" checked={s.is_won} onChange={(e) => patch(s.id, { is_won: e.target.checked, is_lost: e.target.checked ? false : s.is_lost })} />
-                    Ganho
+                  <Input className="flex-1 min-w-[160px]" value={s.nome} onChange={(e) => patch(s.id, { nome: e.target.value })} />
+                  <label className="flex items-center gap-2 text-xs px-2 py-1 rounded border border-border">
+                    <PartyPopper className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-muted-foreground">Celebração</span>
+                    <Switch
+                      checked={s.celebrate_enabled}
+                      onCheckedChange={(v) => patch(s.id, { celebrate_enabled: v, celebrate_type: "confetti" })}
+                    />
                   </label>
-                  <label className="flex items-center gap-1 text-xs">
-                    <input type="checkbox" checked={s.is_lost} onChange={(e) => patch(s.id, { is_lost: e.target.checked, is_won: e.target.checked ? false : s.is_won })} />
-                    Perdido
-                  </label>
+                  <Select value={s.celebrate_audience} onValueChange={(v) => patch(s.id, { celebrate_audience: v as CelebrateAudience })}>
+                    <SelectTrigger className="w-[190px] h-9"><SelectValue placeholder="Exibir para" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="owner">Responsável pelo lead</SelectItem>
+                      <SelectItem value="team">Toda a equipe</SelectItem>
+                      <SelectItem value="admins">Somente administradores</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Button size="icon" variant="ghost" onClick={() => move(i, -1)} disabled={i === 0}><ArrowUp className="w-4 h-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => move(i, 1)} disabled={i === draft.length - 1}><ArrowDown className="w-4 h-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => remove(s.id)}><Trash2 className="w-4 h-4" /></Button>
                 </div>
-                <Collapsible>
-                  <CollapsibleTrigger asChild>
-                    <button className="flex items-center gap-2 w-full px-3 py-2 border-t border-border text-xs text-muted-foreground hover:text-foreground transition-colors">
-                      <PartyPopper className="w-3.5 h-3.5" />
-                      Celebração ao concluir etapa
-                      {s.celebrate_enabled && <span className="ml-1 px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-medium">ATIVA</span>}
-                      <ChevronDown className="w-3.5 h-3.5 ml-auto" />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="px-3 pb-3 pt-1 space-y-3 bg-muted/20">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">Ativar celebração nesta etapa</p>
-                        <p className="text-xs text-muted-foreground">Dispara ao mover uma oportunidade para cá.</p>
-                      </div>
-                      <Switch checked={s.celebrate_enabled} onCheckedChange={(v) => patch(s.id, { celebrate_enabled: v })} />
-                    </div>
-                    {s.celebrate_enabled && (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Tipo de celebração</Label>
-                          <Select value={s.celebrate_type} onValueChange={(v) => patch(s.id, { celebrate_type: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="confetti">Chuva de confete</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Exibir para</Label>
-                          <Select value={s.celebrate_audience} onValueChange={(v) => patch(s.id, { celebrate_audience: v as CelebrateAudience })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="owner">Responsável pelo lead</SelectItem>
-                              <SelectItem value="team">Toda a equipe</SelectItem>
-                              <SelectItem value="admins">Somente administradores</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                  </CollapsibleContent>
-                </Collapsible>
               </div>
             ))}
             <Button variant="outline" onClick={addStage}><Plus className="w-4 h-4 mr-1" /> Adicionar etapa</Button>
