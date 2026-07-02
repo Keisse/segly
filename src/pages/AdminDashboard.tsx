@@ -79,6 +79,48 @@ const AdminDashboard = () => {
     thisMonth: filteredLeads.filter((l) => new Date(l.created_at) >= monthStart).length,
   }), [filteredLeads, todayStart, weekStart, monthStart]);
 
+  const setQuickPeriod = (days: number) => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    setFilters({ ...filters, startDate, endDate });
+  };
+
+  const setCurrentMonth = () => {
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    setFilters({ ...filters, startDate, endDate });
+  };
+
+  const isPeriodActive = (days: number) => {
+    if (!filters.startDate || !filters.endDate) return false;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    return (
+      format(filters.startDate, "yyyy-MM-dd") === format(startDate, "yyyy-MM-dd") &&
+      format(filters.endDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
+    );
+  };
+
+  const isCurrentMonthActive = () => {
+    if (!filters.startDate || !filters.endDate) return false;
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return (
+      format(filters.startDate, "yyyy-MM-dd") === format(startDate, "yyyy-MM-dd") &&
+      format(filters.endDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
+    );
+  };
+
+  const hasDateFilters = filters.startDate || filters.endDate;
+
+  const clearDateFilters = () => {
+    setFilters({ ...filters, startDate: undefined, endDate: undefined });
+  };
+
   return (
     <div className="py-6 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
