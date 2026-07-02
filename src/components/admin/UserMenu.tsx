@@ -36,6 +36,8 @@ export function UserMenu() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string>("");
+  const [principleOpen, setPrincipleOpen] = useState(false);
+
 
   useEffect(() => {
     if (!user?.id) return;
@@ -110,17 +112,23 @@ export function UserMenu() {
           </div>
         </div>
         <Separator />
-        <div className="p-4 space-y-1">
-          <div className="flex items-center gap-2">
-            <CircleDot className="h-4 w-4 text-emerald-500" />
-            <span className="font-semibold">Online</span>
+        <button
+          onClick={() => {
+            setOpen(false);
+            setPrincipleOpen(true);
+          }}
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent transition text-left"
+        >
+          <Sparkles className="h-4 w-4 text-primary" />
+          <div className="flex-1">
+            <p className="font-medium leading-tight">Princípio do dia</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Abra seu biscoito da sorte de hoje.
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Ficar Offline impede receber novas conversas automaticamente. Suas
-            conversas atuais continuam abertas.
-          </p>
-        </div>
+        </button>
         <Separator />
+
         <button
           onClick={() => {
             setOpen(false);
