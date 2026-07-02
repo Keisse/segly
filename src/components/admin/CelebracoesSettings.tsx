@@ -31,13 +31,7 @@ const DEFAULT_CFG: CelebrationsCfg = {
   show_leaderboard: true,
   leaderboard_period: "monthly",
   message_template: "🎉 Parabéns, {nome}! Você acabou de {acao}.",
-  triggers: [
-    { key: "first_lead", label: "Primeiro lead cadastrado", description: "Ao registrar o primeiro lead do usuário.", enabled: true },
-    { key: "deal_won", label: "Negócio ganho", description: "Sempre que um lead é movido para a etapa 'Ganho'.", enabled: true },
-    { key: "monthly_goal", label: "Meta mensal atingida", description: "Ao bater a meta do mês definida na pipeline.", enabled: true },
-    { key: "streak_5", label: "5 contatos consecutivos", description: "Ao completar 5 interações sem interrupção.", enabled: false },
-    { key: "recovered_lead", label: "Lead recuperado", description: "Quando um lead frio volta a avançar de etapa.", enabled: true },
-  ],
+  triggers: [],
 };
 
 export function CelebracoesSettings() {
