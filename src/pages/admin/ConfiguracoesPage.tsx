@@ -392,7 +392,10 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
         </CardContent>
       </Card>
 
+      <PrincipiosLibrarySection />
+
       <div className="flex justify-end sticky bottom-4">
+
         <Button onClick={save} disabled={!dirty || saving} className="shadow-lg">
           {saving ? (
             <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando…</>
