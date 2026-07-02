@@ -1,82 +1,67 @@
+# Múltiplos Pipelines — Configurações ↔ Página Pipelines
 
-# Plano — Área de Configurações do Segly
+## Análise do estado atual
 
-O escopo é grande e envolve backend (várias tabelas novas, RLS, storage, eventos centrais), frontend (5 abas ricas com CRUD, drag-and-drop, campos personalizados, editor de automações) e um componente global de celebração. Para entregar com qualidade e sem quebrar o Segly atual, proponho dividir em **4 fases sequenciais**, cada uma testável e "shippable".
+- **Configurações > Pipeline** (`src/components/admin/PipelineSettings.tsx`): salva um único conjunto de etapas no JSON `organization_settings.settings.pipeline` (campos: `stages[]`, `default_stage_id`, `rotting_days`, `auto_move_days`, `require_reason_on_lost`). Não existe entidade "pipeline" no banco — apenas etapas soltas.
+- **Página Pipelines** (`src/pages/admin/KanbanPage.tsx`): usa um enum fixo hardcoded (`novo`, `em_analise`, `contatado`, `em_negociacao`, `convertido`, `perdido`) através de `LeadStatus` em `src/types/lead.ts`. Não lê as etapas configuradas — ou seja, hoje Configurações > Pipeline **já está desconectada** do Kanban.
+- **Leads** (`public.leads`): coluna `status` (enum `LeadStatus`), sem `pipeline_id` nem `stage_id`.
 
-## Visão geral da arquitetura
+## Riscos para os leads atuais
 
-- **Multi-tenant leve**: já existe `profiles` com `lider_id`. Vou introduzir `organization_id` (uuid) em `profiles` e nas tabelas de configuração, para que cada empresa tenha suas próprias regras. Para os usuários já existentes, uma organização padrão será criada.
-- **Acesso**: rota `/admin/configuracoes` envolvida em `AdminOnlyRoute` (já existe). Backend com RLS `is_admin() AND organization_id = my_org()`. Página de "Acesso negado" reaproveitável.
-- **Eventos centrais**: qualquer mudança de etapa de lead dispara `lead_won` / `lead_lost` via classificação `open|won|lost` da etapa — nunca pelo nome da coluna. Ponte no `useLeads` (mutação de etapa) + trigger DB que insere em `event_log`.
-- **Componente global de celebração**: `<CelebrationHost/>` montado no `AdminLayout`, escuta um `celebrationBus` (event emitter) alimentado pelos eventos `lead_won` / `sale_completed`. Confetes via `canvas-confetti`.
-- **Auditoria**: tabela `audit_log` (quem, quando, o quê, valor anterior/novo) para mudanças administrativas.
+1. `leads.status` é um enum aplicado em várias telas (Dashboard, LeadsTable, LeadDetail, Kanban, filtros, métricas). Trocar por FK para `pipeline_stages` quebra tudo se feito de uma vez.
+2. Kanban legado depende do enum fixo — migrar os cards para etapas dinâmicas exige adaptar drag-and-drop, cores e labels.
+3. Métricas do Dashboard agregam por `status`; se mudarmos a fonte, os gráficos precisam apontar para a nova coluna.
 
-## Fase 1 — Fundamentos e Aba Geral
+Estratégia para mitigar: **manter `leads.status` intacto como fallback** e adicionar colunas novas (`pipeline_id`, `stage_id`) opcionais. O Kanban passa a ler `stage_id` quando existir; leads antigos continuam funcionando via mapeamento do `status` para o pipeline padrão "Comercial".
 
-1. Migração:
-   - `organizations` (nome, e-mail, telefone, cidade, uf, fuso, logo_url, defaults)
-   - `organization_id` em `profiles`, `leads`, `campaigns`, `clientes` (nullable + backfill p/ uma org padrão)
-   - `organization_settings` (jsonb: notificações, responsável padrão, dias sem interação, histórico ativo)
-   - `audit_log`
-   - Funções `my_org()`, RLS em todas as novas tabelas, GRANTs
-   - Bucket público `organization-logos`
-2. Página `/admin/configuracoes` refatorada com header, subtítulo, `Tabs` responsivas, prompt "alterações não salvas" via hook `useUnsavedChanges` + `beforeunload` + bloqueio de navegação React Router.
-3. Aba **Geral** completa (dados da empresa, upload de logo, preferências, notificações gerais), botão Salvar, toasts sonner.
+## Modelo de dados (novo)
 
-## Fase 2 — Pipelines (estrutural)
+**`public.pipelines`**
+- `organization_id` (FK), `nome`, `descricao`, `cor`, `ativo`, `arquivado`, `ordem`, `is_default`
 
-1. Migração:
-   - `pipelines` (nome, descrição, ícone, is_default, is_archived, org_id)
-   - `pipeline_stages` (pipeline_id, nome, descrição, cor, ordem, `status_class` ENUM `open|won|lost`, is_archived)
-   - `pipeline_access` (pipeline_id, role/user_id/lider_id)
-   - `custom_fields` (pipeline_id, stage_id?, tipo, label, obrigatório em open/won/lost)
-   - `lead_stage_history` (lead_id, from_stage, to_stage, changed_by, at)
-   - Adaptar `leads.stage_id` (nova coluna, backfill), manter `status` legada por compatibilidade
-   - Trigger que grava em `lead_stage_history` e insere `event_log` `lead_won`/`lead_lost` conforme `status_class` da nova etapa
-2. UI Aba **Configurações de Pipeline**:
-   - Aviso explicativo (diferença de Pipelines do menu)
-   - Lista de pipelines (criar, editar, arquivar, definir padrão, duplicar, gerenciar acesso)
-   - Editor de etapas com drag-and-drop (`@dnd-kit`), cor, classificação
-   - Modal de confirmação ao classificar como Ganho/Perdido
-   - Editor de campos personalizados e obrigatoriedade por status
-   - Bloqueio de exclusão quando há leads (apenas arquivar)
-3. Ajustar `KanbanPage` para ler `pipeline_stages` (mantendo fallback para o Kanban atual).
+**`public.pipeline_stages`**
+- `pipeline_id` (FK, cascade), `nome`, `cor`, `ordem`, `wip_limit`, `is_won`, `is_lost`
 
-## Fase 3 — Celebrações e componente global
+**`public.leads`** (novas colunas nullable)
+- `pipeline_id` (FK → pipelines, set null)
+- `stage_id` (FK → pipeline_stages, set null)
+- CHECK/trigger: `stage.pipeline_id = lead.pipeline_id`
 
-1. Migração: `celebration_settings` (org_id, enabled, on_won, on_sale, intensity `discreta|padrao|comemorativa|off`).
-2. `celebrationBus` (event emitter) + `<CelebrationHost/>` global no `AdminLayout` com `canvas-confetti` (dependência nova).
-3. Hook `useCelebrate()` para telas dispararem eventos sem lógica local.
-4. Ligação com o trigger DB: `useLeads` observa mutação de etapa; ao receber resposta `won/lost`, chama `celebrate('lead_won')`.
-5. Guarda anti-duplicação: só celebra na *transição* real; se o lead já estava won, não celebra novamente (verificação pelo `lead_stage_history`).
-6. UI da aba com switches, seletor de intensidade, botão "Testar comemoração" e nota informativa.
+Todas com RLS por `organization_id` reutilizando `my_org()` / `has_role()`, e GRANTs para `authenticated` + `service_role`.
 
-## Fase 4 — Automações e Integrações
+## Migração dos dados
 
-1. Migração:
-   - `automations` (org_id, nome, status `active|paused|archived`, trigger jsonb, conditions jsonb, actions jsonb, criado_por)
-   - `automation_runs` (automation_id, lead_id, ações executadas, resultado, at)
-2. UI Aba **Automações**:
-   - Lista com filtros e status
-   - Wizard "Quando → Se → Então" com selects de gatilhos, condições e ações listadas no briefing
-   - Ativar / pausar / duplicar / testar / arquivar
-   - Histórico de execuções
-3. Executor server-side simples via edge function `run-automations`, chamada por trigger DB quando `event_log` recebe novo evento (`lead_created`, `lead_won`, etc.). Loop-guard: cada `automation_run` marca `lead_id + automation_id + event_id` (unique) para não repetir.
-4. Aba **Integrações**: já existe o placeholder — nesta fase apenas listar webhooks configuráveis por org (`integrations` table: nome, url, eventos assinados, secret). Envio real reaproveita `send-webhook` edge function.
+1. Criar pipeline padrão **"Comercial"** por organização existente (`is_default=true`).
+2. Se `organization_settings.settings.pipeline.stages` existir, migrar essas etapas como `pipeline_stages` do pipeline "Comercial". Caso contrário, semear com: Novo → Em contato → Qualificação → Proposta → Negociação → Ganho → Perdido.
+3. Backfill dos leads: `pipeline_id` = pipeline padrão da org; `stage_id` = mapear pelo `status` atual (novo→Novo, contatado→Em contato, em_negociacao→Negociação, convertido→Ganho, perdido→Perdido, em_analise→Qualificação).
+4. `leads.status` continua existindo e sincroniza via trigger quando `stage_id` muda (won/lost/generic).
 
-## Detalhes técnicos
+## Alterações no frontend
 
-- Novas dependências: `canvas-confetti`, `@dnd-kit/core`, `@dnd-kit/sortable`.
-- Formulários com `react-hook-form` + `zod` (já em uso no projeto).
-- Toasts: `sonner`.
-- Estado servidor: `@tanstack/react-query` (padrão do projeto).
-- Nenhuma alteração em `client.ts`, `types.ts` ou `.env`.
-- Rota já existente `/admin/configuracoes` continua a mesma; nada de breaking change no Kanban / Leads (colunas legadas mantidas até a migração ser 100% adotada).
+**`PipelineSettings.tsx`** — evoluir (não recriar):
+- Adicionar seletor de pipeline no topo + botões "Novo pipeline", renomear, duplicar, arquivar, excluir.
+- Modal "Novo pipeline" (nome, descrição, cor, checkbox "criar com etapas padrão").
+- CRUD de etapas passa a operar sobre `pipeline_stages` do pipeline selecionado (não mais no JSON).
+- Manter cards "Regras da pipeline" (rotting_days, auto_move_days, require_reason_on_lost) por pipeline.
+- Regras: não excluir último pipeline ativo; ao excluir pipeline com leads, exigir confirmação e oferecer mover leads para outro pipeline.
 
-## O que preciso confirmar antes de começar
+**`KanbanPage.tsx`** — evoluir:
+- Barra de abas horizontal (scroll horizontal) listando pipelines ativos + botão "+ Novo pipeline" (leva a Configurações).
+- Ler `?pipeline=<id>` da URL; default = primeiro ativo por `ordem`.
+- Colunas geradas dinamicamente a partir de `pipeline_stages` do pipeline ativo (cor, WIP, labels).
+- Drag-and-drop atualiza `leads.stage_id` (e sincroniza `status` via trigger). Só permite mover entre etapas do pipeline ativo.
+- Cards mostram apenas leads com `pipeline_id` = ativo.
 
-1. **Fase 1 primeiro (Geral + fundação multi-tenant)** e seguirmos incrementalmente por chat? Recomendo fortemente — o escopo total é grande demais para uma única entrega segura.
-2. **Organização única padrão** para todos os usuários atuais (podemos separar por cliente depois) — ok?
-3. Aba **Integrações**: no briefing só é citada na lista, sem requisitos detalhados. Posso manter o placeholder atual na Fase 1 e implementar webhooks básicos na Fase 4 — confirma?
+**Novos hooks**: `usePipelines`, `usePipeline(id)`, `usePipelineStages(pipelineId)`, `useUpdateLeadStage`, `useMovePipelineLeads`.
 
-Aprovando, começo imediatamente pela **Fase 1**.
+**Sidebar**: link "Pipelines" continua apontando para `/admin/kanban` (sem mudar rota agora para evitar quebrar bookmarks; podemos renomear depois se você quiser `/admin/pipelines`).
+
+## Plano de implementação (em etapas)
+
+1. **Migração SQL**: criar `pipelines` + `pipeline_stages` + colunas em `leads` + RLS + GRANTs + trigger de sincronização stage↔status + backfill (pipeline "Comercial" por org e mapeamento dos leads).
+2. **Hooks e tipos**: `usePipelines`, `usePipelineStages`, `useUpdateLeadStage`, tipos TS.
+3. **PipelineSettings**: seletor + modal novo pipeline + CRUD ligado a `pipeline_stages` + arquivar/excluir com regras.
+4. **KanbanPage**: abas + colunas dinâmicas + URL param + drag-and-drop no `stage_id`.
+5. **Ajustes finos**: Dashboard/LeadsTable continuam com `status` (sem mudança); LeadDetail mostra etapa/pipeline atual.
+
+Depois da sua aprovação eu executo na ordem acima. Confirma?
