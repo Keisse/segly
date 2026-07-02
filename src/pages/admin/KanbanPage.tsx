@@ -1,17 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { usePipelines, usePipelineStages, useLeadsByPipeline, useUpdateLeadStage } from "@/hooks/usePipelines";
-import { useMyRole } from "@/hooks/useMyRole";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { ChevronDown, Search, Plus, PartyPopper, Mail, MessageCircle, User } from "lucide-react";
+import { PartyPopper, Mail, MessageCircle, User } from "lucide-react";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { capitalizeWords } from "@/lib/formatName";
-import { CreatePipelineDialog } from "@/components/admin/PipelineSettings";
+import { PipelineTabs } from "@/components/admin/PipelineTabs";
 
 type LeadRow = {
   id: string;
