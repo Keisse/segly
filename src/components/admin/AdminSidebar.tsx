@@ -99,21 +99,23 @@ export function AdminSidebar() {
                 {!collapsed && <span>Nosso Propósito</span>}
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <NavLink
-                  to="/admin/meu-perfil"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "hover:bg-sidebar-accent/50"
-                  }
-                >
-                  <UserCircle className="h-4 w-4" />
-                  {!collapsed && <span>Meu Perfil</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {isAdmin && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to="/admin/administradores"
+                    className={({ isActive }) =>
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "hover:bg-sidebar-accent/50"
+                    }
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    {!collapsed && <span>Usuários e Permissões</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             {isAdmin && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
