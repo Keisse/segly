@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { PrincipiosLibrarySection } from "@/components/admin/PrincipiosLibrarySection";
+import { PipelineSettings } from "@/components/admin/PipelineSettings";
+import { CelebracoesSettings } from "@/components/admin/CelebracoesSettings";
 
 
 const TIMEZONES = [
@@ -398,7 +400,7 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
 
       <div className="flex justify-end sticky bottom-4">
 
-        <Button onClick={save} disabled={!dirty || saving} className="shadow-lg">
+        <Button onClick={save} disabled={saving} className="shadow-lg">
           {saving ? (
             <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando…</>
           ) : (
@@ -458,16 +460,10 @@ const ConfiguracoesPage = () => {
           <GeralTab onDirtyChange={setDirty} />
         </TabsContent>
         <TabsContent value="pipeline" className="mt-4">
-          <ComingSoon
-            title="Configurações de Pipeline"
-            description="Aqui você define as regras e padrões das pipelines. Para acompanhar e movimentar oportunidades, acesse Pipelines no menu principal."
-          />
+          <PipelineSettings />
         </TabsContent>
         <TabsContent value="celebracoes" className="mt-4">
-          <ComingSoon
-            title="Celebrações e Reconhecimento"
-            description="Reconhecer conquistas ajuda a equipe a perceber progresso, manter a constância e celebrar resultados construídos com responsabilidade."
-          />
+          <CelebracoesSettings />
         </TabsContent>
         <TabsContent value="automacoes" className="mt-4">
           <ComingSoon
