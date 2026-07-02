@@ -8,7 +8,6 @@ import {
   Users,
   Handshake,
   Settings,
-  Settings,
   Compass,
 } from "lucide-react";
 import { useState } from "react";
