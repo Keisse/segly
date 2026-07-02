@@ -430,13 +430,24 @@ const ComingSoon = ({ title, description }: { title: string; description: string
 
 const ConfiguracoesPage = () => {
   const [dirty, setDirty] = useState(false);
-  const [tab, setTab] = useState("geral");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") ?? "geral";
+  const [tab, setTab] = useState(initialTab);
   const { confirmDiscard } = useUnsavedChanges(dirty);
+
+  useEffect(() => {
+    const q = searchParams.get("tab");
+    if (q && q !== tab) setTab(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const changeTab = (next: string) => {
     if (dirty && !confirmDiscard()) return;
     setDirty(false);
     setTab(next);
+    const p = new URLSearchParams(searchParams);
+    p.set("tab", next);
+    setSearchParams(p, { replace: true });
   };
 
   return (
