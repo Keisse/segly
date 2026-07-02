@@ -315,7 +315,7 @@ export function PipelineSettings() {
   );
 }
 
-function CreatePipelineDialog({ onCreated }: { onCreated: (id: string) => void }) {
+export function CreatePipelineDialog({ onCreated }: { onCreated: (id: string) => void }) {
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
   const [cor, setCor] = useState("#1D9E75");
