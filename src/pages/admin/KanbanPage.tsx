@@ -6,10 +6,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, Search, Settings2, PartyPopper, Mail, MessageCircle, User } from "lucide-react";
+import { ChevronDown, Search, Plus, PartyPopper, Mail, MessageCircle, User } from "lucide-react";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { capitalizeWords } from "@/lib/formatName";
+import { CreatePipelineDialog } from "@/components/admin/PipelineSettings";
 
 type LeadRow = {
   id: string;
@@ -50,6 +52,7 @@ const KanbanPage = () => {
   const [dragId, setDragId] = useState<string | null>(null);
 
   const [popOpen, setPopOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [query, setQuery] = useState("");
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -150,28 +153,33 @@ const KanbanPage = () => {
                 })
               )}
             </div>
-            {isAdmin && (
-              <div className="border-t border-border p-1">
-                <Link
-                  to="/admin/configuracoes?tab=pipeline"
-                  onClick={() => setPopOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded transition-colors"
-                >
-                  <Settings2 className="w-3.5 h-3.5" />
-                  Gerenciar pipelines
-                </Link>
-              </div>
-            )}
           </PopoverContent>
         </Popover>
+        {isAdmin && (
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Plus className="w-4 h-4 mr-1" /> Novo pipeline
+              </Button>
+            </DialogTrigger>
+            <CreatePipelineDialog
+              onCreated={(id) => {
+                setCreateOpen(false);
+                const next = new URLSearchParams(searchParams);
+                next.set("pipeline", id);
+                setSearchParams(next);
+              }}
+            />
+          </Dialog>
+        )}
       </div>
 
       {!activePipelineId ? (
-        <p className="text-sm text-muted-foreground">Nenhum pipeline disponível. {isAdmin && <Link to="/admin/configuracoes?tab=pipeline" className="text-primary underline">Criar em Configurações →</Link>}</p>
+        <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p>
       ) : loadingLeads ? (
         <p className="text-sm text-muted-foreground">Carregando leads…</p>
       ) : stages.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas. {isAdmin && <Link to="/admin/configuracoes?tab=pipeline" className="text-primary underline">Configurar em Configurações →</Link>}</p>
+        <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p>
       ) : (
         <div
           className="grid gap-3"
