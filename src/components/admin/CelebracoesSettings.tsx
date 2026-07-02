@@ -31,13 +31,7 @@ const DEFAULT_CFG: CelebrationsCfg = {
   show_leaderboard: true,
   leaderboard_period: "monthly",
   message_template: "🎉 Parabéns, {nome}! Você acabou de {acao}.",
-  triggers: [
-    { key: "first_lead", label: "Primeiro lead cadastrado", description: "Ao registrar o primeiro lead do usuário.", enabled: true },
-    { key: "deal_won", label: "Negócio ganho", description: "Sempre que um lead é movido para a etapa 'Ganho'.", enabled: true },
-    { key: "monthly_goal", label: "Meta mensal atingida", description: "Ao bater a meta do mês definida na pipeline.", enabled: true },
-    { key: "streak_5", label: "5 contatos consecutivos", description: "Ao completar 5 interações sem interrupção.", enabled: false },
-    { key: "recovered_lead", label: "Lead recuperado", description: "Quando um lead frio volta a avançar de etapa.", enabled: true },
-  ],
+  triggers: [],
 };
 
 export function CelebracoesSettings() {
@@ -121,22 +115,11 @@ export function CelebracoesSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Gatilhos de celebração</CardTitle>
-          <CardDescription>Escolha quais eventos disparam uma comemoração para o time.</CardDescription>
+          <CardDescription>
+            As celebrações agora são configuradas <strong>por etapa</strong> em cada pipeline. Ative a opção
+            <em> Celebração ao concluir etapa </em> na etapa desejada em <a href="/admin/configuracoes?tab=pipeline" className="text-primary underline">Configurações → Pipeline</a>. Cada oportunidade celebra uma única vez por etapa.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {cfg.triggers.map((t, i) => (
-            <div key={t.key} className="flex items-center justify-between gap-4 rounded-md border border-border p-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{t.label}</p>
-                <p className="text-xs text-muted-foreground">{t.description}</p>
-              </div>
-              <Switch
-                checked={t.enabled}
-                onCheckedChange={(v) => setCfg({ ...cfg, triggers: cfg.triggers.map((x, idx) => idx === i ? { ...x, enabled: v } : x) })}
-              />
-            </div>
-          ))}
-        </CardContent>
       </Card>
 
       <Card>

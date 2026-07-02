@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
 export type Pipeline = {
   id: string;
@@ -14,6 +15,8 @@ export type Pipeline = {
   is_default: boolean;
 };
 
+export type CelebrateAudience = "owner" | "team" | "admins";
+
 export type PipelineStage = {
   id: string;
   pipeline_id: string;
@@ -23,7 +26,51 @@ export type PipelineStage = {
   wip_limit: number | null;
   is_won: boolean;
   is_lost: boolean;
+  celebrate_enabled: boolean;
+  celebrate_type: string;
+  celebrate_audience: CelebrateAudience;
 };
+
+async function maybeCelebrate(leadId: string, stageId: string) {
+  try {
+    const { data: stage } = await supabase
+      .from("pipeline_stages" as never)
+      .select("celebrate_enabled, celebrate_audience, celebrate_type, nome")
+      .eq("id", stageId)
+      .maybeSingle();
+    const s = stage as { celebrate_enabled?: boolean; celebrate_audience?: CelebrateAudience; nome?: string } | null;
+    if (!s?.celebrate_enabled) return;
+
+    // Audience check
+    const uRes = await supabase.auth.getUser();
+    const uid = uRes.data.user?.id;
+    if (!uid) return;
+    const { data: lead } = await supabase.from("leads").select("owner_id").eq("id", leadId).maybeSingle();
+    const ownerId = (lead as { owner_id: string | null } | null)?.owner_id ?? null;
+    if (s.celebrate_audience === "owner" && ownerId && ownerId !== uid) return;
+    if (s.celebrate_audience === "admins") {
+      const { data: rr } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+      const isAdmin = (rr || []).some((r: { role: string }) => r.role === "admin");
+      if (!isAdmin) return;
+    }
+
+    // Dedupe insert — unique PK on (lead_id, stage_id). ignoreDuplicates via upsert.
+    const { data: inserted, error } = await supabase
+      .from("lead_stage_celebrations" as never)
+      .upsert({ lead_id: leadId, stage_id: stageId, celebrated_by: uid } as never, { onConflict: "lead_id,stage_id", ignoreDuplicates: true })
+      .select();
+    if (error) return;
+    if (!inserted || (inserted as unknown[]).length === 0) return;
+
+    // Fire confetti
+    confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
+    setTimeout(() => confetti({ particleCount: 80, spread: 100, origin: { x: 0.2, y: 0.7 } }), 200);
+    setTimeout(() => confetti({ particleCount: 80, spread: 100, origin: { x: 0.8, y: 0.7 } }), 400);
+    toast.success(`🎉 Etapa "${s.nome}" concluída!`);
+  } catch {
+    // silent
+  }
+}
 
 const DEFAULT_STAGES = [
   { nome: "Novo", cor: "#64748b", is_won: false, is_lost: false },
@@ -191,6 +238,7 @@ export function useUpdateLeadStage() {
     mutationFn: async ({ leadId, stageId, pipelineId }: { leadId: string; stageId: string; pipelineId: string }) => {
       const { error } = await supabase.from("leads").update({ stage_id: stageId, pipeline_id: pipelineId } as never).eq("id", leadId);
       if (error) throw error;
+      await maybeCelebrate(leadId, stageId);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
