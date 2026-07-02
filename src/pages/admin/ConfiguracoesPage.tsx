@@ -1,6 +1,5 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import AdministradoresPage from "./AdministradoresPage";
 
 const Placeholder = ({ title, description }: { title: string; description: string }) => (
   <Card className="p-8">
@@ -23,7 +22,6 @@ const ConfiguracoesPage = () => {
       <Tabs defaultValue="geral" className="w-full">
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="geral">Geral</TabsTrigger>
-          <TabsTrigger value="usuarios">Usuários e Permissões</TabsTrigger>
           <TabsTrigger value="pipeline">Configurações de Pipeline</TabsTrigger>
           <TabsTrigger value="celebracoes">Celebrações e Reconhecimento</TabsTrigger>
           <TabsTrigger value="automacoes">Automações</TabsTrigger>
@@ -35,9 +33,6 @@ const ConfiguracoesPage = () => {
             title="Geral"
             description="Nome da empresa, fuso horário, logo e preferências gerais do workspace."
           />
-        </TabsContent>
-        <TabsContent value="usuarios" className="mt-4">
-          <AdministradoresPage />
         </TabsContent>
         <TabsContent value="pipeline" className="mt-4">
           <Placeholder
@@ -69,3 +64,4 @@ const ConfiguracoesPage = () => {
 };
 
 export default ConfiguracoesPage;
+
