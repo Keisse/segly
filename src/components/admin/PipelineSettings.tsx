@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { usePipelines, usePipelineStages, useCreatePipeline, useUpdatePipeline, useDeletePipeline, useUpsertStage, useDeleteStage, useReorderStages, type PipelineStage } from "@/hooks/usePipelines";
+import { usePipelines, usePipelineStages, useCreatePipeline, useUpdatePipeline, useDeletePipeline, useUpsertStage, useDeleteStage, type PipelineStage } from "@/hooks/usePipelines";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Trash2, GripVertical, ArrowUp, ArrowDown, MoreVertical, Archive, ArchiveRestore, Copy, Pencil } from "lucide-react";
+import { Plus, Trash2, GripVertical, ArrowUp, ArrowDown, MoreVertical, Archive, ArchiveRestore, Copy, Pencil, Save, Loader2 } from "lucide-react";
+
+type StageDraft = PipelineStage & { _new?: boolean; _dirty?: boolean };
 
 export function PipelineSettings() {
   const { data: pipelines = [], isLoading } = usePipelines({ includeArchived: true });
@@ -28,7 +30,6 @@ export function PipelineSettings() {
   const { data: stages = [] } = usePipelineStages(selectedId);
   const upsertStage = useUpsertStage();
   const deleteStage = useDeleteStage();
-  const reorder = useReorderStages();
   const updatePipeline = useUpdatePipeline();
   const deletePipeline = useDeletePipeline();
 
@@ -37,30 +38,93 @@ export function PipelineSettings() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
 
-  // local stages buffer for reorder & inline edit
-  const [localStages, setLocalStages] = useState<PipelineStage[]>([]);
-  useEffect(() => setLocalStages(stages), [stages]);
+  // Local draft buffer — only persists on Save
+  const [draft, setDraft] = useState<StageDraft[]>([]);
+  const [removed, setRemoved] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  const persistStage = async (s: PipelineStage) => upsertStage.mutateAsync(s);
+  useEffect(() => { setDraft(stages.map((s) => ({ ...s }))); setRemoved([]); }, [stages]);
+
+  const dirty = useMemo(() => {
+    if (removed.length > 0) return true;
+    if (draft.length !== stages.length) return true;
+    return draft.some((d, i) => d._dirty || d._new || d.id !== stages[i]?.id || d.ordem !== i);
+  }, [draft, stages, removed]);
+
+  const patch = (id: string, p: Partial<StageDraft>) =>
+    setDraft((d) => d.map((s) => (s.id === id ? { ...s, ...p, _dirty: true } : s)));
+
   const move = (i: number, dir: -1 | 1) => {
-    const next = [...localStages];
     const j = i + dir;
-    if (j < 0 || j >= next.length) return;
+    if (j < 0 || j >= draft.length) return;
+    const next = [...draft];
     [next[i], next[j]] = [next[j], next[i]];
-    setLocalStages(next);
-    reorder.mutate({ pipelineId: selectedId!, stages: next });
+    setDraft(next.map((s, idx) => ({ ...s, ordem: idx, _dirty: s.ordem !== idx || s._dirty })));
   };
 
-  const addStage = async () => {
+  const addStage = () => {
     if (!selectedId) return;
-    await upsertStage.mutateAsync({
-      pipeline_id: selectedId,
-      nome: "Nova etapa",
-      cor: "#8b5cf6",
-      ordem: localStages.length,
-      is_won: false,
-      is_lost: false,
-    });
+    setDraft((d) => [
+      ...d,
+      {
+        id: `new-${crypto.randomUUID()}`,
+        pipeline_id: selectedId,
+        nome: "Nova etapa",
+        cor: "#8b5cf6",
+        ordem: d.length,
+        wip_limit: null,
+        is_won: false,
+        is_lost: false,
+        _new: true,
+        _dirty: true,
+      },
+    ]);
+  };
+
+  const remove = (id: string) => {
+    setDraft((d) => d.filter((s) => s.id !== id).map((s, i) => ({ ...s, ordem: i, _dirty: true })));
+    if (!id.startsWith("new-")) setRemoved((r) => [...r, id]);
+  };
+
+  const save = async () => {
+    if (!selectedId) return;
+    setSaving(true);
+    try {
+      for (const id of removed) {
+        await deleteStage.mutateAsync({ id, pipelineId: selectedId });
+      }
+      for (let i = 0; i < draft.length; i++) {
+        const s = draft[i];
+        if (s._new) {
+          await upsertStage.mutateAsync({
+            pipeline_id: selectedId,
+            nome: s.nome,
+            cor: s.cor,
+            ordem: i,
+            wip_limit: s.wip_limit,
+            is_won: s.is_won,
+            is_lost: s.is_lost,
+          });
+        } else if (s._dirty || s.ordem !== i) {
+          await upsertStage.mutateAsync({
+            id: s.id,
+            pipeline_id: selectedId,
+            nome: s.nome,
+            cor: s.cor,
+            ordem: i,
+            wip_limit: s.wip_limit,
+            is_won: s.is_won,
+            is_lost: s.is_lost,
+          });
+        }
+      }
+      setRemoved([]);
+      toast.success("Pipeline salvo.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando pipelines…</p>;
@@ -102,16 +166,6 @@ export function PipelineSettings() {
                   <Pencil className="w-4 h-4 mr-2" /> Renomear
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => {
-                  const created = await (async () => {
-                    // simple duplicate: create pipeline then copy stages
-                    const { data: user } = await import("@/integrations/supabase/client").then((m) => m.supabase.auth.getUser());
-                    void user;
-                    return null;
-                  })();
-                  void created;
-                  toast.info("Duplicando…");
-                  // duplicate via hooks would need a dedicated hook; do inline:
-                  const { supabase } = await import("@/integrations/supabase/client");
                   const u = await supabase.auth.getUser();
                   const { data: prof } = await supabase.from("profiles").select("organization_id").eq("id", u.data.user!.id).maybeSingle();
                   const orgId = (prof as { organization_id: string } | null)?.organization_id;
@@ -147,45 +201,38 @@ export function PipelineSettings() {
         <Card>
           <CardHeader>
             <CardTitle>Etapas de "{selected.nome}"</CardTitle>
-            <CardDescription>Ordene, edite cor, limite WIP e marque etapas como Ganho/Perdido.</CardDescription>
+            <CardDescription>Ordene, edite cor, limite WIP e marque etapas como Ganho/Perdido. Clique em Salvar para aplicar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {localStages.map((s, i) => (
+            {draft.map((s, i) => (
               <div key={s.id} className="flex items-center gap-2 rounded-md border border-border p-2">
                 <GripVertical className="w-4 h-4 text-muted-foreground" />
                 <input
                   type="color"
                   value={s.cor ?? "#64748b"}
-                  onChange={(e) => setLocalStages(localStages.map((x) => x.id === s.id ? { ...x, cor: e.target.value } : x))}
-                  onBlur={() => persistStage(s)}
+                  onChange={(e) => patch(s.id, { cor: e.target.value })}
                   className="h-8 w-10 rounded border border-border bg-transparent"
                 />
-                <Input
-                  className="flex-1"
-                  value={s.nome}
-                  onChange={(e) => setLocalStages(localStages.map((x) => x.id === s.id ? { ...x, nome: e.target.value } : x))}
-                  onBlur={() => persistStage(s)}
-                />
+                <Input className="flex-1" value={s.nome} onChange={(e) => patch(s.id, { nome: e.target.value })} />
                 <Input
                   type="number"
                   min={0}
                   placeholder="WIP"
                   className="w-20"
                   value={s.wip_limit ?? ""}
-                  onChange={(e) => setLocalStages(localStages.map((x) => x.id === s.id ? { ...x, wip_limit: e.target.value ? Number(e.target.value) : null } : x))}
-                  onBlur={() => persistStage(s)}
+                  onChange={(e) => patch(s.id, { wip_limit: e.target.value ? Number(e.target.value) : null })}
                 />
                 <label className="flex items-center gap-1 text-xs">
-                  <input type="checkbox" checked={s.is_won} onChange={(e) => { const upd = { ...s, is_won: e.target.checked, is_lost: e.target.checked ? false : s.is_lost }; setLocalStages(localStages.map((x) => x.id === s.id ? upd : x)); persistStage(upd); }} />
+                  <input type="checkbox" checked={s.is_won} onChange={(e) => patch(s.id, { is_won: e.target.checked, is_lost: e.target.checked ? false : s.is_lost })} />
                   Ganho
                 </label>
                 <label className="flex items-center gap-1 text-xs">
-                  <input type="checkbox" checked={s.is_lost} onChange={(e) => { const upd = { ...s, is_lost: e.target.checked, is_won: e.target.checked ? false : s.is_won }; setLocalStages(localStages.map((x) => x.id === s.id ? upd : x)); persistStage(upd); }} />
+                  <input type="checkbox" checked={s.is_lost} onChange={(e) => patch(s.id, { is_lost: e.target.checked, is_won: e.target.checked ? false : s.is_won })} />
                   Perdido
                 </label>
                 <Button size="icon" variant="ghost" onClick={() => move(i, -1)} disabled={i === 0}><ArrowUp className="w-4 h-4" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => move(i, 1)} disabled={i === localStages.length - 1}><ArrowDown className="w-4 h-4" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => deleteStage.mutate({ id: s.id, pipelineId: selected.id })}><Trash2 className="w-4 h-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => move(i, 1)} disabled={i === draft.length - 1}><ArrowDown className="w-4 h-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => remove(s.id)}><Trash2 className="w-4 h-4" /></Button>
               </div>
             ))}
             <Button variant="outline" onClick={addStage}><Plus className="w-4 h-4 mr-1" /> Adicionar etapa</Button>
@@ -205,7 +252,6 @@ export function PipelineSettings() {
               checked={selected.is_default}
               onCheckedChange={async (v) => {
                 if (v) {
-                  const { supabase } = await import("@/integrations/supabase/client");
                   await supabase.from("pipelines" as never).update({ is_default: false } as never).eq("organization_id", selected.organization_id);
                 }
                 updatePipeline.mutate({ id: selected.id, patch: { is_default: v } });
@@ -215,7 +261,14 @@ export function PipelineSettings() {
         </Card>
       )}
 
-      {/* Rename dialog */}
+      {selected && (
+        <div className="flex justify-end sticky bottom-4">
+          <Button onClick={save} disabled={saving || !dirty} className="shadow-lg">
+            {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando…</> : <><Save className="w-4 h-4 mr-2" /> Salvar alterações</>}
+          </Button>
+        </div>
+      )}
+
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Renomear pipeline</DialogTitle></DialogHeader>
@@ -227,7 +280,6 @@ export function PipelineSettings() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete dialog */}
       <DeletePipelineDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
