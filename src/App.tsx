@@ -22,6 +22,11 @@ import TrackingTemplatePage from "./pages/TrackingTemplatePage";
 import OutboundCadastro from "./pages/OutboundCadastro";
 import ObrigadaPage from "./pages/ObrigadaPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminOnlyRoute from "./components/AdminOnlyRoute";
+import LeadsPage from "./pages/admin/LeadsPage";
+import ClientesPage from "./pages/admin/ClientesPage";
+import MeuPerfilPage from "./pages/admin/MeuPerfilPage";
+import ConfiguracoesPage from "./pages/admin/ConfiguracoesPage";
 
 const queryClient = new QueryClient();
 
@@ -59,7 +64,25 @@ const App = () => (
             <Route path="campanhas" element={<CampanhasPage />} />
             <Route path="campanhas/nova" element={<CampanhaEditPage />} />
             <Route path="campanhas/:id" element={<CampanhaEditPage />} />
-            <Route path="administradores" element={<AdministradoresPage />} />
+            <Route path="leads" element={<LeadsPage />} />
+            <Route path="clientes" element={<ClientesPage />} />
+            <Route path="meu-perfil" element={<MeuPerfilPage />} />
+            <Route
+              path="administradores"
+              element={
+                <AdminOnlyRoute>
+                  <AdministradoresPage />
+                </AdminOnlyRoute>
+              }
+            />
+            <Route
+              path="configuracoes"
+              element={
+                <AdminOnlyRoute>
+                  <ConfiguracoesPage />
+                </AdminOnlyRoute>
+              }
+            />
             <Route path="lead/:id" element={<LeadDetail />} />
           </Route>
 

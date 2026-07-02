@@ -179,6 +179,62 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes: {
+        Row: {
+          created_at: string
+          data_conversao: string
+          email: string | null
+          empresa: string | null
+          historico: Json
+          id: string
+          lead_id: string | null
+          nome: string
+          owner_id: string | null
+          pipeline_origem: string | null
+          status: string
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_conversao?: string
+          email?: string | null
+          empresa?: string | null
+          historico?: Json
+          id?: string
+          lead_id?: string | null
+          nome: string
+          owner_id?: string | null
+          pipeline_origem?: string | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_conversao?: string
+          email?: string | null
+          empresa?: string | null
+          historico?: Json
+          id?: string
+          lead_id?: string | null
+          nome?: string
+          owner_id?: string | null
+          pipeline_origem?: string | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_base: {
         Row: {
           content: string | null
@@ -268,6 +324,7 @@ export type Database = {
           id: string
           nome: string
           notas: Json | null
+          owner_id: string | null
           porte_empresa: string
           responsavel: string | null
           resultado_diagnostico: Json | null
@@ -288,6 +345,7 @@ export type Database = {
           id?: string
           nome: string
           notas?: Json | null
+          owner_id?: string | null
           porte_empresa: string
           responsavel?: string | null
           resultado_diagnostico?: Json | null
@@ -308,6 +366,7 @@ export type Database = {
           id?: string
           nome?: string
           notas?: Json | null
+          owner_id?: string | null
           porte_empresa?: string
           responsavel?: string | null
           resultado_diagnostico?: Json | null
@@ -323,6 +382,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          lider_id: string | null
+          preferences: Json
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          lider_id?: string | null
+          preferences?: Json
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          lider_id?: string | null
+          preferences?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       question_sets: {
         Row: {
@@ -383,6 +472,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_owner: { Args: { _owner: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -391,9 +481,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_lider: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "lider" | "moderator"
       campaign_question_type:
         | "multiple_choice"
         | "checkbox"
@@ -532,7 +623,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "lider", "moderator"],
       campaign_question_type: [
         "multiple_choice",
         "checkbox",
