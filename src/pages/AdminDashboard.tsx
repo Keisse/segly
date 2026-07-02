@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, UserPlus, CalendarDays, TrendingUp, CalendarIcon, X } from "lucide-react";
+import { Users, UserPlus, CalendarDays, TrendingUp, CalendarIcon, X, Plus } from "lucide-react";
+import { NovoLeadDialog } from "@/components/leads/NovoLeadDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -38,6 +39,7 @@ type FonteTab = "todos" | "inbound" | "outbound";
 const AdminDashboard = () => {
   const { data: metrics, isLoading } = useDashboardMetrics();
   const { data: campaigns = [] } = useCampaigns();
+  const [openNewLead, setOpenNewLead] = useState(false);
   const [filters, setFilters] = useState<FiltersState>({});
   const [fonteTab, setFonteTab] = useState<FonteTab>("todos");
   const [campaignFilter, setCampaignFilter] = useState<string>("all");
@@ -127,14 +129,22 @@ const AdminDashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
+          className="flex items-start justify-between gap-3 flex-wrap"
         >
-          <h1 className="text-2xl font-display font-bold text-foreground">
-            Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Gerencie seus leads do diagnóstico
-          </p>
+          <div>
+            <h1 className="text-2xl font-display font-bold text-foreground">
+              Dashboard
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Gerencie seus leads do diagnóstico
+            </p>
+          </div>
+          <Button onClick={() => setOpenNewLead(true)}>
+            <Plus className="w-4 h-4 mr-1.5" /> Novo Lead
+          </Button>
         </motion.div>
+        <NovoLeadDialog open={openNewLead} onOpenChange={setOpenNewLead} />
+
 
         {/* Date Filter Bar */}
         <motion.div

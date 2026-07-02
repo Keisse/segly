@@ -17,6 +17,7 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { PrincipiosLibrarySection } from "@/components/admin/PrincipiosLibrarySection";
 import { PipelineSettings } from "@/components/admin/PipelineSettings";
 import { CelebracoesSettings } from "@/components/admin/CelebracoesSettings";
+import { LeadFormBuilder } from "@/components/admin/LeadFormBuilder";
 
 
 const TIMEZONES = [
