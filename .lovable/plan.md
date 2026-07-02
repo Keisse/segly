@@ -1,107 +1,82 @@
 
-# Reestruturação da Navegação Lateral e Papéis do Segly
+# Plano — Área de Configurações do Segly
 
-Vou reorganizar o menu, criar as novas áreas e implementar o controle de acesso por papel (Usuário, Líder, Administrador) sem alterar estilo visual, cores, tipografia ou comportamento dos itens já existentes.
+O escopo é grande e envolve backend (várias tabelas novas, RLS, storage, eventos centrais), frontend (5 abas ricas com CRUD, drag-and-drop, campos personalizados, editor de automações) e um componente global de celebração. Para entregar com qualidade e sem quebrar o Segly atual, proponho dividir em **4 fases sequenciais**, cada uma testável e "shippable".
 
-## 1. Papéis e Permissões (Backend)
+## Visão geral da arquitetura
 
-Hoje o enum `app_role` só tem `admin`, `moderator`, `user`. Vou:
+- **Multi-tenant leve**: já existe `profiles` com `lider_id`. Vou introduzir `organization_id` (uuid) em `profiles` e nas tabelas de configuração, para que cada empresa tenha suas próprias regras. Para os usuários já existentes, uma organização padrão será criada.
+- **Acesso**: rota `/admin/configuracoes` envolvida em `AdminOnlyRoute` (já existe). Backend com RLS `is_admin() AND organization_id = my_org()`. Página de "Acesso negado" reaproveitável.
+- **Eventos centrais**: qualquer mudança de etapa de lead dispara `lead_won` / `lead_lost` via classificação `open|won|lost` da etapa — nunca pelo nome da coluna. Ponte no `useLeads` (mutação de etapa) + trigger DB que insere em `event_log`.
+- **Componente global de celebração**: `<CelebrationHost/>` montado no `AdminLayout`, escuta um `celebrationBus` (event emitter) alimentado pelos eventos `lead_won` / `sale_completed`. Confetes via `canvas-confetti`.
+- **Auditoria**: tabela `audit_log` (quem, quando, o quê, valor anterior/novo) para mudanças administrativas.
 
-- Adicionar `lider` ao enum `app_role`.
-- Adicionar coluna `lider_id` em `user_roles` (ou tabela `profiles`) para vincular um Usuário a um Líder responsável (só válido quando o papel for `user`; o líder referenciado deve ter papel `lider` ou `admin`).
-- Criar/ajustar funções `has_role`, `is_admin`, `is_lider` (SECURITY DEFINER) para uso em RLS.
-- Ajustar RLS de `leads` (e futura tabela `clientes`) para:
-  - Admin → vê tudo.
-  - Líder → vê os próprios + leads de usuários cujo `lider_id` = seu id.
-  - Usuário → vê só os próprios (`owner_id = auth.uid()`).
-- Se a tabela `leads` ainda não tiver `owner_id`, adiciono a coluna (nullable, sem quebrar dados atuais; admin continua vendo tudo).
+## Fase 1 — Fundamentos e Aba Geral
 
-## 2. Nova estrutura do menu (`AdminSidebar.tsx`)
+1. Migração:
+   - `organizations` (nome, e-mail, telefone, cidade, uf, fuso, logo_url, defaults)
+   - `organization_id` em `profiles`, `leads`, `campaigns`, `clientes` (nullable + backfill p/ uma org padrão)
+   - `organization_settings` (jsonb: notificações, responsável padrão, dias sem interação, histórico ativo)
+   - `audit_log`
+   - Funções `my_org()`, RLS em todas as novas tabelas, GRANTs
+   - Bucket público `organization-logos`
+2. Página `/admin/configuracoes` refatorada com header, subtítulo, `Tabs` responsivas, prompt "alterações não salvas" via hook `useUnsavedChanges` + `beforeunload` + bloqueio de navegação React Router.
+3. Aba **Geral** completa (dados da empresa, upload de logo, preferências, notificações gerais), botão Salvar, toasts sonner.
 
-Mantendo estilo, ícones no mesmo padrão Lucide, espaçamentos e comportamento colapsável atuais.
+## Fase 2 — Pipelines (estrutural)
 
-**PAINEL**
-1. Dashboard — `LayoutDashboard` (existente)
-2. Leads — `Users` / `UserSquare` (novo)
-3. Pipelines — `KanbanSquare` (existente, renomeado do item Pipelines atual)
-4. Clientes — `Handshake` ou `Building2` (novo)
-5. Criar campanhas — `Megaphone` (existente)
-6. Base de conhecimento — `BookOpen` (existente)
-7. Usuários e Permissões — `ShieldCheck` (renomeado de "Usuários", **somente Admin**)
+1. Migração:
+   - `pipelines` (nome, descrição, ícone, is_default, is_archived, org_id)
+   - `pipeline_stages` (pipeline_id, nome, descrição, cor, ordem, `status_class` ENUM `open|won|lost`, is_archived)
+   - `pipeline_access` (pipeline_id, role/user_id/lider_id)
+   - `custom_fields` (pipeline_id, stage_id?, tipo, label, obrigatório em open/won/lost)
+   - `lead_stage_history` (lead_id, from_stage, to_stage, changed_by, at)
+   - Adaptar `leads.stage_id` (nova coluna, backfill), manter `status` legada por compatibilidade
+   - Trigger que grava em `lead_stage_history` e insere `event_log` `lead_won`/`lead_lost` conforme `status_class` da nova etapa
+2. UI Aba **Configurações de Pipeline**:
+   - Aviso explicativo (diferença de Pipelines do menu)
+   - Lista de pipelines (criar, editar, arquivar, definir padrão, duplicar, gerenciar acesso)
+   - Editor de etapas com drag-and-drop (`@dnd-kit`), cor, classificação
+   - Modal de confirmação ao classificar como Ganho/Perdido
+   - Editor de campos personalizados e obrigatoriedade por status
+   - Bloqueio de exclusão quando há leads (apenas arquivar)
+3. Ajustar `KanbanPage` para ler `pipeline_stages` (mantendo fallback para o Kanban atual).
 
-**RODAPÉ** (na mesma área inferior onde hoje está "Nosso Propósito" + "Sair")
-1. Nosso Propósito — `PrayingHandsIcon` (existente)
-2. Meu Perfil — `UserCircle` (novo, todos)
-3. Configurações — `Settings` (novo, **somente Admin**)
-4. Sair — `LogOut` (existente)
+## Fase 3 — Celebrações e componente global
 
-O filtro de visibilidade usa o hook `useIsAdmin` já existente + um novo `useIsLider`.
+1. Migração: `celebration_settings` (org_id, enabled, on_won, on_sale, intensity `discreta|padrao|comemorativa|off`).
+2. `celebrationBus` (event emitter) + `<CelebrationHost/>` global no `AdminLayout` com `canvas-confetti` (dependência nova).
+3. Hook `useCelebrate()` para telas dispararem eventos sem lógica local.
+4. Ligação com o trigger DB: `useLeads` observa mutação de etapa; ao receber resposta `won/lost`, chama `celebrate('lead_won')`.
+5. Guarda anti-duplicação: só celebra na *transição* real; se o lead já estava won, não celebra novamente (verificação pelo `lead_stage_history`).
+6. UI da aba com switches, seletor de intensidade, botão "Testar comemoração" e nota informativa.
 
-## 3. Guarda de rotas
+## Fase 4 — Automações e Integrações
 
-- Criar `AdminOnlyRoute` (wrapper que redireciona não-admins para `/admin/dashboard`).
-- Aplicar em `/admin/administradores` (renomeado internamente para "Usuários e Permissões", rota mantida por compatibilidade) e `/admin/configuracoes`.
-- Bloqueio server-side já vem das RLS + checagens `is_admin()` nas edge functions relevantes (`manage-admins` já valida).
-
-## 4. Novas páginas
-
-### `/admin/leads` — Lista centralizada de Leads
-- Reaproveita `LeadsTable` já existente, agora em página própria.
-- Busca por nome/empresa/email, filtros (status, data), ordenação por colunas, clique → `/admin/lead/:id`.
-- Query respeita RLS (admin vê tudo, líder vê equipe, usuário vê próprios).
-
-### `/admin/clientes` — Clientes
-- Nova tabela `clientes` (ou view sobre `leads` com `status = 'convertido'`). Vou usar tabela nova `clientes` com: `lead_id`, `owner_id`, `pipeline_origem`, `data_conversao`, `status_cliente`, histórico via `cliente_eventos`.
-- UI: lista com busca, filtros, detalhes (histórico, pipeline de origem, responsável, data, status).
-- Mesmas regras de permissão de Leads.
-
-### `/admin/meu-perfil` — Meu Perfil (todos)
-- Formulário para editar nome, email, avatar, preferências (tema, notificações). Grava em `profiles` (crio se não existir).
-
-### `/admin/configuracoes` — Configurações (só Admin)
-- Tabs internas:
-  - **Geral** — nome da empresa, fuso, logo.
-  - **Configurações de Pipeline** — etapas, campos, regras, permissões das pipelines.
-  - **Celebrações e Reconhecimento** — regras de gamificação/celebração de vitórias.
-  - **Automações** — gatilhos e ações automáticas.
-  - **Integrações** — webhooks, chaves externas.
-- Nesta primeira entrega as tabs abrem cada seção com estrutura pronta e placeholders "Em breve" para os campos ainda sem escopo detalhado — assim a navegação/permissão fica funcional sem inventar regras não pedidas.
-
-### `/admin/administradores` — Usuários e Permissões
-- Página existente renomeada no menu para "Usuários e Permissões".
-- Acrescentar seleção de **Papel** (Usuário / Líder / Administrador) e, quando papel = Usuário, campo **Líder responsável** (lista só usuários com papel Líder ou Administrador).
-- Ativação/inativação já suportadas via edge function `manage-admins` (estendo o payload).
-
-## 5. Rotas em `App.tsx`
-
-Adicionar (dentro de `/admin`):
-- `leads` → `LeadsPage`
-- `clientes` → `ClientesPage`
-- `meu-perfil` → `MeuPerfilPage`
-- `configuracoes` → `ConfiguracoesPage` (envolvida em `AdminOnlyRoute`)
-- `administradores` → envolvida em `AdminOnlyRoute`
-
-## 6. Separação clara
-
-- "Pipelines" (menu) → segue apontando para `/admin/kanban` (operacional, oportunidades).
-- "Configurações de Pipeline" → aba dentro de `/admin/configuracoes` (administrativa).
+1. Migração:
+   - `automations` (org_id, nome, status `active|paused|archived`, trigger jsonb, conditions jsonb, actions jsonb, criado_por)
+   - `automation_runs` (automation_id, lead_id, ações executadas, resultado, at)
+2. UI Aba **Automações**:
+   - Lista com filtros e status
+   - Wizard "Quando → Se → Então" com selects de gatilhos, condições e ações listadas no briefing
+   - Ativar / pausar / duplicar / testar / arquivar
+   - Histórico de execuções
+3. Executor server-side simples via edge function `run-automations`, chamada por trigger DB quando `event_log` recebe novo evento (`lead_created`, `lead_won`, etc.). Loop-guard: cada `automation_run` marca `lead_id + automation_id + event_id` (unique) para não repetir.
+4. Aba **Integrações**: já existe o placeholder — nesta fase apenas listar webhooks configuráveis por org (`integrations` table: nome, url, eventos assinados, secret). Envio real reaproveita `send-webhook` edge function.
 
 ## Detalhes técnicos
 
-- Migration única adicionando: valor `lider` no enum, `profiles` (se ausente), `lider_id`, tabela `clientes` + RLS + GRANTs, funções `is_lider`/`can_view_lead`.
-- Hook novo `useMyRole()` retornando `'admin' | 'lider' | 'user'`.
-- Nenhuma mudança em cores, tokens, tipografia ou no comportamento dos itens já existentes — só adição de itens e reordenação.
+- Novas dependências: `canvas-confetti`, `@dnd-kit/core`, `@dnd-kit/sortable`.
+- Formulários com `react-hook-form` + `zod` (já em uso no projeto).
+- Toasts: `sonner`.
+- Estado servidor: `@tanstack/react-query` (padrão do projeto).
+- Nenhuma alteração em `client.ts`, `types.ts` ou `.env`.
+- Rota já existente `/admin/configuracoes` continua a mesma; nada de breaking change no Kanban / Leads (colunas legadas mantidas até a migração ser 100% adotada).
 
-## Ordem de execução
+## O que preciso confirmar antes de começar
 
-1. Migration (papéis, `lider_id`, tabela `clientes`, RLS, GRANTs).
-2. Hooks (`useMyRole`, `useIsLider`) e `AdminOnlyRoute`.
-3. Sidebar reestruturado com visibilidade por papel.
-4. Páginas novas (Leads, Clientes, Meu Perfil, Configurações com tabs).
-5. Ajustes em "Usuários e Permissões" (papel + líder responsável).
-6. Rotas em `App.tsx`.
-7. Verificação: build + Playwright para conferir visibilidade por papel.
+1. **Fase 1 primeiro (Geral + fundação multi-tenant)** e seguirmos incrementalmente por chat? Recomendo fortemente — o escopo total é grande demais para uma única entrega segura.
+2. **Organização única padrão** para todos os usuários atuais (podemos separar por cliente depois) — ok?
+3. Aba **Integrações**: no briefing só é citada na lista, sem requisitos detalhados. Posso manter o placeholder atual na Fase 1 e implementar webhooks básicos na Fase 4 — confirma?
 
-Confirma que posso seguir com esta abordagem? Em especial:
-- Criar a tabela `clientes` nova (vs. derivar de `leads` convertidos)?
-- Deixar as seções de Configurações (Celebrações, Automações, Integrações) com estrutura + placeholder "Em breve" nesta primeira entrega, para não inventar regras?
+Aprovando, começo imediatamente pela **Fase 1**.
