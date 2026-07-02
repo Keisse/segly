@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, Link, useNavigate } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { usePipelines, usePipelineStages, useLeadsByPipeline, useUpdateLeadStage } from "@/hooks/usePipelines";
+import { useMyRole } from "@/hooks/useMyRole";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { ChevronDown, Search, Settings2, PartyPopper } from "lucide-react";
 
 type LeadRow = { id: string; nome: string; empresa: string | null; cargo: string | null; stage_id: string | null; resultado_diagnostico: { percentage?: number } | null };
 
 const KanbanPage = () => {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: pipelines = [], isLoading: loadingPipelines } = usePipelines();
+  const { data: role } = useMyRole();
+  const isAdmin = role === "admin";
 
   const activePipelineId = useMemo(() => {
     const fromUrl = searchParams.get("pipeline");
@@ -34,6 +37,16 @@ const KanbanPage = () => {
   const updateStage = useUpdateLeadStage();
   const [dragId, setDragId] = useState<string | null>(null);
 
+  const [popOpen, setPopOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return pipelines;
+    return pipelines.filter((p) => p.nome.toLowerCase().includes(q));
+  }, [pipelines, query]);
+
+  const selected = pipelines.find((p) => p.id === activePipelineId) ?? null;
+
   const grouped = useMemo(() => {
     const g: Record<string, LeadRow[]> = {};
     stages.forEach((s) => { g[s.id] = []; });
@@ -48,61 +61,98 @@ const KanbanPage = () => {
     }
   };
 
+  const selectPipeline = (id: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("pipeline", id);
+    setSearchParams(next);
+    setPopOpen(false);
+    setQuery("");
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div>
         <h1 className="text-2xl font-display font-bold">Pipelines</h1>
-        <p className="text-sm text-muted-foreground">Arraste os cards entre etapas para movê-los. Configure etapas em Configurações → Pipeline.</p>
+        <p className="text-sm text-muted-foreground">Arraste os cards entre etapas para movê-los.</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-border pb-1">
-        {loadingPipelines ? (
-          <p className="text-sm text-muted-foreground">Carregando…</p>
-        ) : (
-          <>
-            {pipelines.map((p) => {
-              const isActive = p.id === activePipelineId;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    const next = new URLSearchParams(searchParams);
-                    next.set("pipeline", p.id);
-                    setSearchParams(next);
-                  }}
-                  className={cn(
-                    "shrink-0 px-4 py-2 text-sm rounded-t-md border-b-2 -mb-[1px] transition-colors",
-                    isActive
-                      ? "border-primary text-foreground bg-card"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ background: p.cor ?? "#1D9E75" }} />
-                    {p.nome}
-                  </span>
-                </button>
-              );
-            })}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 text-muted-foreground"
-              onClick={() => navigate("/admin/configuracoes?tab=pipeline")}
-            >
-              <Plus className="w-4 h-4 mr-1" /> Novo pipeline
+      <div className="flex items-center gap-2 flex-wrap">
+        <Popover open={popOpen} onOpenChange={setPopOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="justify-between min-w-[240px]" disabled={loadingPipelines}>
+              <span className="inline-flex items-center gap-2 truncate">
+                {selected ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: selected.cor ?? "#1D9E75" }} />
+                    <span className="truncate">{selected.nome}</span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">Selecionar pipeline</span>
+                )}
+              </span>
+              <ChevronDown className="w-4 h-4 opacity-60 ml-2 shrink-0" />
             </Button>
-          </>
-        )}
+          </PopoverTrigger>
+          <PopoverContent align="start" className="p-0 w-[280px]">
+            {pipelines.length > 8 && (
+              <div className="p-2 border-b border-border">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    autoFocus
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Buscar pipeline…"
+                    className="h-8 pl-7 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="max-h-72 overflow-auto py-1">
+              {loadingPipelines ? (
+                <p className="px-3 py-4 text-xs text-muted-foreground">Carregando…</p>
+              ) : filtered.length === 0 ? (
+                <p className="px-3 py-6 text-xs text-center text-muted-foreground">
+                  {pipelines.length === 0 ? "Nenhum pipeline disponível." : "Nenhum resultado."}
+                </p>
+              ) : (
+                filtered.map((p) => {
+                  const active = p.id === activePipelineId;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => selectPipeline(p.id)}
+                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-muted/60 transition-colors ${active ? "bg-muted/40 font-medium" : ""}`}
+                    >
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.cor ?? "#1D9E75" }} />
+                      <span className="truncate">{p.nome}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            {isAdmin && (
+              <div className="border-t border-border p-1">
+                <Link
+                  to="/admin/configuracoes?tab=pipeline"
+                  onClick={() => setPopOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded transition-colors"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  Gerenciar pipelines
+                </Link>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
       </div>
 
       {!activePipelineId ? (
-        <p className="text-sm text-muted-foreground">Nenhum pipeline criado ainda. Crie em Configurações → Pipeline.</p>
+        <p className="text-sm text-muted-foreground">Nenhum pipeline disponível. {isAdmin && <Link to="/admin/configuracoes?tab=pipeline" className="text-primary underline">Criar em Configurações →</Link>}</p>
       ) : loadingLeads ? (
         <p className="text-sm text-muted-foreground">Carregando leads…</p>
       ) : stages.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas. Configure em Configurações → Pipeline.</p>
+        <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas. {isAdmin && <Link to="/admin/configuracoes?tab=pipeline" className="text-primary underline">Configurar em Configurações →</Link>}</p>
       ) : (
         <div
           className="grid gap-3"
@@ -122,6 +172,9 @@ const KanbanPage = () => {
                   <h3 className="text-sm font-semibold inline-flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full" style={{ background: col.cor ?? "#64748b" }} />
                     {col.nome}
+                    {col.celebrate_enabled && (
+                      <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />
+                    )}
                   </h3>
                   <Badge variant={overWip ? "destructive" : "secondary"} className="text-xs">
                     {cards.length}{col.wip_limit != null ? `/${col.wip_limit}` : ""}
