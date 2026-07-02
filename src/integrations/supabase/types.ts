@@ -538,6 +538,95 @@ export type Database = {
         }
         Relationships: []
       }
+      principle_history: {
+        Row: {
+          created_at: string
+          cycle: number
+          id: string
+          organization_id: string
+          principle_id: string
+          saved: boolean
+          shown_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cycle?: number
+          id?: string
+          organization_id: string
+          principle_id: string
+          saved?: boolean
+          shown_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cycle?: number
+          id?: string
+          organization_id?: string
+          principle_id?: string
+          saved?: boolean
+          shown_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "principle_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "principle_history_principle_id_fkey"
+            columns: ["principle_id"]
+            isOneToOne: false
+            referencedRelation: "principles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      principles: {
+        Row: {
+          audience: Database["public"]["Enums"]["principle_audience"]
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          phrase: string
+          status: Database["public"]["Enums"]["principle_status"]
+          updated_at: string
+        }
+        Insert: {
+          audience?: Database["public"]["Enums"]["principle_audience"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          phrase: string
+          status?: Database["public"]["Enums"]["principle_status"]
+          updated_at?: string
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["principle_audience"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          phrase?: string
+          status?: Database["public"]["Enums"]["principle_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "principles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -705,6 +794,8 @@ export type Database = {
         | "nps"
       campaign_status: "ativa" | "inativa"
       campaign_type: "diagnostico_score" | "formulario_captura" | "pesquisa"
+      principle_audience: "all" | "user" | "lider" | "admin"
+      principle_status: "published" | "paused" | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -845,6 +936,8 @@ export const Constants = {
       ],
       campaign_status: ["ativa", "inativa"],
       campaign_type: ["diagnostico_score", "formulario_captura", "pesquisa"],
+      principle_audience: ["all", "user", "lider", "admin"],
+      principle_status: ["published", "paused", "archived"],
     },
   },
 } as const

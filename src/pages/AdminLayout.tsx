@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { UserMenu } from "@/components/admin/UserMenu";
+import { PrincipioAutoOpener } from "@/components/admin/PrincipioAutoOpener";
 
 const AdminLayout = () => {
   return (
@@ -19,9 +20,11 @@ const AdminLayout = () => {
             <Outlet />
           </main>
         </div>
+        <PrincipioAutoOpener />
       </div>
     </SidebarProvider>
   );
 };
 
 export default AdminLayout;
+

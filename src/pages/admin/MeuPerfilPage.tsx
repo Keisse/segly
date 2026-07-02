@@ -5,11 +5,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, User, MapPin, KeyRound, Eye, EyeOff } from "lucide-react";
+import { Loader2, User, MapPin, KeyRound, Eye, EyeOff, Sparkles, BookmarkCheck, Trash2 } from "lucide-react";
+import { usePrinciplePrefs, useSavedPrinciples, useSavePrinciple } from "@/hooks/usePrinciple";
+import { PrincipioDoDiaDialog } from "@/components/admin/PrincipioDoDiaDialog";
+
 
 type Profile = {
   display_name: string | null;
@@ -241,7 +245,10 @@ const MeuPerfilPage = () => {
         </div>
       </Card>
 
+      <PrincipioSection />
+
       {/* Password */}
+
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <KeyRound className="h-4 w-4 text-primary" />
@@ -294,4 +301,91 @@ const MeuPerfilPage = () => {
   );
 };
 
+function PrincipioSection() {
+  const { prefs, isLoading, update } = usePrinciplePrefs();
+  const { data: saved = [] } = useSavedPrinciples();
+  const unsave = useSavePrinciple();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Card className="p-6 space-y-4">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <Sparkles className="h-4 w-4 text-primary" />
+        Princípio do Dia
+      </div>
+      <p className="text-xs text-muted-foreground -mt-2">
+        Uma frase curta e inspiradora sobre liderança, responsabilidade e propósito, no formato de um biscoito da sorte.
+      </p>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="flex items-center justify-between rounded-md border border-border p-3">
+          <div>
+            <p className="text-sm font-medium">Receber princípio diário</p>
+            <p className="text-xs text-muted-foreground">Recurso opcional e sem som.</p>
+          </div>
+          <Switch
+            checked={prefs.enabled}
+            disabled={isLoading}
+            onCheckedChange={(v) => update({ enabled: v })}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Quando exibir?</Label>
+          <Select
+            value={prefs.when}
+            onValueChange={(v) => update({ when: v as typeof prefs.when })}
+            disabled={!prefs.enabled}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="first_access">No primeiro acesso do dia</SelectItem>
+              <SelectItem value="dashboard">Ao abrir o Dashboard</SelectItem>
+              <SelectItem value="on_demand">Somente quando eu solicitar</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex justify-start">
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <Sparkles className="h-4 w-4 mr-2" /> Abrir princípio do dia
+        </Button>
+      </div>
+
+      <div className="pt-2">
+        <p className="text-sm font-medium mb-2 flex items-center gap-2">
+          <BookmarkCheck className="h-4 w-4 text-primary" /> Princípios salvos
+        </p>
+        {saved.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Você ainda não salvou nenhum princípio. Ao abrir o biscoito, use o botão Salvar.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {saved.map((s) => (
+              <li
+                key={s.id}
+                className="flex items-start justify-between gap-3 rounded-md border border-border p-3 text-sm"
+              >
+                <span className="italic text-foreground">“{s.principles.phrase}”</span>
+                <button
+                  onClick={() => unsave.mutateAsync({ historyId: s.id, saved: false })}
+                  className="text-muted-foreground hover:text-destructive transition"
+                  aria-label="Remover"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <PrincipioDoDiaDialog open={open} onOpenChange={setOpen} />
+    </Card>
+  );
+}
+
 export default MeuPerfilPage;
+

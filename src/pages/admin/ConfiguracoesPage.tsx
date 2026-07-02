@@ -13,6 +13,8 @@ import { Loader2, Save, Upload, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { PrincipiosLibrarySection } from "@/components/admin/PrincipiosLibrarySection";
+
 
 const TIMEZONES = [
   "America/Sao_Paulo",
@@ -392,7 +394,10 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
         </CardContent>
       </Card>
 
+      <PrincipiosLibrarySection />
+
       <div className="flex justify-end sticky bottom-4">
+
         <Button onClick={save} disabled={!dirty || saving} className="shadow-lg">
           {saving ? (
             <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando…</>
