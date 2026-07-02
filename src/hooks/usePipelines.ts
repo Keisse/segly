@@ -54,12 +54,13 @@ async function maybeCelebrate(leadId: string, stageId: string) {
       if (!isAdmin) return;
     }
 
-    // Dedupe insert
-    const { error, count } = await supabase
+    // Dedupe insert — unique PK on (lead_id, stage_id). ignoreDuplicates via upsert.
+    const { data: inserted, error } = await supabase
       .from("lead_stage_celebrations" as never)
-      .insert({ lead_id: leadId, stage_id: stageId, celebrated_by: uid } as never, { count: "exact" });
-    if (error) return; // conflict = already celebrated
-    if (count === 0) return;
+      .upsert({ lead_id: leadId, stage_id: stageId, celebrated_by: uid } as never, { onConflict: "lead_id,stage_id", ignoreDuplicates: true })
+      .select();
+    if (error) return;
+    if (!inserted || (inserted as unknown[]).length === 0) return;
 
     // Fire confetti
     confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
