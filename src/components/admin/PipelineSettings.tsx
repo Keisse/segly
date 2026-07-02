@@ -79,7 +79,7 @@ export function PipelineSettings() {
         is_lost: false,
         celebrate_enabled: false,
         celebrate_type: "confetti",
-        celebrate_audience: "owner" as CelebrateAudience,
+        celebrate_audience: "team" as CelebrateAudience,
         _new: true,
         _dirty: true,
       },
@@ -242,11 +242,13 @@ export function PipelineSettings() {
                       onCheckedChange={(v) => patch(s.id, { celebrate_enabled: v, celebrate_type: "confetti" })}
                     />
                   </label>
-                  <Select value={s.celebrate_audience} onValueChange={(v) => patch(s.id, { celebrate_audience: v as CelebrateAudience })}>
-                    <SelectTrigger className="w-[190px] h-9"><SelectValue placeholder="Exibir para" /></SelectTrigger>
+                  <Select
+                    value={s.celebrate_audience === "admins" ? "admins" : "team"}
+                    onValueChange={(v) => patch(s.id, { celebrate_audience: v as CelebrateAudience })}
+                  >
+                    <SelectTrigger className="w-[220px] h-9"><SelectValue placeholder="Exibir celebração para" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="owner">Responsável pelo lead</SelectItem>
-                      <SelectItem value="team">Toda a equipe</SelectItem>
+                      <SelectItem value="team">Toda equipe</SelectItem>
                       <SelectItem value="admins">Somente administradores</SelectItem>
                     </SelectContent>
                   </Select>
