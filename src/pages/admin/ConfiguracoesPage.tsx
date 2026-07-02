@@ -46,7 +46,7 @@ type SettingsRow = {
   inactive_lead_reminder_days: number;
 };
 
-type ProfileOption = { id: string; nome: string | null; email: string | null };
+type ProfileOption = { id: string; display_name: string | null };
 
 const useOrganization = () =>
   useQuery({
@@ -62,7 +62,7 @@ const useOrganization = () =>
       const [{ data: org }, { data: settings }, { data: members }] = await Promise.all([
         supabase.from("organizations" as never).select("*").eq("id", orgId).maybeSingle(),
         supabase.from("organization_settings" as never).select("*").eq("organization_id", orgId).maybeSingle(),
-        supabase.from("profiles").select("id, nome, email").eq("organization_id" as never, orgId),
+        supabase.from("profiles").select("id, display_name").eq("organization_id", orgId),
       ]);
       return {
         org: org as unknown as OrgRow,
@@ -78,6 +78,7 @@ const useOrganization = () =>
       };
     },
   });
+
 
 const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) => {
   const qc = useQueryClient();
