@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, UserPlus, Calendar, TrendingUp, CalendarIcon } from "lucide-react";
+import { Users, UserPlus, CalendarDays, TrendingUp, CalendarIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
