@@ -22,9 +22,7 @@ type LeadRow = {
 
 const KanbanPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: pipelines = [], isLoading: loadingPipelines } = usePipelines();
-  const { data: role } = useMyRole();
-  const isAdmin = role === "admin";
+  const { data: pipelines = [] } = usePipelines();
 
   const activePipelineId = useMemo(() => {
     const fromUrl = searchParams.get("pipeline");
