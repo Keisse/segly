@@ -13,6 +13,8 @@ import { Loader2, Save, Upload, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { PrincipiosLibrarySection } from "@/components/admin/PrincipiosLibrarySection";
+
 
 const TIMEZONES = [
   "America/Sao_Paulo",
