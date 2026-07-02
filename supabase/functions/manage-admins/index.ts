@@ -5,6 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+type Role = "admin" | "lider" | "user";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -28,15 +30,39 @@ Deno.serve(async (req) => {
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if (!isAdmin) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
 
-    const { action, email, password, userId } = await req.json();
+    const body = await req.json();
+    const { action, email, password, userId } = body;
+    const role: Role = (body.role as Role) || "admin";
+    const liderId: string | null = body.liderId || null;
 
     if (action === "list") {
-      const { data: roles } = await admin.from("user_roles").select("user_id, created_at").eq("role", "admin");
+      const { data: roles } = await admin.from("user_roles").select("user_id, role, created_at");
       const { data: { users } } = await admin.auth.admin.listUsers();
-      const list = (roles || []).map((r) => {
-        const u = users.find((x) => x.id === r.user_id);
-        return u ? { id: u.id, email: u.email!, created_at: r.created_at } : null;
+      const { data: profiles } = await admin.from("profiles").select("id, lider_id, display_name");
+
+      // Group roles by user
+      const byUser = new Map<string, { roles: Role[]; created_at: string }>();
+      (roles || []).forEach((r: any) => {
+        const cur = byUser.get(r.user_id) || { roles: [], created_at: r.created_at };
+        cur.roles.push(r.role);
+        byUser.set(r.user_id, cur);
+      });
+
+      const list = Array.from(byUser.entries()).map(([uid, v]) => {
+        const u = users.find((x) => x.id === uid);
+        if (!u) return null;
+        const profile = (profiles || []).find((p: any) => p.id === uid);
+        const primary: Role = v.roles.includes("admin") ? "admin" : v.roles.includes("lider") ? "lider" : "user";
+        return {
+          id: uid,
+          email: u.email!,
+          created_at: v.created_at,
+          role: primary,
+          lider_id: profile?.lider_id || null,
+          display_name: profile?.display_name || null,
+        };
       }).filter(Boolean);
+
       return new Response(JSON.stringify({ admins: list }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -60,20 +86,38 @@ Deno.serve(async (req) => {
         targetUserId = created.user!.id;
       }
 
-      const { error: roleErr } = await admin
-        .from("user_roles")
-        .insert({ user_id: targetUserId, role: "admin" });
+      // Clear roles and set the chosen one (single primary role)
+      await admin.from("user_roles").delete().eq("user_id", targetUserId);
+      const { error: roleErr } = await admin.from("user_roles").insert({ user_id: targetUserId, role });
       if (roleErr && !roleErr.message.includes("duplicate")) throw roleErr;
+
+      // Ensure profile row and set lider_id
+      await admin.from("profiles").upsert({
+        id: targetUserId,
+        lider_id: role === "user" ? liderId : null,
+      });
 
       return new Response(JSON.stringify({ success: true, userId: targetUserId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    if (action === "update_role") {
+      if (!userId) return new Response(JSON.stringify({ error: "userId obrigatório" }), { status: 400, headers: corsHeaders });
+      await admin.from("user_roles").delete().eq("user_id", userId);
+      const { error: roleErr } = await admin.from("user_roles").insert({ user_id: userId, role });
+      if (roleErr) throw roleErr;
+      await admin.from("profiles").upsert({
+        id: userId,
+        lider_id: role === "user" ? liderId : null,
+      });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "remove") {
       if (!userId) return new Response(JSON.stringify({ error: "userId obrigatório" }), { status: 400, headers: corsHeaders });
       if (userId === user.id) return new Response(JSON.stringify({ error: "Você não pode remover a si mesmo" }), { status: 400, headers: corsHeaders });
-      const { error } = await admin.from("user_roles").delete().eq("user_id", userId).eq("role", "admin");
+      const { error } = await admin.from("user_roles").delete().eq("user_id", userId);
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
