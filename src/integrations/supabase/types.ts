@@ -374,6 +374,42 @@ export type Database = {
           },
         ]
       }
+      lead_stage_celebrations: {
+        Row: {
+          celebrated_at: string
+          celebrated_by: string | null
+          lead_id: string
+          stage_id: string
+        }
+        Insert: {
+          celebrated_at?: string
+          celebrated_by?: string | null
+          lead_id: string
+          stage_id: string
+        }
+        Update: {
+          celebrated_at?: string
+          celebrated_by?: string | null
+          lead_id?: string
+          stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_stage_celebrations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_stage_celebrations_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           campaign_id: string | null
@@ -560,6 +596,9 @@ export type Database = {
       }
       pipeline_stages: {
         Row: {
+          celebrate_audience: string
+          celebrate_enabled: boolean
+          celebrate_type: string
           cor: string | null
           created_at: string
           id: string
@@ -572,6 +611,9 @@ export type Database = {
           wip_limit: number | null
         }
         Insert: {
+          celebrate_audience?: string
+          celebrate_enabled?: boolean
+          celebrate_type?: string
           cor?: string | null
           created_at?: string
           id?: string
@@ -584,6 +626,9 @@ export type Database = {
           wip_limit?: number | null
         }
         Update: {
+          celebrate_audience?: string
+          celebrate_enabled?: boolean
+          celebrate_type?: string
           cor?: string | null
           created_at?: string
           id?: string
