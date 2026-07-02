@@ -3,8 +3,10 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { UserMenu } from "@/components/admin/UserMenu";
 import { PrincipioAutoOpener } from "@/components/admin/PrincipioAutoOpener";
+import { useLeadRealtime } from "@/hooks/useLeadRealtime";
 
 const AdminLayout = () => {
+  useLeadRealtime();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
