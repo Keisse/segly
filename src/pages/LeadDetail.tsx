@@ -36,7 +36,7 @@ import {
 import { capitalizeWords } from "@/lib/formatName";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import allevoLogo from "@/assets/allevo-logo.png";
+import seglyLogo from "@/assets/segly-logo.png.asset.json";
 import {
   RadarChart,
   PolarGrid,
@@ -123,8 +123,8 @@ const LeadDetail = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <img
-            src={allevoLogo}
-            alt="Allevo for Business"
+            src={seglyLogo.url}
+            alt="Segly"
             className="h-8"
           />
         </motion.div>
