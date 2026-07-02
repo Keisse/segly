@@ -136,6 +136,110 @@ const AdminDashboard = () => {
           </p>
         </motion.div>
 
+        {/* Date Filter Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-4"
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-foreground">Período:</span>
+
+            <Button
+              variant={isPeriodActive(0) ? "default" : "outline"}
+              size="sm"
+              onClick={() => setQuickPeriod(0)}
+            >
+              Hoje
+            </Button>
+            <Button
+              variant={isPeriodActive(7) ? "default" : "outline"}
+              size="sm"
+              onClick={() => setQuickPeriod(7)}
+            >
+              7 dias
+            </Button>
+            <Button
+              variant={isPeriodActive(30) ? "default" : "outline"}
+              size="sm"
+              onClick={() => setQuickPeriod(30)}
+            >
+              30 dias
+            </Button>
+            <Button
+              variant={isCurrentMonthActive() ? "default" : "outline"}
+              size="sm"
+              onClick={setCurrentMonth}
+            >
+              Este mês
+            </Button>
+
+            <div className="h-6 w-px bg-border/50" />
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="justify-start text-left font-normal gap-2"
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                  {filters.startDate
+                    ? format(filters.startDate, "dd/MM/yy", { locale: ptBR })
+                    : "De"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card pointer-events-auto">
+                <Calendar
+                  mode="single"
+                  selected={filters.startDate}
+                  onSelect={(date) =>
+                    setFilters({ ...filters, startDate: date || undefined })
+                  }
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="justify-start text-left font-normal gap-2"
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                  {filters.endDate
+                    ? format(filters.endDate, "dd/MM/yy", { locale: ptBR })
+                    : "Até"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card pointer-events-auto">
+                <Calendar
+                  mode="single"
+                  selected={filters.endDate}
+                  onSelect={(date) =>
+                    setFilters({ ...filters, endDate: date || undefined })
+                  }
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {hasDateFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearDateFilters}
+                className="text-xs text-muted-foreground gap-1"
+              >
+                <X className="w-3 h-3" />
+                Limpar
+              </Button>
+            )}
+          </div>
+        </motion.div>
+
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard title="Total de Leads" value={isLoading ? "..." : computedMetrics.total} icon={Users} delay={0} />
