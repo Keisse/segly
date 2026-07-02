@@ -40,7 +40,6 @@ const mainItems: Item[] = [
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Criar campanhas", url: "/admin/campanhas", icon: Megaphone },
   { title: "Base de conhecimento", url: "/admin/base-conhecimento", icon: BookOpen },
-  { title: "Usuários e Permissões", url: "/admin/administradores", icon: ShieldCheck, adminOnly: true },
 ];
 
 export function AdminSidebar() {
