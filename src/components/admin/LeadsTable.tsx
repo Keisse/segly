@@ -10,13 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -28,12 +21,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Phone, Trash2, Eye } from "lucide-react";
-import type { Lead, LeadStatus } from "@/types/lead";
-import { statusLabels, statusColors } from "@/types/lead";
-import { useUpdateLeadStatus, useDeleteLead, useUpdateLeadResponsavel } from "@/hooks/useLeads";
-import { capitalizeWords, hasAtLeastTwoWords } from "@/lib/formatName";
+import type { Lead } from "@/types/lead";
+import { useDeleteLead, useUpdateLeadOwner } from "@/hooks/useLeads";
+import { ResponsavelPicker } from "@/components/admin/ResponsavelPicker";
+import { StagePicker } from "@/components/admin/StagePicker";
+import { capitalizeWords } from "@/lib/formatName";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -49,12 +42,9 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<keyof Lead>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [editingResponsavel, setEditingResponsavel] = useState<string | null>(null);
-  const [responsavelValue, setResponsavelValue] = useState("");
-  const [responsavelError, setResponsavelError] = useState<string | null>(null);
-  const updateStatus = useUpdateLeadStatus();
   const deleteLead = useDeleteLead();
-  const updateResponsavel = useUpdateLeadResponsavel();
+  const updateOwner = useUpdateLeadOwner();
+
 
   // Sort leads
   const sortedLeads = [...leads].sort((a, b) => {
