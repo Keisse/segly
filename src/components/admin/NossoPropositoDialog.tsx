@@ -1,4 +1,4 @@
-import { Compass } from "lucide-react";
+import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import {
   Dialog,
   DialogContent,
@@ -23,12 +23,12 @@ export function NossoPropositoDialog({ open, onOpenChange }: NossoPropositoDialo
               className="flex items-center justify-center h-14 w-14 rounded-full mx-auto"
               style={{ backgroundColor: "rgba(47, 177, 132, 0.1)" }}
             >
-              <Compass className="h-7 w-7" style={{ color: "#2FB184" }} strokeWidth={1.75} />
+              <PrayingHandsIcon size={28} strokeWidth={1.75} style={{ color: "#2FB184" }} />
             </div>
             <DialogTitle className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
               Mais do que organizar vendas
             </DialogTitle>
-            <DialogDescription className="text-[15px] leading-relaxed text-slate-600 max-w-md mx-auto text-left">
+            <DialogDescription className="text-[15px] leading-relaxed text-slate-600 text-left">
               O Segly existe para ajudar pessoas e negócios a crescerem com clareza,
               responsabilidade e cuidado.
             </DialogDescription>
@@ -60,7 +60,7 @@ export function NossoPropositoDialog({ open, onOpenChange }: NossoPropositoDialo
           </div>
 
           <p
-            className="mt-8 text-center italic text-lg sm:text-xl font-semibold"
+            className="mt-8 text-center text-lg sm:text-xl font-semibold"
             style={{
               color: "#1A9A70",
               textShadow: "0 0 22px rgba(47, 177, 132, 0.40)",
