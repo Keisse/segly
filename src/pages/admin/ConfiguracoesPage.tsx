@@ -432,13 +432,15 @@ const ComingSoon = ({ title, description }: { title: string; description: string
 const ConfiguracoesPage = () => {
   const [dirty, setDirty] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") ?? "geral";
+  const rawTab = searchParams.get("tab") ?? "geral";
+  const initialTab = rawTab === "automacoes" ? "formulario" : rawTab;
   const [tab, setTab] = useState(initialTab);
   const { confirmDiscard } = useUnsavedChanges(dirty);
 
   useEffect(() => {
     const q = searchParams.get("tab");
-    if (q && q !== tab) setTab(q);
+    const normalized = q === "automacoes" ? "formulario" : q;
+    if (normalized && normalized !== tab) setTab(normalized);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -465,8 +467,7 @@ const ConfiguracoesPage = () => {
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="celebracoes">Celebrações</TabsTrigger>
-          <TabsTrigger value="automacoes">Automações</TabsTrigger>
-          
+          <TabsTrigger value="formulario">Formulário Padrão</TabsTrigger>
         </TabsList>
 
         <TabsContent value="geral" className="mt-4">
@@ -478,11 +479,8 @@ const ConfiguracoesPage = () => {
         <TabsContent value="celebracoes" className="mt-4">
           <CelebracoesSettings />
         </TabsContent>
-        <TabsContent value="automacoes" className="mt-4">
-          <ComingSoon
-            title="Automações"
-            description="Configure ações automáticas sem necessidade de integrações externas."
-          />
+        <TabsContent value="formulario" className="mt-4">
+          <LeadFormBuilder />
         </TabsContent>
       </Tabs>
     </div>
