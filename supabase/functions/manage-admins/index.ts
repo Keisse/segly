@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     if (!isAdmin) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
 
     const body = await req.json();
-    const { action, email, password, userId } = body;
+    const { action, email, password, userId, displayName } = body;
     const role: Role = (body.role as Role) || "admin";
     const liderId: string | null = body.liderId || null;
 
@@ -40,7 +40,6 @@ Deno.serve(async (req) => {
       const { data: { users } } = await admin.auth.admin.listUsers();
       const { data: profiles } = await admin.from("profiles").select("id, lider_id, display_name");
 
-      // Group roles by user
       const byUser = new Map<string, { roles: Role[]; created_at: string }>();
       (roles || []).forEach((r: any) => {
         const cur = byUser.get(r.user_id) || { roles: [], created_at: r.created_at };
@@ -86,14 +85,13 @@ Deno.serve(async (req) => {
         targetUserId = created.user!.id;
       }
 
-      // Clear roles and set the chosen one (single primary role)
       await admin.from("user_roles").delete().eq("user_id", targetUserId);
       const { error: roleErr } = await admin.from("user_roles").insert({ user_id: targetUserId, role });
       if (roleErr && !roleErr.message.includes("duplicate")) throw roleErr;
 
-      // Ensure profile row and set lider_id
       await admin.from("profiles").upsert({
         id: targetUserId,
+        display_name: displayName || null,
         lider_id: role === "user" ? liderId : null,
       });
 
@@ -114,10 +112,41 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (action === "update_user") {
+      if (!userId) return new Response(JSON.stringify({ error: "userId obrigatório" }), { status: 400, headers: corsHeaders });
+
+      if (email) {
+        const { error: upErr } = await admin.auth.admin.updateUserById(userId, { email });
+        if (upErr) throw upErr;
+      }
+
+      await admin.from("user_roles").delete().eq("user_id", userId);
+      const { error: roleErr } = await admin.from("user_roles").insert({ user_id: userId, role });
+      if (roleErr) throw roleErr;
+
+      await admin.from("profiles").upsert({
+        id: userId,
+        display_name: displayName ?? null,
+        lider_id: role === "user" ? liderId : null,
+      });
+
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (action === "reset_password") {
+      if (!userId || !password) return new Response(JSON.stringify({ error: "userId e password obrigatórios" }), { status: 400, headers: corsHeaders });
+      if (password.length < 8) return new Response(JSON.stringify({ error: "Senha deve ter ao menos 8 caracteres" }), { status: 400, headers: corsHeaders });
+      const { error } = await admin.auth.admin.updateUserById(userId, { password });
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "remove") {
       if (!userId) return new Response(JSON.stringify({ error: "userId obrigatório" }), { status: 400, headers: corsHeaders });
       if (userId === user.id) return new Response(JSON.stringify({ error: "Você não pode remover a si mesmo" }), { status: 400, headers: corsHeaders });
-      const { error } = await admin.from("user_roles").delete().eq("user_id", userId);
+      await admin.from("user_roles").delete().eq("user_id", userId);
+      await admin.from("profiles").delete().eq("id", userId);
+      const { error } = await admin.auth.admin.deleteUser(userId);
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
