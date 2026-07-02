@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { PrincipiosLibrarySection } from "@/components/admin/PrincipiosLibrarySection";
+import { PipelineSettings } from "@/components/admin/PipelineSettings";
+import { CelebracoesSettings } from "@/components/admin/CelebracoesSettings";
 
 
 const TIMEZONES = [
