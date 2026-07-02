@@ -1,4 +1,5 @@
-import { LayoutDashboard, KanbanSquare, Megaphone, BookOpen, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Megaphone, BookOpen, Users, LogOut, Compass } from "lucide-react";
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { NossoPropositoDialog } from "./NossoPropositoDialog";
 import seglyLogoAsset from "@/assets/segly-logo.png.asset.json";
 const seglyLogo = seglyLogoAsset.url;
 
@@ -29,6 +31,7 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const [propositoOpen, setPropositoOpen] = useState(false);
 
   const handleLogout = async () => {
     await signOut();
@@ -65,13 +68,25 @@ export function AdminSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <div className="mt-auto p-2">
+        <div className="mt-auto p-2 space-y-1">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setPropositoOpen(true)}
+                className="hover:bg-sidebar-accent/50"
+              >
+                <Compass className="h-4 w-4" />
+                {!collapsed && <span>Nosso Propósito</span>}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
           <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
             {!collapsed && "Sair"}
           </Button>
         </div>
       </SidebarContent>
+      <NossoPropositoDialog open={propositoOpen} onOpenChange={setPropositoOpen} />
     </Sidebar>
   );
 }
