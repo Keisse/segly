@@ -374,6 +374,66 @@ export type Database = {
           },
         ]
       }
+      lead_form_fields: {
+        Row: {
+          active: boolean
+          created_at: string
+          default_value: string | null
+          field_key: string
+          help_text: string | null
+          id: string
+          is_system: boolean
+          label: string
+          maps_to: string | null
+          options: Json
+          ordem: number
+          organization_id: string
+          placeholder: string | null
+          required: boolean
+          type: Database["public"]["Enums"]["lead_form_field_type"]
+          updated_at: string
+          validation: Json
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          default_value?: string | null
+          field_key: string
+          help_text?: string | null
+          id?: string
+          is_system?: boolean
+          label: string
+          maps_to?: string | null
+          options?: Json
+          ordem?: number
+          organization_id: string
+          placeholder?: string | null
+          required?: boolean
+          type: Database["public"]["Enums"]["lead_form_field_type"]
+          updated_at?: string
+          validation?: Json
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          default_value?: string | null
+          field_key?: string
+          help_text?: string | null
+          id?: string
+          is_system?: boolean
+          label?: string
+          maps_to?: string | null
+          options?: Json
+          ordem?: number
+          organization_id?: string
+          placeholder?: string | null
+          required?: boolean
+          type?: Database["public"]["Enums"]["lead_form_field_type"]
+          updated_at?: string
+          validation?: Json
+        }
+        Relationships: []
+      }
       lead_stage_celebrations: {
         Row: {
           celebrated_at: string
@@ -417,6 +477,7 @@ export type Database = {
           campaign_slug: string | null
           cargo: string
           created_at: string
+          custom_fields: Json
           departamento: string
           email: string
           empresa: string
@@ -441,6 +502,7 @@ export type Database = {
           campaign_slug?: string | null
           cargo: string
           created_at?: string
+          custom_fields?: Json
           departamento: string
           email: string
           empresa: string
@@ -465,6 +527,7 @@ export type Database = {
           campaign_slug?: string | null
           cargo?: string
           created_at?: string
+          custom_fields?: Json
           departamento?: string
           email?: string
           empresa?: string
@@ -955,7 +1018,9 @@ export type Database = {
         }[]
       }
       my_org: { Args: never; Returns: string }
+      restore_default_lead_form: { Args: never; Returns: undefined }
       same_org: { Args: { _user_id: string }; Returns: boolean }
+      seed_default_lead_form: { Args: { _org: string }; Returns: undefined }
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
@@ -971,6 +1036,17 @@ export type Database = {
         | "nps"
       campaign_status: "ativa" | "inativa"
       campaign_type: "diagnostico_score" | "formulario_captura" | "pesquisa"
+      lead_form_field_type:
+        | "short_text"
+        | "long_text"
+        | "email"
+        | "phone"
+        | "number"
+        | "date"
+        | "select"
+        | "multiselect"
+        | "checkbox"
+        | "company"
       principle_audience: "all" | "user" | "lider" | "admin"
       principle_status: "published" | "paused" | "archived"
     }
@@ -1113,6 +1189,18 @@ export const Constants = {
       ],
       campaign_status: ["ativa", "inativa"],
       campaign_type: ["diagnostico_score", "formulario_captura", "pesquisa"],
+      lead_form_field_type: [
+        "short_text",
+        "long_text",
+        "email",
+        "phone",
+        "number",
+        "date",
+        "select",
+        "multiselect",
+        "checkbox",
+        "company",
+      ],
       principle_audience: ["all", "user", "lider", "admin"],
       principle_status: ["published", "paused", "archived"],
     },
