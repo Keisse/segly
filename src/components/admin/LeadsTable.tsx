@@ -76,48 +76,10 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
     }
   };
 
-  const handleStatusChange = (leadId: string, newStatus: LeadStatus) => {
-    updateStatus.mutate({ id: leadId, status: newStatus });
-  };
-
   const handleDelete = (leadId: string) => {
     deleteLead.mutate(leadId);
   };
 
-  const handleResponsavelClick = (lead: Lead) => {
-    setEditingResponsavel(lead.id);
-    setResponsavelValue(lead.responsavel || "");
-    setResponsavelError(null);
-  };
-
-  const handleResponsavelBlur = (leadId: string) => {
-    if (responsavelValue.trim() === "") {
-      setEditingResponsavel(null);
-      setResponsavelError(null);
-      return;
-    }
-
-    if (!hasAtLeastTwoWords(responsavelValue)) {
-      setResponsavelError("Informe nome e sobrenome");
-      return;
-    }
-
-    updateResponsavel.mutate({ 
-      id: leadId, 
-      responsavel: capitalizeWords(responsavelValue.trim()) 
-    });
-    setEditingResponsavel(null);
-    setResponsavelError(null);
-  };
-
-  const handleResponsavelKeyDown = (e: React.KeyboardEvent, leadId: string) => {
-    if (e.key === "Enter") {
-      handleResponsavelBlur(leadId);
-    } else if (e.key === "Escape") {
-      setEditingResponsavel(null);
-      setResponsavelError(null);
-    }
-  };
 
   if (isLoading) {
     return (
