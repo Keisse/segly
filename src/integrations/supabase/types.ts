@@ -391,9 +391,11 @@ export type Database = {
           notas: Json | null
           organization_id: string | null
           owner_id: string | null
+          pipeline_id: string | null
           porte_empresa: string
           responsavel: string | null
           resultado_diagnostico: Json | null
+          stage_id: string | null
           status: string
           telefone: string
         }
@@ -413,9 +415,11 @@ export type Database = {
           notas?: Json | null
           organization_id?: string | null
           owner_id?: string | null
+          pipeline_id?: string | null
           porte_empresa: string
           responsavel?: string | null
           resultado_diagnostico?: Json | null
+          stage_id?: string | null
           status?: string
           telefone: string
         }
@@ -435,9 +439,11 @@ export type Database = {
           notas?: Json | null
           organization_id?: string | null
           owner_id?: string | null
+          pipeline_id?: string | null
           porte_empresa?: string
           responsavel?: string | null
           resultado_diagnostico?: Json | null
+          stage_id?: string | null
           status?: string
           telefone?: string
         }
@@ -454,6 +460,20 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
             referencedColumns: ["id"]
           },
         ]
@@ -537,6 +557,103 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pipeline_stages: {
+        Row: {
+          cor: string | null
+          created_at: string
+          id: string
+          is_lost: boolean
+          is_won: boolean
+          nome: string
+          ordem: number
+          pipeline_id: string
+          updated_at: string
+          wip_limit: number | null
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          nome: string
+          ordem?: number
+          pipeline_id: string
+          updated_at?: string
+          wip_limit?: number | null
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          nome?: string
+          ordem?: number
+          pipeline_id?: string
+          updated_at?: string
+          wip_limit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_stages_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pipelines: {
+        Row: {
+          arquivado: boolean
+          ativo: boolean
+          cor: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          is_default: boolean
+          nome: string
+          ordem: number
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          arquivado?: boolean
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_default?: boolean
+          nome: string
+          ordem?: number
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          arquivado?: boolean
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_default?: boolean
+          nome?: string
+          ordem?: number
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipelines_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       principle_history: {
         Row: {

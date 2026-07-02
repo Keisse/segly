@@ -1,168 +1,314 @@
-import { useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useMemo, useState } from "react";
+import { usePipelines, usePipelineStages, useCreatePipeline, useUpdatePipeline, useDeletePipeline, useUpsertStage, useDeleteStage, useReorderStages, type PipelineStage } from "@/hooks/usePipelines";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Trash2, GripVertical, Save, Loader2, ArrowUp, ArrowDown } from "lucide-react";
-
-type Stage = { id: string; name: string; color: string; wip_limit: number | null };
-type PipelineCfg = {
-  stages: Stage[];
-  default_stage_id: string | null;
-  rotting_days: number;
-  auto_move_days: number | null;
-  require_reason_on_lost: boolean;
-};
-
-const DEFAULT_CFG: PipelineCfg = {
-  stages: [
-    { id: "novo", name: "Novo", color: "#64748b", wip_limit: null },
-    { id: "contato", name: "Em contato", color: "#3b82f6", wip_limit: null },
-    { id: "proposta", name: "Proposta enviada", color: "#eab308", wip_limit: null },
-    { id: "ganho", name: "Ganho", color: "#10b981", wip_limit: null },
-    { id: "perdido", name: "Perdido", color: "#ef4444", wip_limit: null },
-  ],
-  default_stage_id: "novo",
-  rotting_days: 14,
-  auto_move_days: null,
-  require_reason_on_lost: true,
-};
-
-const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || crypto.randomUUID().slice(0, 6);
+import { Plus, Trash2, GripVertical, ArrowUp, ArrowDown, MoreVertical, Archive, ArchiveRestore, Copy, Pencil } from "lucide-react";
 
 export function PipelineSettings() {
-  const qc = useQueryClient();
-  const [cfg, setCfg] = useState<PipelineCfg>(DEFAULT_CFG);
-  const [orgId, setOrgId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const { data: pipelines = [], isLoading } = usePipelines({ includeArchived: true });
+  const activePipelines = useMemo(() => pipelines.filter((p) => !p.arquivado), [pipelines]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const { data } = useQuery({
-    queryKey: ["org-settings-pipeline"],
-    queryFn: async () => {
-      const u = await supabase.auth.getUser();
-      const { data: prof } = await supabase.from("profiles").select("organization_id").eq("id", u.data.user!.id).maybeSingle();
-      const oid = (prof as { organization_id: string | null } | null)?.organization_id ?? null;
-      setOrgId(oid);
-      if (!oid) return null;
-      const { data: row } = await supabase.from("organization_settings" as never).select("settings" as never).eq("organization_id", oid).maybeSingle();
-      const s = (row as { settings?: Record<string, unknown> } | null)?.settings ?? {};
-      return (s.pipeline as PipelineCfg) ?? DEFAULT_CFG;
-    },
-  });
+  useEffect(() => {
+    if (!selectedId && activePipelines.length > 0) setSelectedId(activePipelines[0].id);
+    if (selectedId && !pipelines.find((p) => p.id === selectedId) && activePipelines.length > 0) setSelectedId(activePipelines[0].id);
+  }, [activePipelines, pipelines, selectedId]);
 
-  useEffect(() => { if (data) setCfg({ ...DEFAULT_CFG, ...data, stages: data.stages?.length ? data.stages : DEFAULT_CFG.stages }); }, [data]);
+  const selected = pipelines.find((p) => p.id === selectedId) ?? null;
+  const { data: stages = [] } = usePipelineStages(selectedId);
+  const upsertStage = useUpsertStage();
+  const deleteStage = useDeleteStage();
+  const reorder = useReorderStages();
+  const updatePipeline = useUpdatePipeline();
+  const deletePipeline = useDeletePipeline();
 
-  const save = async () => {
-    if (!orgId) return;
-    setSaving(true);
-    try {
-      const { data: existing } = await supabase.from("organization_settings" as never).select("settings" as never).eq("organization_id", orgId).maybeSingle();
-      const current = ((existing as { settings?: Record<string, unknown> } | null)?.settings) ?? {};
-      const merged = { ...current, pipeline: cfg };
-      const { error } = await supabase.from("organization_settings" as never).upsert({ organization_id: orgId, settings: merged } as never, { onConflict: "organization_id" });
-      if (error) throw error;
-      qc.invalidateQueries({ queryKey: ["org-settings-pipeline"] });
-      toast.success("Pipeline salva.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao salvar");
-    } finally { setSaving(false); }
-  };
+  const [createOpen, setCreateOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
 
-  const addStage = () => setCfg({ ...cfg, stages: [...cfg.stages, { id: crypto.randomUUID().slice(0, 8), name: "Nova etapa", color: "#8b5cf6", wip_limit: null }] });
-  const updateStage = (i: number, patch: Partial<Stage>) => setCfg({ ...cfg, stages: cfg.stages.map((s, idx) => idx === i ? { ...s, ...patch, id: patch.name ? slug(patch.name) : s.id } : s) });
-  const removeStage = (i: number) => setCfg({ ...cfg, stages: cfg.stages.filter((_, idx) => idx !== i) });
+  // local stages buffer for reorder & inline edit
+  const [localStages, setLocalStages] = useState<PipelineStage[]>([]);
+  useEffect(() => setLocalStages(stages), [stages]);
+
+  const persistStage = async (s: PipelineStage) => upsertStage.mutateAsync(s);
   const move = (i: number, dir: -1 | 1) => {
-    const next = [...cfg.stages];
+    const next = [...localStages];
     const j = i + dir;
     if (j < 0 || j >= next.length) return;
     [next[i], next[j]] = [next[j], next[i]];
-    setCfg({ ...cfg, stages: next });
+    setLocalStages(next);
+    reorder.mutate({ pipelineId: selectedId!, stages: next });
   };
+
+  const addStage = async () => {
+    if (!selectedId) return;
+    await upsertStage.mutateAsync({
+      pipeline_id: selectedId,
+      nome: "Nova etapa",
+      cor: "#8b5cf6",
+      ordem: localStages.length,
+      is_won: false,
+      is_lost: false,
+    });
+  };
+
+  if (isLoading) return <p className="text-sm text-muted-foreground">Carregando pipelines…</p>;
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Etapas da pipeline</CardTitle>
-          <CardDescription>Defina os estágios pelos quais os leads passam. A ordem aqui é a mesma no quadro.</CardDescription>
+          <CardTitle>Pipelines da organização</CardTitle>
+          <CardDescription>Cada pipeline aparece como uma aba na página Pipelines. Selecione um para configurar suas etapas.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {cfg.stages.map((s, i) => (
-            <div key={s.id + i} className="flex items-center gap-2 rounded-md border border-border p-2">
-              <GripVertical className="w-4 h-4 text-muted-foreground" />
-              <input type="color" value={s.color} onChange={(e) => updateStage(i, { color: e.target.value })} className="h-8 w-10 rounded border border-border bg-transparent" />
-              <Input className="flex-1" value={s.name} onChange={(e) => updateStage(i, { name: e.target.value })} />
-              <Input
-                type="number"
-                min={0}
-                placeholder="Limite WIP"
-                className="w-28"
-                value={s.wip_limit ?? ""}
-                onChange={(e) => updateStage(i, { wip_limit: e.target.value ? Number(e.target.value) : null })}
-              />
-              <Button size="icon" variant="ghost" onClick={() => move(i, -1)} disabled={i === 0}><ArrowUp className="w-4 h-4" /></Button>
-              <Button size="icon" variant="ghost" onClick={() => move(i, 1)} disabled={i === cfg.stages.length - 1}><ArrowDown className="w-4 h-4" /></Button>
-              <Button size="icon" variant="ghost" onClick={() => removeStage(i)}><Trash2 className="w-4 h-4" /></Button>
-            </div>
-          ))}
-          <Button variant="outline" onClick={addStage}><Plus className="w-4 h-4 mr-1" /> Adicionar etapa</Button>
+        <CardContent className="flex flex-wrap items-center gap-2">
+          <div className="min-w-[240px]">
+            <Select value={selectedId ?? ""} onValueChange={setSelectedId}>
+              <SelectTrigger><SelectValue placeholder="Selecione um pipeline" /></SelectTrigger>
+              <SelectContent>
+                {pipelines.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full" style={{ background: p.cor ?? "#1D9E75" }} />
+                      {p.nome}{p.arquivado ? " (arquivado)" : ""}{p.is_default ? " • padrão" : ""}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild><Button size="sm"><Plus className="w-4 h-4 mr-1" /> Novo pipeline</Button></DialogTrigger>
+            <CreatePipelineDialog onCreated={(id) => { setSelectedId(id); setCreateOpen(false); }} />
+          </Dialog>
+
+          {selected && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="outline" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setRenameValue(selected.nome); setRenameOpen(true); }}>
+                  <Pencil className="w-4 h-4 mr-2" /> Renomear
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={async () => {
+                  const created = await (async () => {
+                    // simple duplicate: create pipeline then copy stages
+                    const { data: user } = await import("@/integrations/supabase/client").then((m) => m.supabase.auth.getUser());
+                    void user;
+                    return null;
+                  })();
+                  void created;
+                  toast.info("Duplicando…");
+                  // duplicate via hooks would need a dedicated hook; do inline:
+                  const { supabase } = await import("@/integrations/supabase/client");
+                  const u = await supabase.auth.getUser();
+                  const { data: prof } = await supabase.from("profiles").select("organization_id").eq("id", u.data.user!.id).maybeSingle();
+                  const orgId = (prof as { organization_id: string } | null)?.organization_id;
+                  if (!orgId) return;
+                  const { data: p } = await supabase.from("pipelines" as never).insert({ organization_id: orgId, nome: `${selected.nome} (cópia)`, cor: selected.cor, ordem: pipelines.length } as never).select().single();
+                  const newId = (p as { id: string } | null)?.id;
+                  if (newId && stages.length) {
+                    await supabase.from("pipeline_stages" as never).insert(stages.map((s) => ({ pipeline_id: newId, nome: s.nome, cor: s.cor, ordem: s.ordem, wip_limit: s.wip_limit, is_won: s.is_won, is_lost: s.is_lost })) as never);
+                  }
+                  toast.success("Pipeline duplicado.");
+                  setSelectedId(newId ?? selectedId);
+                }}>
+                  <Copy className="w-4 h-4 mr-2" /> Duplicar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updatePipeline.mutate({ id: selected.id, patch: { arquivado: !selected.arquivado } })}>
+                  {selected.arquivado ? <><ArchiveRestore className="w-4 h-4 mr-2" /> Desarquivar</> : <><Archive className="w-4 h-4 mr-2" /> Arquivar</>}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive"
+                  disabled={activePipelines.length <= 1}
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Regras da pipeline</CardTitle>
-          <CardDescription>Comportamentos padrão aplicados a todas as oportunidades.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Etapa inicial padrão</Label>
-              <select
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm"
-                value={cfg.default_stage_id ?? ""}
-                onChange={(e) => setCfg({ ...cfg, default_stage_id: e.target.value })}
-              >
-                {cfg.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Considerar lead "parado" após (dias)</Label>
-              <Input type="number" min={1} value={cfg.rotting_days} onChange={(e) => setCfg({ ...cfg, rotting_days: Number(e.target.value) || 1 })} />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Mover automaticamente para próxima etapa após (dias sem interação)</Label>
-              <Input
-                type="number"
-                min={0}
-                placeholder="Desligado"
-                value={cfg.auto_move_days ?? ""}
-                onChange={(e) => setCfg({ ...cfg, auto_move_days: e.target.value ? Number(e.target.value) : null })}
-              />
-              <p className="text-xs text-muted-foreground">Deixe em branco para desligar a automação.</p>
-            </div>
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Exigir motivo ao mover para "Perdido"</p>
-              <p className="text-xs text-muted-foreground">Garante que o time registre o aprendizado.</p>
-            </div>
-            <Switch checked={cfg.require_reason_on_lost} onCheckedChange={(v) => setCfg({ ...cfg, require_reason_on_lost: v })} />
-          </div>
-        </CardContent>
-      </Card>
+      {selected && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Etapas de "{selected.nome}"</CardTitle>
+            <CardDescription>Ordene, edite cor, limite WIP e marque etapas como Ganho/Perdido.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {localStages.map((s, i) => (
+              <div key={s.id} className="flex items-center gap-2 rounded-md border border-border p-2">
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
+                <input
+                  type="color"
+                  value={s.cor ?? "#64748b"}
+                  onChange={(e) => setLocalStages(localStages.map((x) => x.id === s.id ? { ...x, cor: e.target.value } : x))}
+                  onBlur={() => persistStage(s)}
+                  className="h-8 w-10 rounded border border-border bg-transparent"
+                />
+                <Input
+                  className="flex-1"
+                  value={s.nome}
+                  onChange={(e) => setLocalStages(localStages.map((x) => x.id === s.id ? { ...x, nome: e.target.value } : x))}
+                  onBlur={() => persistStage(s)}
+                />
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="WIP"
+                  className="w-20"
+                  value={s.wip_limit ?? ""}
+                  onChange={(e) => setLocalStages(localStages.map((x) => x.id === s.id ? { ...x, wip_limit: e.target.value ? Number(e.target.value) : null } : x))}
+                  onBlur={() => persistStage(s)}
+                />
+                <label className="flex items-center gap-1 text-xs">
+                  <input type="checkbox" checked={s.is_won} onChange={(e) => { const upd = { ...s, is_won: e.target.checked, is_lost: e.target.checked ? false : s.is_lost }; setLocalStages(localStages.map((x) => x.id === s.id ? upd : x)); persistStage(upd); }} />
+                  Ganho
+                </label>
+                <label className="flex items-center gap-1 text-xs">
+                  <input type="checkbox" checked={s.is_lost} onChange={(e) => { const upd = { ...s, is_lost: e.target.checked, is_won: e.target.checked ? false : s.is_won }; setLocalStages(localStages.map((x) => x.id === s.id ? upd : x)); persistStage(upd); }} />
+                  Perdido
+                </label>
+                <Button size="icon" variant="ghost" onClick={() => move(i, -1)} disabled={i === 0}><ArrowUp className="w-4 h-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => move(i, 1)} disabled={i === localStages.length - 1}><ArrowDown className="w-4 h-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => deleteStage.mutate({ id: s.id, pipelineId: selected.id })}><Trash2 className="w-4 h-4" /></Button>
+              </div>
+            ))}
+            <Button variant="outline" onClick={addStage}><Plus className="w-4 h-4 mr-1" /> Adicionar etapa</Button>
+          </CardContent>
+        </Card>
+      )}
 
-      <div className="flex justify-end">
-        <Button onClick={save} disabled={saving}>
-          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando…</> : <><Save className="w-4 h-4 mr-2" /> Salvar pipeline</>}
-        </Button>
-      </div>
+      {selected && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Definir como padrão</CardTitle>
+            <CardDescription>Novos leads sem pipeline definido irão para o pipeline padrão da organização.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between">
+            <p className="text-sm">Este é o pipeline padrão?</p>
+            <Switch
+              checked={selected.is_default}
+              onCheckedChange={async (v) => {
+                if (v) {
+                  const { supabase } = await import("@/integrations/supabase/client");
+                  await supabase.from("pipelines" as never).update({ is_default: false } as never).eq("organization_id", selected.organization_id);
+                }
+                updatePipeline.mutate({ id: selected.id, patch: { is_default: v } });
+              }}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Rename dialog */}
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Renomear pipeline</DialogTitle></DialogHeader>
+          <Input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameOpen(false)}>Cancelar</Button>
+            <Button onClick={() => { if (selected && renameValue.trim()) { updatePipeline.mutate({ id: selected.id, patch: { nome: renameValue.trim() } }); setRenameOpen(false); } }}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete dialog */}
+      <DeletePipelineDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        pipeline={selected}
+        options={activePipelines.filter((p) => p.id !== selected?.id)}
+        onDone={() => { setDeleteOpen(false); setSelectedId(null); }}
+        deletePipeline={deletePipeline.mutateAsync}
+      />
     </div>
+  );
+}
+
+function CreatePipelineDialog({ onCreated }: { onCreated: (id: string) => void }) {
+  const [nome, setNome] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [cor, setCor] = useState("#1D9E75");
+  const [withDefaults, setWithDefaults] = useState(true);
+  const create = useCreatePipeline();
+
+  return (
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Novo pipeline</DialogTitle>
+        <DialogDescription>Este pipeline aparecerá como uma aba na página Pipelines.</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-3">
+        <div className="space-y-1"><Label>Nome *</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Renovação" /></div>
+        <div className="space-y-1"><Label>Descrição</Label><Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={2} /></div>
+        <div className="space-y-1"><Label>Cor</Label><input type="color" value={cor} onChange={(e) => setCor(e.target.value)} className="h-10 w-16 rounded border border-border bg-transparent" /></div>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={withDefaults} onChange={(e) => setWithDefaults(e.target.checked)} /> Criar com etapas padrão (Novo → Ganho/Perdido)</label>
+      </div>
+      <DialogFooter>
+        <Button disabled={!nome.trim() || create.isPending} onClick={async () => {
+          const p = await create.mutateAsync({ nome: nome.trim(), descricao: descricao.trim() || undefined, cor, withDefaultStages: withDefaults });
+          onCreated(p.id);
+        }}>Criar pipeline</Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+}
+
+function DeletePipelineDialog({ open, onOpenChange, pipeline, options, onDone, deletePipeline }: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  pipeline: { id: string; nome: string } | null;
+  options: { id: string; nome: string }[];
+  onDone: () => void;
+  deletePipeline: (args: { id: string; moveLeadsTo?: string | null }) => Promise<void>;
+}) {
+  const [moveTo, setMoveTo] = useState<string>("");
+  useEffect(() => { if (open && options[0]) setMoveTo(options[0].id); }, [open, options]);
+
+  if (!pipeline) return null;
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Excluir pipeline "{pipeline.nome}"?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Leads vinculados serão movidos para o pipeline selecionado abaixo. Esta ação não pode ser desfeita.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="space-y-2">
+          <Label>Mover leads para</Label>
+          <Select value={moveTo} onValueChange={setMoveTo}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {options.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async () => { await deletePipeline({ id: pipeline.id, moveLeadsTo: moveTo || null }); onDone(); }}
+          >
+            Excluir
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
