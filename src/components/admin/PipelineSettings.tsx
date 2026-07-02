@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { usePipelines, usePipelineStages, useCreatePipeline, useUpdatePipeline, useDeletePipeline, useUpsertStage, useDeleteStage, type PipelineStage } from "@/hooks/usePipelines";
+import { usePipelines, usePipelineStages, useCreatePipeline, useUpdatePipeline, useDeletePipeline, useUpsertStage, useDeleteStage, type PipelineStage, type CelebrateAudience } from "@/hooks/usePipelines";
+import { useMyRole } from "@/hooks/useMyRole";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Trash2, GripVertical, ArrowUp, ArrowDown, MoreVertical, Archive, ArchiveRestore, Copy, Pencil, Save, Loader2 } from "lucide-react";
+import { Plus, Trash2, GripVertical, ArrowUp, ArrowDown, MoreVertical, Archive, ArchiveRestore, Copy, Pencil, Save, Loader2, PartyPopper, ChevronDown, Lock } from "lucide-react";
 
 type StageDraft = PipelineStage & { _new?: boolean; _dirty?: boolean };
 
