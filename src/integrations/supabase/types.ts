@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          entity: string | null
+          entity_id: string | null
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          organization_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          organization_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          organization_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_questions: {
         Row: {
           campaign_id: string
@@ -125,6 +169,7 @@ export type Database = {
           image_url: string | null
           name: string
           optin_fields: Json
+          organization_id: string | null
           public_subtitle: string | null
           public_title: string | null
           slug: string
@@ -145,6 +190,7 @@ export type Database = {
           image_url?: string | null
           name: string
           optin_fields?: Json
+          organization_id?: string | null
           public_subtitle?: string | null
           public_title?: string | null
           slug: string
@@ -165,6 +211,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           optin_fields?: Json
+          organization_id?: string | null
           public_subtitle?: string | null
           public_title?: string | null
           slug?: string
@@ -177,7 +224,15 @@ export type Database = {
           voucher_description?: string | null
           voucher_enabled?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clientes: {
         Row: {
@@ -189,6 +244,7 @@ export type Database = {
           id: string
           lead_id: string | null
           nome: string
+          organization_id: string | null
           owner_id: string | null
           pipeline_origem: string | null
           status: string
@@ -204,6 +260,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           nome: string
+          organization_id?: string | null
           owner_id?: string | null
           pipeline_origem?: string | null
           status?: string
@@ -219,6 +276,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           nome?: string
+          organization_id?: string | null
           owner_id?: string | null
           pipeline_origem?: string | null
           status?: string
@@ -231,6 +289,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clientes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -324,6 +389,7 @@ export type Database = {
           id: string
           nome: string
           notas: Json | null
+          organization_id: string | null
           owner_id: string | null
           porte_empresa: string
           responsavel: string | null
@@ -345,6 +411,7 @@ export type Database = {
           id?: string
           nome: string
           notas?: Json | null
+          organization_id?: string | null
           owner_id?: string | null
           porte_empresa: string
           responsavel?: string | null
@@ -366,6 +433,7 @@ export type Database = {
           id?: string
           nome?: string
           notas?: Json | null
+          organization_id?: string | null
           owner_id?: string | null
           porte_empresa?: string
           responsavel?: string | null
@@ -381,7 +449,94 @@ export type Database = {
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "leads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      organization_settings: {
+        Row: {
+          default_lead_owner: string | null
+          email_notifications: boolean
+          extra: Json
+          in_app_notifications: boolean
+          inactive_lead_reminder_days: number
+          organization_id: string
+          track_change_history: boolean
+          updated_at: string
+        }
+        Insert: {
+          default_lead_owner?: string | null
+          email_notifications?: boolean
+          extra?: Json
+          in_app_notifications?: boolean
+          inactive_lead_reminder_days?: number
+          organization_id: string
+          track_change_history?: boolean
+          updated_at?: string
+        }
+        Update: {
+          default_lead_owner?: string | null
+          email_notifications?: boolean
+          extra?: Json
+          in_app_notifications?: boolean
+          inactive_lead_reminder_days?: number
+          organization_id?: string
+          track_change_history?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          phone: string | null
+          state: string | null
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          state?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          state?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -399,6 +554,7 @@ export type Database = {
           id: string
           lider_id: string | null
           numero: string | null
+          organization_id: string | null
           pais: string | null
           preferences: Json
           profissao: string | null
@@ -422,6 +578,7 @@ export type Database = {
           id: string
           lider_id?: string | null
           numero?: string | null
+          organization_id?: string | null
           pais?: string | null
           preferences?: Json
           profissao?: string | null
@@ -445,6 +602,7 @@ export type Database = {
           id?: string
           lider_id?: string | null
           numero?: string | null
+          organization_id?: string | null
           pais?: string | null
           preferences?: Json
           profissao?: string | null
@@ -453,7 +611,15 @@ export type Database = {
           telefone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       question_sets: {
         Row: {
@@ -524,6 +690,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_lider: { Args: never; Returns: boolean }
+      my_org: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user" | "lider" | "moderator"
