@@ -465,8 +465,7 @@ const ConfiguracoesPage = () => {
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="celebracoes">Celebrações</TabsTrigger>
-          <TabsTrigger value="automacoes">Automações</TabsTrigger>
-          
+          <TabsTrigger value="formulario">Formulário Padrão</TabsTrigger>
         </TabsList>
 
         <TabsContent value="geral" className="mt-4">
@@ -478,11 +477,8 @@ const ConfiguracoesPage = () => {
         <TabsContent value="celebracoes" className="mt-4">
           <CelebracoesSettings />
         </TabsContent>
-        <TabsContent value="automacoes" className="mt-4">
-          <ComingSoon
-            title="Automações"
-            description="Configure ações automáticas sem necessidade de integrações externas."
-          />
+        <TabsContent value="formulario" className="mt-4">
+          <LeadFormBuilder />
         </TabsContent>
       </Tabs>
     </div>
