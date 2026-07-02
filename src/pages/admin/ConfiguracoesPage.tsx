@@ -475,12 +475,6 @@ const ConfiguracoesPage = () => {
             description="Configure ações automáticas sem necessidade de integrações externas."
           />
         </TabsContent>
-        <TabsContent value="integracoes" className="mt-4">
-          <ComingSoon
-            title="Integrações"
-            description="Webhooks e conexões com sistemas externos."
-          />
-        </TabsContent>
       </Tabs>
     </div>
   );
