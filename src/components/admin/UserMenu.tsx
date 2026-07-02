@@ -16,9 +16,11 @@ import {
   Cookie,
   Tag,
   ShieldCheck,
-  CircleDot,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PrincipioDoDiaDialog } from "@/components/admin/PrincipioDoDiaDialog";
+
 
 const APP_VERSION = "1.0.0";
 
