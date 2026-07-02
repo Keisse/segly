@@ -1,123 +1,107 @@
-## Sistema de Campanhas Dinâmicas
 
-Transformar o sistema atual em uma plataforma de campanhas gerenciadas pelo admin, com criação de páginas públicas dinâmicas via slug, perguntas customizáveis por campanha e tracking de respostas.
+# Reestruturação da Navegação Lateral e Papéis do Segly
 
----
+Vou reorganizar o menu, criar as novas áreas e implementar o controle de acesso por papel (Usuário, Líder, Administrador) sem alterar estilo visual, cores, tipografia ou comportamento dos itens já existentes.
 
-### Etapa 1 — Banco de Dados (Supabase)
+## 1. Papéis e Permissões (Backend)
 
-Criar via migration:
+Hoje o enum `app_role` só tem `admin`, `moderator`, `user`. Vou:
 
-**Tabela `campaigns`**
-- `id`, `name`, `slug` (unique), `description`, `type` (enum: diagnostico_score | formulario_captura | pesquisa), `status` (enum: ativa | inativa), `tag`, `public_title`, `public_subtitle`, `image_url`, `optin_fields` (jsonb), `thank_you_message`, `created_at`, `updated_at`
+- Adicionar `lider` ao enum `app_role`.
+- Adicionar coluna `lider_id` em `user_roles` (ou tabela `profiles`) para vincular um Usuário a um Líder responsável (só válido quando o papel for `user`; o líder referenciado deve ter papel `lider` ou `admin`).
+- Criar/ajustar funções `has_role`, `is_admin`, `is_lider` (SECURITY DEFINER) para uso em RLS.
+- Ajustar RLS de `leads` (e futura tabela `clientes`) para:
+  - Admin → vê tudo.
+  - Líder → vê os próprios + leads de usuários cujo `lider_id` = seu id.
+  - Usuário → vê só os próprios (`owner_id = auth.uid()`).
+- Se a tabela `leads` ainda não tiver `owner_id`, adiciono a coluna (nullable, sem quebrar dados atuais; admin continua vendo tudo).
 
-**Tabela `campaign_questions`**
-- `id`, `campaign_id` (FK), `question_text`, `question_type` (enum: multiple_choice | checkbox | scale | short_text | long_text | yes_no | dropdown | nps), `options` (jsonb), `scale_min`, `scale_max`, `is_required`, `category`, `sort_order`, `created_at`
+## 2. Nova estrutura do menu (`AdminSidebar.tsx`)
 
-**Tabela `campaign_responses`**
-- `id`, `lead_id` (FK leads), `campaign_id` (FK), `question_id` (FK), `answer_text`, `answer_value` (numeric), `created_at`
+Mantendo estilo, ícones no mesmo padrão Lucide, espaçamentos e comportamento colapsável atuais.
 
-**Alterações em `leads`**
-- Adicionar `campaign_id` (uuid, nullable), `campaign_slug` (text, nullable), `campaign_name` (text, nullable)
+**PAINEL**
+1. Dashboard — `LayoutDashboard` (existente)
+2. Leads — `Users` / `UserSquare` (novo)
+3. Pipelines — `KanbanSquare` (existente, renomeado do item Pipelines atual)
+4. Clientes — `Handshake` ou `Building2` (novo)
+5. Criar campanhas — `Megaphone` (existente)
+6. Base de conhecimento — `BookOpen` (existente)
+7. Usuários e Permissões — `ShieldCheck` (renomeado de "Usuários", **somente Admin**)
 
-**RLS**
-- `campaigns` / `campaign_questions`: admins gerenciam tudo (`is_admin()`); público pode ler campanhas com `status='ativa'` e suas perguntas
-- `campaign_responses`: admins leem tudo; inserção pública permitida (sem auth, pois lead público responde)
-- Storage: bucket público `campaign-images` para uploads de logos
+**RODAPÉ** (na mesma área inferior onde hoje está "Nosso Propósito" + "Sair")
+1. Nosso Propósito — `PrayingHandsIcon` (existente)
+2. Meu Perfil — `UserCircle` (novo, todos)
+3. Configurações — `Settings` (novo, **somente Admin**)
+4. Sair — `LogOut` (existente)
 
-**Storage bucket**: `campaign-images` (público), políticas: admins fazem upload, público lê
+O filtro de visibilidade usa o hook `useIsAdmin` já existente + um novo `useIsLider`.
 
-**Migração de dados**: criar campanha padrão "Diagnóstico Original" e vincular os 55 leads existentes a ela.
+## 3. Guarda de rotas
 
----
+- Criar `AdminOnlyRoute` (wrapper que redireciona não-admins para `/admin/dashboard`).
+- Aplicar em `/admin/administradores` (renomeado internamente para "Usuários e Permissões", rota mantida por compatibilidade) e `/admin/configuracoes`.
+- Bloqueio server-side já vem das RLS + checagens `is_admin()` nas edge functions relevantes (`manage-admins` já valida).
 
-### Etapa 2 — Painel Admin: módulo Campanhas
+## 4. Novas páginas
 
-**Sidebar** (`AdminSidebar.tsx`): novo item "Campanhas" entre "Editor de Perguntas" e "Base de Conhecimento", com ícone `Megaphone`.
+### `/admin/leads` — Lista centralizada de Leads
+- Reaproveita `LeadsTable` já existente, agora em página própria.
+- Busca por nome/empresa/email, filtros (status, data), ordenação por colunas, clique → `/admin/lead/:id`.
+- Query respeita RLS (admin vê tudo, líder vê equipe, usuário vê próprios).
 
-**Rotas novas em `App.tsx`**:
-- `/admin/campanhas` → lista
-- `/admin/campanhas/nova` → criação
-- `/admin/campanhas/:id` → edição
+### `/admin/clientes` — Clientes
+- Nova tabela `clientes` (ou view sobre `leads` com `status = 'convertido'`). Vou usar tabela nova `clientes` com: `lead_id`, `owner_id`, `pipeline_origem`, `data_conversao`, `status_cliente`, histórico via `cliente_eventos`.
+- UI: lista com busca, filtros, detalhes (histórico, pipeline de origem, responsável, data, status).
+- Mesmas regras de permissão de Leads.
 
-**Página `CampanhasPage.tsx`** (lista):
-- Tabela: Nome, Slug, Status (badge), Total de Leads (count), Data de Criação, Ações
-- Botão "Nova Campanha" no topo
-- Ações por linha: Editar, Duplicar, Ativar/Desativar (toggle inline), Copiar Link (`/c/:slug`), Excluir (com confirmação)
+### `/admin/meu-perfil` — Meu Perfil (todos)
+- Formulário para editar nome, email, avatar, preferências (tema, notificações). Grava em `profiles` (crio se não existir).
 
-**Página `CampanhaEditPage.tsx`** com 3 abas (`Tabs`):
+### `/admin/configuracoes` — Configurações (só Admin)
+- Tabs internas:
+  - **Geral** — nome da empresa, fuso, logo.
+  - **Configurações de Pipeline** — etapas, campos, regras, permissões das pipelines.
+  - **Celebrações e Reconhecimento** — regras de gamificação/celebração de vitórias.
+  - **Automações** — gatilhos e ações automáticas.
+  - **Integrações** — webhooks, chaves externas.
+- Nesta primeira entrega as tabs abrem cada seção com estrutura pronta e placeholders "Em breve" para os campos ainda sem escopo detalhado — assim a navegação/permissão fica funcional sem inventar regras não pedidas.
 
-*Aba Geral*: nome, slug auto-gerado/editável (validação de unicidade), descrição interna, tipo, status toggle, tag.
+### `/admin/administradores` — Usuários e Permissões
+- Página existente renomeada no menu para "Usuários e Permissões".
+- Acrescentar seleção de **Papel** (Usuário / Líder / Administrador) e, quando papel = Usuário, campo **Líder responsável** (lista só usuários com papel Líder ou Administrador).
+- Ativação/inativação já suportadas via edge function `manage-admins` (estendo o payload).
 
-*Aba Perguntas*:
-- Lista drag-and-drop usando `@dnd-kit/core` + `@dnd-kit/sortable` (já comuns no stack)
-- "+ Adicionar Pergunta" → modal/inline form
-- Cada item: texto, tipo, opções (quando aplicável), escala min/max, obrigatória, categoria, duplicar, excluir
-- Editor de opções dinâmico (texto + valor numérico opcional)
-- Dropdown "Importar perguntas de outra campanha" (copia tudo, mantém edição)
+## 5. Rotas em `App.tsx`
 
-*Aba Aparência*: título público, subtítulo, upload de imagem (Supabase Storage), checkboxes dos campos de optin (Nome, Email, WhatsApp, Empresa, Porte, Departamento, Cargo), mensagem de agradecimento.
+Adicionar (dentro de `/admin`):
+- `leads` → `LeadsPage`
+- `clientes` → `ClientesPage`
+- `meu-perfil` → `MeuPerfilPage`
+- `configuracoes` → `ConfiguracoesPage` (envolvida em `AdminOnlyRoute`)
+- `administradores` → envolvida em `AdminOnlyRoute`
 
----
+## 6. Separação clara
 
-### Etapa 3 — Página Pública Dinâmica
+- "Pipelines" (menu) → segue apontando para `/admin/kanban` (operacional, oportunidades).
+- "Configurações de Pipeline" → aba dentro de `/admin/configuracoes` (administrativa).
 
-**Rota `/c/:slug`** em `App.tsx` → `CampaignPublicPage.tsx`
+## Detalhes técnicos
 
-Comportamento:
-1. Buscar campanha pelo slug; se inativa/inexistente → componente `CampaignNotFound` amigável
-2. Renderizar título/subtítulo/imagem
-3. Renderizar perguntas conforme `type`:
-   - `diagnostico_score`: step-by-step (uma por vez), barra de progresso, ao final → optin → resultado com score (somatório de `answer_value` agrupado por categoria)
-   - `formulario_captura`: optin primeiro → perguntas opcionais → mensagem
-   - `pesquisa`: perguntas → optin → mensagem
-4. Componente `QuestionRenderer` por tipo: radio, checkbox group, slider/scale, input, textarea, sim/não, select, NPS visual (0–10 botões)
-5. Optin renderiza apenas campos ativos em `optin_fields`, com máscaras de telefone existentes
-6. Submissão: cria `lead` (com `campaign_id/slug/name` e `fonte='inbound'`), insere `campaign_responses` em batch, dispara webhook existente, exibe mensagem ou resultado
+- Migration única adicionando: valor `lider` no enum, `profiles` (se ausente), `lider_id`, tabela `clientes` + RLS + GRANTs, funções `is_lider`/`can_view_lead`.
+- Hook novo `useMyRole()` retornando `'admin' | 'lider' | 'user'`.
+- Nenhuma mudança em cores, tokens, tipografia ou no comportamento dos itens já existentes — só adição de itens e reordenação.
 
-Visual: mesmo design system (dark, glassmorphism, Space Grotesk, Allevo magenta), mobile-first.
+## Ordem de execução
 
----
+1. Migration (papéis, `lider_id`, tabela `clientes`, RLS, GRANTs).
+2. Hooks (`useMyRole`, `useIsLider`) e `AdminOnlyRoute`.
+3. Sidebar reestruturado com visibilidade por papel.
+4. Páginas novas (Leads, Clientes, Meu Perfil, Configurações com tabs).
+5. Ajustes em "Usuários e Permissões" (papel + líder responsável).
+6. Rotas em `App.tsx`.
+7. Verificação: build + Playwright para conferir visibilidade por papel.
 
-### Etapa 4 — Dashboard de Leads
-
-**`LeadsTable.tsx`**: nova coluna "Campanha" exibindo `campaign_name` (fallback: fonte original).
-
-**`DashboardFilters.tsx`**: novo dropdown "Campanha" com lista dinâmica de todas as campanhas + opção "Todas". Combina com filtros existentes (Outbound/Inbound, status, datas, etc).
-
-**`AdminDashboard.tsx`**: aplicar filtro de campanha em `filteredLeads`. Cards de métricas (Total / Hoje / Semana / Mês) recalculam sobre o conjunto filtrado.
-
-**`LeadDetail.tsx`**: nova seção "Campanha de Origem" com nome + link, e bloco "Respostas" listando perguntas + respostas, agrupadas por `category` quando houver.
-
----
-
-### Etapa 5 — Compatibilidade
-
-- Campos novos em `leads` são nullable → leads antigos continuam funcionando
-- Rotas existentes (`/diagnostico`, `/diagnostico-direto`, `/mail`, etc) intocadas
-- Editor de Perguntas atual (`question_sets`) continua funcionando paralelamente — ele controla o diagnóstico clássico; campanhas têm suas próprias perguntas
-
----
-
-### Detalhes técnicos
-
-- Drag-and-drop: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` (instalar via bun)
-- Slug: gerar com slugify simples (lowercase, sem acentos, hífens), validar unicidade ao salvar
-- Score em `diagnostico_score`: somatório de `answer_value` por `category`, normalizado em escala 1–5 para reaproveitar `MaturityGauge` existente
-- Webhook: reutilizar `send-webhook` edge function, incluindo `campaign_slug/name/tag` no payload
-- RLS de inserção pública em `leads` e `campaign_responses`: criar policy permitindo INSERT anônimo apenas com `campaign_id` válido de campanha ativa (via subquery)
-- Realtime opcional para a tabela `leads` no dashboard (já existe padrão no projeto)
-
----
-
-### Ordem de execução
-
-1. Migration (tabelas, RLS, bucket, campanha padrão + vinculação leads antigos)
-2. Sidebar + rotas admin
-3. CRUD de campanhas (lista + edição com 3 abas)
-4. Rota pública `/c/:slug` + renderer de perguntas + submissão
-5. Filtro de campanha no dashboard + coluna na tabela
-6. Respostas no LeadDetail
-7. QA visual e testes de fluxo end-to-end
-
-Posso começar? Aviso: é uma implementação extensa (muitos arquivos novos e migration grande). Confirme se quer que eu prossiga com tudo de uma vez ou prefere fasear (ex: começar só por Etapas 1–3 e depois 4–6).
+Confirma que posso seguir com esta abordagem? Em especial:
+- Criar a tabela `clientes` nova (vs. derivar de `leads` convertidos)?
+- Deixar as seções de Configurações (Celebrações, Automações, Integrações) com estrutura + placeholder "Em breve" nesta primeira entrega, para não inventar regras?
