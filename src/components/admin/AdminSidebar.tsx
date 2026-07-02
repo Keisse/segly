@@ -1,4 +1,15 @@
-import { LayoutDashboard, KanbanSquare, Megaphone, BookOpen, Users, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  KanbanSquare,
+  Megaphone,
+  BookOpen,
+  ShieldCheck,
+  LogOut,
+  Users,
+  Handshake,
+  UserCircle,
+  Settings,
+} from "lucide-react";
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -15,22 +26,29 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useMyRole } from "@/hooks/useMyRole";
 import { NossoPropositoDialog } from "./NossoPropositoDialog";
 import seglyLogoAsset from "@/assets/segly-logo.png.asset.json";
 const seglyLogo = seglyLogoAsset.url;
 
-const items = [
+type Item = { title: string; url: string; icon: any; adminOnly?: boolean };
+
+const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+  { title: "Leads", url: "/admin/leads", icon: Users },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
+  { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Criar campanhas", url: "/admin/campanhas", icon: Megaphone },
   { title: "Base de conhecimento", url: "/admin/base-conhecimento", icon: BookOpen },
-  { title: "Usuários", url: "/admin/administradores", icon: Users },
+  { title: "Usuários e Permissões", url: "/admin/administradores", icon: ShieldCheck, adminOnly: true },
 ];
 
 export function AdminSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
+  const { data: role } = useMyRole();
+  const isAdmin = role === "admin";
   const navigate = useNavigate();
   const [propositoOpen, setPropositoOpen] = useState(false);
 
@@ -38,6 +56,8 @@ export function AdminSidebar() {
     await signOut();
     navigate("/admin-login");
   };
+
+  const visibleMain = mainItems.filter((i) => !i.adminOnly || isAdmin);
 
   return (
     <Sidebar collapsible="icon">
@@ -49,7 +69,7 @@ export function AdminSidebar() {
           <SidebarGroupLabel>Painel</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {visibleMain.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
@@ -80,6 +100,38 @@ export function AdminSidebar() {
                 {!collapsed && <span>Nosso Propósito</span>}
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <NavLink
+                  to="/admin/meu-perfil"
+                  className={({ isActive }) =>
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "hover:bg-sidebar-accent/50"
+                  }
+                >
+                  <UserCircle className="h-4 w-4" />
+                  {!collapsed && <span>Meu Perfil</span>}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {isAdmin && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to="/admin/configuracoes"
+                    className={({ isActive }) =>
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "hover:bg-sidebar-accent/50"
+                    }
+                  >
+                    <Settings className="h-4 w-4" />
+                    {!collapsed && <span>Configurações</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
           </SidebarMenu>
           <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
