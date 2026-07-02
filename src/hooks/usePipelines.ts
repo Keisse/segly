@@ -255,7 +255,7 @@ export function useLeadsByPipeline(pipelineId: string | null | undefined) {
       if (!pipelineId) return [];
       const { data, error } = await supabase
         .from("leads")
-        .select("id, nome, empresa, cargo, stage_id, status, resultado_diagnostico, created_at, pipeline_id")
+        .select("id, nome, empresa, cargo, email, telefone, stage_id, owner_id, status, resultado_diagnostico, created_at, pipeline_id")
         .eq("pipeline_id", pipelineId)
         .order("created_at", { ascending: false });
       if (error) throw error;

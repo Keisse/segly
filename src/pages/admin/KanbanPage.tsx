@@ -9,7 +9,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { ChevronDown, Search, Settings2, PartyPopper } from "lucide-react";
 
-type LeadRow = { id: string; nome: string; empresa: string | null; cargo: string | null; stage_id: string | null; resultado_diagnostico: { percentage?: number } | null };
+type LeadRow = {
+  id: string;
+  nome: string;
+  empresa: string | null;
+  cargo: string | null;
+  email: string | null;
+  telefone: string | null;
+  stage_id: string | null;
+  owner_id: string | null;
+  resultado_diagnostico: { percentage?: number } | null;
+};
 
 const KanbanPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
