@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Phone, Trash2, Eye } from "lucide-react";
 import type { Lead, LeadStatus } from "@/types/lead";
-import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors } from "@/types/lead";
+import { statusLabels, statusColors } from "@/types/lead";
 import { useUpdateLeadStatus, useDeleteLead, useUpdateLeadResponsavel } from "@/hooks/useLeads";
 import { capitalizeWords, hasAtLeastTwoWords } from "@/lib/formatName";
 import { format } from "date-fns";
