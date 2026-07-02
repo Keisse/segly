@@ -28,15 +28,13 @@ export function NossoPropositoDialog({ open, onOpenChange }: NossoPropositoDialo
             <DialogTitle className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
               Mais do que organizar vendas
             </DialogTitle>
-            <DialogDescription className="text-base text-slate-500 max-w-md mx-auto leading-relaxed">
+            <DialogDescription className="text-[15px] leading-relaxed text-slate-600 max-w-md mx-auto text-left">
               O Segly existe para ajudar pessoas e negócios a crescerem com clareza,
               responsabilidade e cuidado.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="my-8 h-px w-16 mx-auto" style={{ backgroundColor: "#2FB184" }} />
-
-          <div className="space-y-5 text-[15px] leading-relaxed text-slate-600 text-left">
+          <div className="space-y-5 text-[15px] leading-relaxed text-slate-600 text-left mt-6">
             <p>
               No Segly, acreditamos que tecnologia deve aproximar pessoas, não reduzi-las
               a números.
@@ -62,8 +60,11 @@ export function NossoPropositoDialog({ open, onOpenChange }: NossoPropositoDialo
           </div>
 
           <p
-            className="mt-8 text-center italic text-lg sm:text-xl font-medium"
-            style={{ color: "#2FB184" }}
+            className="mt-8 text-center italic text-lg sm:text-xl font-semibold"
+            style={{
+              color: "#1A9A70",
+              textShadow: "0 0 22px rgba(47, 177, 132, 0.40)",
+            }}
           >
             "Crescer com propósito é servir melhor."
           </p>
