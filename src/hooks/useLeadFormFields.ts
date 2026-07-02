@@ -74,10 +74,8 @@ export function useUpsertLeadFormField() {
         .maybeSingle();
       const orgId = (prof as { organization_id: string | null } | null)?.organization_id;
       if (!orgId) throw new Error("Organização não encontrada");
-      const { error } = await supabase.from("lead_form_fields").insert({
-        ...(field as never),
-        organization_id: orgId,
-      } as never);
+      const payload = { ...(field as object), organization_id: orgId } as never;
+      const { error } = await supabase.from("lead_form_fields").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
