@@ -9,6 +9,7 @@ import {
   Handshake,
   Settings,
   Compass,
+  UserCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
