@@ -162,53 +162,17 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                     {lead.campaign_name || "—"}
                   </TableCell>
                   <TableCell>
-                    {editingResponsavel === lead.id ? (
-                      <div className="flex flex-col">
-                        <Input
-                          value={responsavelValue}
-                          onChange={(e) => {
-                            setResponsavelValue(e.target.value);
-                            setResponsavelError(null);
-                          }}
-                          onBlur={() => handleResponsavelBlur(lead.id)}
-                          onKeyDown={(e) => handleResponsavelKeyDown(e, lead.id)}
-                          placeholder="Nome Sobrenome"
-                          className="h-8 text-xs w-[130px]"
-                          autoFocus
-                        />
-                        {responsavelError && (
-                          <span className="text-xs text-destructive mt-1">{responsavelError}</span>
-                        )}
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleResponsavelClick(lead)}
-                        className={`px-2 py-1 rounded text-xs font-medium min-w-[100px] text-left ${
-                          lead.responsavel 
-                            ? "bg-white text-gray-900" 
-                            : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
-                        }`}
-                      >
-                        {lead.responsavel ? capitalizeWords(lead.responsavel) : "Atribuir..."}
-                      </button>
-                    )}
+                    <ResponsavelPicker
+                      value={lead.owner_id}
+                      onChange={(uid) => updateOwner.mutate({ id: lead.id, ownerId: uid })}
+                    />
                   </TableCell>
                   <TableCell>
-                    <Select
-                      value={lead.status}
-                      onValueChange={(value) => handleStatusChange(lead.id, value as LeadStatus)}
-                    >
-                      <SelectTrigger className={`w-[140px] h-8 text-xs ${statusColors[lead.status]} border-0`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
-                        {Object.entries(statusLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <StagePicker
+                      leadId={lead.id}
+                      pipelineId={lead.pipeline_id}
+                      stageId={lead.stage_id}
+                    />
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
