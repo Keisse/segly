@@ -39,13 +39,6 @@ const ConfiguracoesPage = () => {
         <TabsContent value="usuarios" className="mt-4">
           <AdministradoresPage />
         </TabsContent>
-
-        <TabsContent value="geral" className="mt-4">
-          <Placeholder
-            title="Geral"
-            description="Nome da empresa, fuso horário, logo e preferências gerais do workspace."
-          />
-        </TabsContent>
         <TabsContent value="pipeline" className="mt-4">
           <Placeholder
             title="Configurações de Pipeline"
