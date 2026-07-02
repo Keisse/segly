@@ -317,7 +317,7 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
                 <SelectItem value="__none__">Nenhum</SelectItem>
                 {data?.members.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
-                    {m.nome ?? m.email ?? m.id}
+                    {m.display_name ?? m.id.slice(0, 8)}
                   </SelectItem>
                 ))}
               </SelectContent>
