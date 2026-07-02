@@ -4,9 +4,11 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { UserMenu } from "@/components/admin/UserMenu";
 import { PrincipioAutoOpener } from "@/components/admin/PrincipioAutoOpener";
 import { useLeadRealtime } from "@/hooks/useLeadRealtime";
+import { useCelebrationListener } from "@/hooks/useCelebrationListener";
 
 const AdminLayout = () => {
   useLeadRealtime();
+  useCelebrationListener();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
