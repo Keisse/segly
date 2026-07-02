@@ -451,7 +451,7 @@ const ConfiguracoesPage = () => {
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="celebracoes">Celebrações</TabsTrigger>
           <TabsTrigger value="automacoes">Automações</TabsTrigger>
-          <TabsTrigger value="integracoes">Integrações</TabsTrigger>
+          
         </TabsList>
 
         <TabsContent value="geral" className="mt-4">
@@ -473,12 +473,6 @@ const ConfiguracoesPage = () => {
           <ComingSoon
             title="Automações"
             description="Configure ações automáticas sem necessidade de integrações externas."
-          />
-        </TabsContent>
-        <TabsContent value="integracoes" className="mt-4">
-          <ComingSoon
-            title="Integrações"
-            description="Webhooks e conexões com sistemas externos."
           />
         </TabsContent>
       </Tabs>
