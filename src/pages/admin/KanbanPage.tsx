@@ -44,17 +44,6 @@ const KanbanPage = () => {
   const updateStage = useUpdateLeadStage();
   const [dragId, setDragId] = useState<string | null>(null);
 
-  const [popOpen, setPopOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return pipelines;
-    return pipelines.filter((p) => p.nome.toLowerCase().includes(q));
-  }, [pipelines, query]);
-
-  const selected = pipelines.find((p) => p.id === activePipelineId) ?? null;
-
   const { data: members = [] } = useOrgMembers();
   const ownerMap = useMemo(() => {
     const m = new Map<string, { display_name: string | null; email: string | null }>();
