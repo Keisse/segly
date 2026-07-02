@@ -59,6 +59,13 @@ const KanbanPage = () => {
 
   const selected = pipelines.find((p) => p.id === activePipelineId) ?? null;
 
+  const { data: members = [] } = useOrgMembers();
+  const ownerMap = useMemo(() => {
+    const m = new Map<string, { display_name: string | null; email: string | null }>();
+    members.forEach((u) => m.set(u.id, { display_name: u.display_name, email: u.email }));
+    return m;
+  }, [members]);
+
   const grouped = useMemo(() => {
     const g: Record<string, LeadRow[]> = {};
     stages.forEach((s) => { g[s.id] = []; });
