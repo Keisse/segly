@@ -451,7 +451,7 @@ const ConfiguracoesPage = () => {
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="celebracoes">Celebrações</TabsTrigger>
           <TabsTrigger value="automacoes">Automações</TabsTrigger>
-          <TabsTrigger value="integracoes">Integrações</TabsTrigger>
+          
         </TabsList>
 
         <TabsContent value="geral" className="mt-4">
