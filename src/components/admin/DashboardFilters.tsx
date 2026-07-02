@@ -86,7 +86,7 @@ const DashboardFilters = ({ filters, onFiltersChange, filteredLeads, fonteTab }:
 
   const exportHeaders = [
     "Data", "Nome", "Email", "Telefone", "Empresa",
-    "Porte", "Departamento", "Cargo", "Score (%)", "Status", "Fonte",
+    "Porte", "Departamento", "Cargo", "Status", "Fonte",
   ];
 
   const getExportRows = () =>
@@ -99,7 +99,6 @@ const DashboardFilters = ({ filters, onFiltersChange, filteredLeads, fonteTab }:
       lead.porte_empresa,
       lead.departamento,
       lead.cargo,
-      lead.resultado_diagnostico?.percentage?.toFixed(1) || "N/A",
       lead.status,
       lead.fonte === "outbound" ? "Outbound" : "Inbound",
     ]);

@@ -1,10 +1,19 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, UserPlus, Calendar, TrendingUp } from "lucide-react";
+import { Users, UserPlus, CalendarDays, TrendingUp, CalendarIcon, X } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useDashboardMetrics } from "@/hooks/useLeads";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import MetricCard from "@/components/admin/MetricCard";
@@ -70,6 +79,48 @@ const AdminDashboard = () => {
     thisMonth: filteredLeads.filter((l) => new Date(l.created_at) >= monthStart).length,
   }), [filteredLeads, todayStart, weekStart, monthStart]);
 
+  const setQuickPeriod = (days: number) => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    setFilters({ ...filters, startDate, endDate });
+  };
+
+  const setCurrentMonth = () => {
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    setFilters({ ...filters, startDate, endDate });
+  };
+
+  const isPeriodActive = (days: number) => {
+    if (!filters.startDate || !filters.endDate) return false;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    return (
+      format(filters.startDate, "yyyy-MM-dd") === format(startDate, "yyyy-MM-dd") &&
+      format(filters.endDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
+    );
+  };
+
+  const isCurrentMonthActive = () => {
+    if (!filters.startDate || !filters.endDate) return false;
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return (
+      format(filters.startDate, "yyyy-MM-dd") === format(startDate, "yyyy-MM-dd") &&
+      format(filters.endDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
+    );
+  };
+
+  const hasDateFilters = filters.startDate || filters.endDate;
+
+  const clearDateFilters = () => {
+    setFilters({ ...filters, startDate: undefined, endDate: undefined });
+  };
+
   return (
     <div className="py-6 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -85,11 +136,115 @@ const AdminDashboard = () => {
           </p>
         </motion.div>
 
+        {/* Date Filter Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-4"
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-foreground">Período:</span>
+
+            <Button
+              variant={isPeriodActive(0) ? "default" : "outline"}
+              size="sm"
+              onClick={() => setQuickPeriod(0)}
+            >
+              Hoje
+            </Button>
+            <Button
+              variant={isPeriodActive(7) ? "default" : "outline"}
+              size="sm"
+              onClick={() => setQuickPeriod(7)}
+            >
+              7 dias
+            </Button>
+            <Button
+              variant={isPeriodActive(30) ? "default" : "outline"}
+              size="sm"
+              onClick={() => setQuickPeriod(30)}
+            >
+              30 dias
+            </Button>
+            <Button
+              variant={isCurrentMonthActive() ? "default" : "outline"}
+              size="sm"
+              onClick={setCurrentMonth}
+            >
+              Este mês
+            </Button>
+
+            <div className="h-6 w-px bg-border/50" />
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="justify-start text-left font-normal gap-2"
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                  {filters.startDate
+                    ? format(filters.startDate, "dd/MM/yy", { locale: ptBR })
+                    : "De"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card pointer-events-auto">
+                <Calendar
+                  mode="single"
+                  selected={filters.startDate}
+                  onSelect={(date) =>
+                    setFilters({ ...filters, startDate: date || undefined })
+                  }
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="justify-start text-left font-normal gap-2"
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                  {filters.endDate
+                    ? format(filters.endDate, "dd/MM/yy", { locale: ptBR })
+                    : "Até"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card pointer-events-auto">
+                <Calendar
+                  mode="single"
+                  selected={filters.endDate}
+                  onSelect={(date) =>
+                    setFilters({ ...filters, endDate: date || undefined })
+                  }
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {hasDateFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearDateFilters}
+                className="text-xs text-muted-foreground gap-1"
+              >
+                <X className="w-3 h-3" />
+                Limpar
+              </Button>
+            )}
+          </div>
+        </motion.div>
+
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard title="Total de Leads" value={isLoading ? "..." : computedMetrics.total} icon={Users} delay={0} />
           <MetricCard title="Leads Hoje" value={isLoading ? "..." : computedMetrics.today} icon={UserPlus} delay={0.1} />
-          <MetricCard title="Esta Semana" value={isLoading ? "..." : computedMetrics.thisWeek} icon={Calendar} delay={0.2} />
+          <MetricCard title="Esta Semana" value={isLoading ? "..." : computedMetrics.thisWeek} icon={CalendarDays} delay={0.2} />
           <MetricCard title="Este Mês" value={isLoading ? "..." : computedMetrics.thisMonth} icon={TrendingUp} delay={0.3} />
         </div>
 
