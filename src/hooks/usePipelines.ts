@@ -237,6 +237,7 @@ export function useUpdateLeadStage() {
     mutationFn: async ({ leadId, stageId, pipelineId }: { leadId: string; stageId: string; pipelineId: string }) => {
       const { error } = await supabase.from("leads").update({ stage_id: stageId, pipeline_id: pipelineId } as never).eq("id", leadId);
       if (error) throw error;
+      await maybeCelebrate(leadId, stageId);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
