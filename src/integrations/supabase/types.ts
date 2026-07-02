@@ -386,29 +386,71 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          complemento: string | null
+          cpf: string | null
           created_at: string
+          data_nascimento: string | null
           display_name: string | null
+          estado: string | null
+          genero: string | null
           id: string
           lider_id: string | null
+          numero: string | null
+          pais: string | null
           preferences: Json
+          profissao: string | null
+          rg: string | null
+          rua: string | null
+          telefone: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          cpf?: string | null
           created_at?: string
+          data_nascimento?: string | null
           display_name?: string | null
+          estado?: string | null
+          genero?: string | null
           id: string
           lider_id?: string | null
+          numero?: string | null
+          pais?: string | null
           preferences?: Json
+          profissao?: string | null
+          rg?: string | null
+          rua?: string | null
+          telefone?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          cpf?: string | null
           created_at?: string
+          data_nascimento?: string | null
           display_name?: string | null
+          estado?: string | null
+          genero?: string | null
           id?: string
           lider_id?: string | null
+          numero?: string | null
+          pais?: string | null
           preferences?: Json
+          profissao?: string | null
+          rg?: string | null
+          rua?: string | null
+          telefone?: string | null
           updated_at?: string
         }
         Relationships: []
