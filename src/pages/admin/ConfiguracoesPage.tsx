@@ -460,16 +460,10 @@ const ConfiguracoesPage = () => {
           <GeralTab onDirtyChange={setDirty} />
         </TabsContent>
         <TabsContent value="pipeline" className="mt-4">
-          <ComingSoon
-            title="Configurações de Pipeline"
-            description="Aqui você define as regras e padrões das pipelines. Para acompanhar e movimentar oportunidades, acesse Pipelines no menu principal."
-          />
+          <PipelineSettings />
         </TabsContent>
         <TabsContent value="celebracoes" className="mt-4">
-          <ComingSoon
-            title="Celebrações e Reconhecimento"
-            description="Reconhecer conquistas ajuda a equipe a perceber progresso, manter a constância e celebrar resultados construídos com responsabilidade."
-          />
+          <CelebracoesSettings />
         </TabsContent>
         <TabsContent value="automacoes" className="mt-4">
           <ComingSoon
