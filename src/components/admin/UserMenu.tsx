@@ -156,6 +156,8 @@ export function UserMenu() {
           Sair
         </button>
       </PopoverContent>
+      <PrincipioDoDiaDialog open={principleOpen} onOpenChange={setPrincipleOpen} />
     </Popover>
   );
 }
+
