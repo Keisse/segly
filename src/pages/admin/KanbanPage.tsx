@@ -7,9 +7,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, Search, Settings2, PartyPopper } from "lucide-react";
+import { ChevronDown, Search, Settings2, PartyPopper, Mail, MessageCircle, User } from "lucide-react";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
+import { capitalizeWords } from "@/lib/formatName";
 
-type LeadRow = { id: string; nome: string; empresa: string | null; cargo: string | null; stage_id: string | null; resultado_diagnostico: { percentage?: number } | null };
+type LeadRow = {
+  id: string;
+  nome: string;
+  empresa: string | null;
+  cargo: string | null;
+  email: string | null;
+  telefone: string | null;
+  stage_id: string | null;
+  owner_id: string | null;
+  resultado_diagnostico: { percentage?: number } | null;
+};
 
 const KanbanPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,6 +58,13 @@ const KanbanPage = () => {
   }, [pipelines, query]);
 
   const selected = pipelines.find((p) => p.id === activePipelineId) ?? null;
+
+  const { data: members = [] } = useOrgMembers();
+  const ownerMap = useMemo(() => {
+    const m = new Map<string, { display_name: string | null; email: string | null }>();
+    members.forEach((u) => m.set(u.id, { display_name: u.display_name, email: u.email }));
+    return m;
+  }, [members]);
 
   const grouped = useMemo(() => {
     const g: Record<string, LeadRow[]> = {};
@@ -181,23 +200,57 @@ const KanbanPage = () => {
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  {cards.map((lead) => (
-                    <Card
-                      key={lead.id}
-                      draggable
-                      onDragStart={() => setDragId(lead.id)}
-                      className="p-3 cursor-move hover:border-primary/50 transition-colors"
-                    >
-                      <Link to={`/admin/lead/${lead.id}`} className="block space-y-1">
-                        <p className="text-sm font-medium truncate uppercase">{lead.nome}</p>
-                        {lead.empresa && <p className="text-xs text-muted-foreground truncate">{lead.empresa}</p>}
-                        {lead.cargo && <p className="text-xs text-muted-foreground truncate">{lead.cargo}</p>}
-                        {lead.resultado_diagnostico?.percentage != null && (
-                          <Badge className="text-xs">{Math.round(lead.resultado_diagnostico.percentage)}%</Badge>
-                        )}
-                      </Link>
-                    </Card>
-                  ))}
+                  {cards.map((lead) => {
+                    const owner = ownerMap.get(lead.owner_id ?? "");
+                    const wa = lead.telefone ? lead.telefone.replace(/\D/g, "") : "";
+                    return (
+                      <Card
+                        key={lead.id}
+                        draggable
+                        onDragStart={() => setDragId(lead.id)}
+                        className="p-3 cursor-move hover:border-primary/50 transition-colors space-y-2"
+                      >
+                        <Link to={`/admin/lead/${lead.id}`} className="block space-y-1">
+                          <p className="text-sm font-medium truncate uppercase">{lead.nome}</p>
+                          {lead.empresa && <p className="text-xs text-muted-foreground truncate">{lead.empresa}</p>}
+                          {lead.cargo && <p className="text-xs text-muted-foreground truncate">{lead.cargo}</p>}
+                          {lead.resultado_diagnostico?.percentage != null && (
+                            <Badge className="text-xs">{Math.round(lead.resultado_diagnostico.percentage)}%</Badge>
+                          )}
+                        </Link>
+                        <div className="pt-2 border-t border-border/50 space-y-1">
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <User className="w-3 h-3 shrink-0" />
+                            <span className="truncate">
+                              {owner ? capitalizeWords(owner.display_name || owner.email || "Usuário") : "Sem responsável"}
+                            </span>
+                          </div>
+                          {lead.email && (
+                            <a
+                              href={`mailto:${lead.email}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Mail className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{lead.email}</span>
+                            </a>
+                          )}
+                          {wa && (
+                            <a
+                              href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors"
+                            >
+                              <MessageCircle className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{lead.telefone}</span>
+                            </a>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
             );

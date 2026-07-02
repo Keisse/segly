@@ -10,13 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -28,12 +21,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Phone, Trash2, Eye } from "lucide-react";
-import type { Lead, LeadStatus } from "@/types/lead";
-import { statusLabels, statusColors } from "@/types/lead";
-import { useUpdateLeadStatus, useDeleteLead, useUpdateLeadResponsavel } from "@/hooks/useLeads";
-import { capitalizeWords, hasAtLeastTwoWords } from "@/lib/formatName";
+import type { Lead } from "@/types/lead";
+import { useDeleteLead, useUpdateLeadOwner } from "@/hooks/useLeads";
+import { ResponsavelPicker } from "@/components/admin/ResponsavelPicker";
+import { StagePicker } from "@/components/admin/StagePicker";
+import { capitalizeWords } from "@/lib/formatName";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -49,12 +42,9 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<keyof Lead>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [editingResponsavel, setEditingResponsavel] = useState<string | null>(null);
-  const [responsavelValue, setResponsavelValue] = useState("");
-  const [responsavelError, setResponsavelError] = useState<string | null>(null);
-  const updateStatus = useUpdateLeadStatus();
   const deleteLead = useDeleteLead();
-  const updateResponsavel = useUpdateLeadResponsavel();
+  const updateOwner = useUpdateLeadOwner();
+
 
   // Sort leads
   const sortedLeads = [...leads].sort((a, b) => {
@@ -86,48 +76,10 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
     }
   };
 
-  const handleStatusChange = (leadId: string, newStatus: LeadStatus) => {
-    updateStatus.mutate({ id: leadId, status: newStatus });
-  };
-
   const handleDelete = (leadId: string) => {
     deleteLead.mutate(leadId);
   };
 
-  const handleResponsavelClick = (lead: Lead) => {
-    setEditingResponsavel(lead.id);
-    setResponsavelValue(lead.responsavel || "");
-    setResponsavelError(null);
-  };
-
-  const handleResponsavelBlur = (leadId: string) => {
-    if (responsavelValue.trim() === "") {
-      setEditingResponsavel(null);
-      setResponsavelError(null);
-      return;
-    }
-
-    if (!hasAtLeastTwoWords(responsavelValue)) {
-      setResponsavelError("Informe nome e sobrenome");
-      return;
-    }
-
-    updateResponsavel.mutate({ 
-      id: leadId, 
-      responsavel: capitalizeWords(responsavelValue.trim()) 
-    });
-    setEditingResponsavel(null);
-    setResponsavelError(null);
-  };
-
-  const handleResponsavelKeyDown = (e: React.KeyboardEvent, leadId: string) => {
-    if (e.key === "Enter") {
-      handleResponsavelBlur(leadId);
-    } else if (e.key === "Escape") {
-      setEditingResponsavel(null);
-      setResponsavelError(null);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -210,53 +162,17 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                     {lead.campaign_name || "—"}
                   </TableCell>
                   <TableCell>
-                    {editingResponsavel === lead.id ? (
-                      <div className="flex flex-col">
-                        <Input
-                          value={responsavelValue}
-                          onChange={(e) => {
-                            setResponsavelValue(e.target.value);
-                            setResponsavelError(null);
-                          }}
-                          onBlur={() => handleResponsavelBlur(lead.id)}
-                          onKeyDown={(e) => handleResponsavelKeyDown(e, lead.id)}
-                          placeholder="Nome Sobrenome"
-                          className="h-8 text-xs w-[130px]"
-                          autoFocus
-                        />
-                        {responsavelError && (
-                          <span className="text-xs text-destructive mt-1">{responsavelError}</span>
-                        )}
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleResponsavelClick(lead)}
-                        className={`px-2 py-1 rounded text-xs font-medium min-w-[100px] text-left ${
-                          lead.responsavel 
-                            ? "bg-white text-gray-900" 
-                            : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
-                        }`}
-                      >
-                        {lead.responsavel ? capitalizeWords(lead.responsavel) : "Atribuir..."}
-                      </button>
-                    )}
+                    <ResponsavelPicker
+                      value={lead.owner_id}
+                      onChange={(uid) => updateOwner.mutate({ id: lead.id, ownerId: uid })}
+                    />
                   </TableCell>
                   <TableCell>
-                    <Select
-                      value={lead.status}
-                      onValueChange={(value) => handleStatusChange(lead.id, value as LeadStatus)}
-                    >
-                      <SelectTrigger className={`w-[140px] h-8 text-xs ${statusColors[lead.status]} border-0`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
-                        {Object.entries(statusLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <StagePicker
+                      leadId={lead.id}
+                      pipelineId={lead.pipeline_id}
+                      stageId={lead.stage_id}
+                    />
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
