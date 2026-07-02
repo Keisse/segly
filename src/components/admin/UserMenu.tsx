@@ -79,11 +79,11 @@ export function UserMenu() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="relative flex items-center justify-center h-9 w-9 rounded-full bg-primary/10 text-primary font-semibold text-sm hover:bg-primary/20 transition"
+          className="relative flex items-center justify-center h-11 w-11 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold text-base shadow-lg shadow-primary/30 ring-2 ring-primary/40 hover:ring-primary/60 hover:scale-105 transition-all"
           aria-label="Menu do usuário"
         >
           {initials}
-          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-background" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
