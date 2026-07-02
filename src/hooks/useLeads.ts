@@ -383,6 +383,34 @@ export function useUpdateLeadResponsavel() {
   });
 }
 
+// Update lead owner (responsible user)
+export function useUpdateLeadOwner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ownerId }: { id: string; ownerId: string | null }) => {
+      const { data, error } = await supabase
+        .from("leads")
+        .update({ owner_id: ownerId } as never)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return transformLead(data);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
+      toast.success("Responsável atribuído!");
+    },
+    onError: (error: Error) => {
+      console.error("Error updating lead owner:", error);
+      toast.error(error.message || "Erro ao atribuir responsável.");
+    },
+  });
+}
+
 // Delete lead
 export function useDeleteLead() {
   const queryClient = useQueryClient();
