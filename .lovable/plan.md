@@ -1,67 +1,81 @@
-# Múltiplos Pipelines — Configurações ↔ Página Pipelines
+## Plano: Seletor de Pipelines + Celebração por Etapa
 
-## Análise do estado atual
+### 1) Análise da estrutura atual
 
-- **Configurações > Pipeline** (`src/components/admin/PipelineSettings.tsx`): salva um único conjunto de etapas no JSON `organization_settings.settings.pipeline` (campos: `stages[]`, `default_stage_id`, `rotting_days`, `auto_move_days`, `require_reason_on_lost`). Não existe entidade "pipeline" no banco — apenas etapas soltas.
-- **Página Pipelines** (`src/pages/admin/KanbanPage.tsx`): usa um enum fixo hardcoded (`novo`, `em_analise`, `contatado`, `em_negociacao`, `convertido`, `perdido`) através de `LeadStatus` em `src/types/lead.ts`. Não lê as etapas configuradas — ou seja, hoje Configurações > Pipeline **já está desconectada** do Kanban.
-- **Leads** (`public.leads`): coluna `status` (enum `LeadStatus`), sem `pipeline_id` nem `stage_id`.
+- **`src/pages/admin/KanbanPage.tsx`**: hoje mostra pipelines como abas horizontais + botão "Novo pipeline" que redireciona para Configurações.
+- **`src/components/admin/PipelineSettings.tsx`**: CRUD completo de pipelines/etapas (já é a única fonte de administração). Não bloqueia por papel.
+- **`src/hooks/usePipelines.ts`**: hooks de leitura/escrita; `useUpdateLeadStage` atualiza `stage_id` do lead.
+- **`src/components/admin/CelebracoesSettings.tsx`**: config global (`confetti`, `sound`, triggers como `deal_won`, `monthly_goal`…). Vamos manter como *preferências globais* (som/confete on/off), mas o **evento de disparo** passa a ser por etapa.
+- **`src/hooks/useMyRole.ts`**: já expõe papel do usuário (admin/lider/moderator/user).
+- **Tabelas**: `pipelines`, `pipeline_stages` (10 colunas — faltam campos de celebração), `leads` (com `stage_id`, `pipeline_id`). Sem tabela de histórico de celebração por lead.
 
-## Riscos para os leads atuais
+### 2) Mudanças de banco
 
-1. `leads.status` é um enum aplicado em várias telas (Dashboard, LeadsTable, LeadDetail, Kanban, filtros, métricas). Trocar por FK para `pipeline_stages` quebra tudo se feito de uma vez.
-2. Kanban legado depende do enum fixo — migrar os cards para etapas dinâmicas exige adaptar drag-and-drop, cores e labels.
-3. Métricas do Dashboard agregam por `status`; se mudarmos a fonte, os gráficos precisam apontar para a nova coluna.
+Migration única:
 
-Estratégia para mitigar: **manter `leads.status` intacto como fallback** e adicionar colunas novas (`pipeline_id`, `stage_id`) opcionais. O Kanban passa a ler `stage_id` quando existir; leads antigos continuam funcionando via mapeamento do `status` para o pipeline padrão "Comercial".
+- `pipeline_stages`: adicionar
+  - `celebrate_enabled boolean NOT NULL DEFAULT false`
+  - `celebrate_type text NOT NULL DEFAULT 'confetti'` (por ora só 'confetti')
+  - `celebrate_audience text NOT NULL DEFAULT 'owner'` (`owner` | `team` | `admins`)
+- Nova tabela `lead_stage_celebrations` (para não repetir a celebração no mesmo par lead+etapa):
+  - `lead_id uuid`, `stage_id uuid`, `celebrated_at timestamptz`, PK composta `(lead_id, stage_id)`
+  - GRANTs `authenticated` (SELECT/INSERT) + `service_role` (ALL)
+  - RLS: usuário só vê/insere celebrações de leads da própria organização (via `my_org()` cruzando com `leads`).
+- Policies de escrita em `pipelines` e `pipeline_stages`: restringir `INSERT/UPDATE/DELETE` a `is_admin()`. Manter `SELECT` para toda a organização.
 
-## Modelo de dados (novo)
+### 3) Frontend — Pipelines page (`KanbanPage.tsx`)
 
-**`public.pipelines`**
-- `organization_id` (FK), `nome`, `descricao`, `cor`, `ativo`, `arquivado`, `ordem`, `is_default`
+- Substituir o botão **“Novo Pipeline”** por **“Selecionar pipeline ▼”** (Popover ancorado).
+- Também substituir as abas horizontais pelo mesmo seletor (fica mais limpo com muitos pipelines). Estado ativo continua vindo de `?pipeline=<id>` e persiste após refresh.
+- Popover contém:
+  - Lista dos pipelines ativos (com bolinha da cor + nome).
+  - Campo de busca visível quando `pipelines.length > 8`.
+  - Estado vazio: “Nenhum pipeline disponível”.
+  - Se `useMyRole()` = admin: rodapé com link discreto “Gerenciar pipelines →” para `/admin/configuracoes?tab=pipeline`. Para não-admin: sem esse link.
+- Ao clicar num item: fecha, seta `?pipeline=id`, carrega Kanban.
 
-**`public.pipeline_stages`**
-- `pipeline_id` (FK, cascade), `nome`, `cor`, `ordem`, `wip_limit`, `is_won`, `is_lost`
+### 4) Frontend — Configurações › Pipeline (admin-only)
 
-**`public.leads`** (novas colunas nullable)
-- `pipeline_id` (FK → pipelines, set null)
-- `stage_id` (FK → pipeline_stages, set null)
-- CHECK/trigger: `stage.pipeline_id = lead.pipeline_id`
+- Envolver `PipelineSettings` num guard: se `useMyRole()` ≠ `admin`, renderizar bloco “Permissão insuficiente” (mesmo padrão de `AdminOnlyRoute`).
+- Na edição de cada etapa (linha do stage no `PipelineSettings`), adicionar seção expansível **“Celebração ao concluir etapa”**:
+  - Toggle *Ativar celebração nesta etapa*.
+  - Select *Tipo*: “Chuva de confete”.
+  - Select *Exibir para*: Responsável / Toda a equipe / Administradores.
+- Persistir junto com o batch save existente (adicionar campos em `useUpsertStage`).
 
-Todas com RLS por `organization_id` reutilizando `my_org()` / `has_role()`, e GRANTs para `authenticated` + `service_role`.
+### 5) Disparo da celebração (uma vez por lead+etapa)
 
-## Migração dos dados
+Criar hook `useCelebrateStageMove(leadId, newStageId)`:
 
-1. Criar pipeline padrão **"Comercial"** por organização existente (`is_default=true`).
-2. Se `organization_settings.settings.pipeline.stages` existir, migrar essas etapas como `pipeline_stages` do pipeline "Comercial". Caso contrário, semear com: Novo → Em contato → Qualificação → Proposta → Negociação → Ganho → Perdido.
-3. Backfill dos leads: `pipeline_id` = pipeline padrão da org; `stage_id` = mapear pelo `status` atual (novo→Novo, contatado→Em contato, em_negociacao→Negociação, convertido→Ganho, perdido→Perdido, em_analise→Qualificação).
-4. `leads.status` continua existindo e sincroniza via trigger quando `stage_id` muda (won/lost/generic).
+1. Ler `pipeline_stages` (cache): se `celebrate_enabled` = false → nada.
+2. Verificar audiência vs. usuário atual (`useMyRole` + `leads.responsavel_id` se existir; se não houver responsável definido, aplicar para todos com acesso).
+3. `INSERT` em `lead_stage_celebrations (lead_id, stage_id)` com `ON CONFLICT DO NOTHING` — se conflito (0 rows), NÃO celebrar (já rodou).
+4. Se inseriu: disparar confete (`canvas-confetti` já é convenção; se não estiver instalado, adicionar) respeitando `organization_settings.celebrations.confetti/sound` como preferência global.
 
-## Alterações no frontend
+Integração:
+- `useUpdateLeadStage` (hook em `usePipelines.ts`): após sucesso, chamar o disparador. Cobre drag no Kanban.
+- `LeadDetail.tsx` (mudança de etapa pela tela de detalhes): reutilizar `useUpdateLeadStage` (já usa? verificar; se não, migrar). Assim ambos os fluxos passam pelo mesmo ponto e garantem uma única fonte de disparo.
 
-**`PipelineSettings.tsx`** — evoluir (não recriar):
-- Adicionar seletor de pipeline no topo + botões "Novo pipeline", renomear, duplicar, arquivar, excluir.
-- Modal "Novo pipeline" (nome, descrição, cor, checkbox "criar com etapas padrão").
-- CRUD de etapas passa a operar sobre `pipeline_stages` do pipeline selecionado (não mais no JSON).
-- Manter cards "Regras da pipeline" (rotting_days, auto_move_days, require_reason_on_lost) por pipeline.
-- Regras: não excluir último pipeline ativo; ao excluir pipeline com leads, exigir confirmação e oferecer mover leads para outro pipeline.
+Não haverá disparo global por `deal_won`/`monthly_goal` — Celebrações passa a ter só preferências (confete on/off, som on/off, mensagem, ranking). Os toggles antigos de “triggers” serão removidos com nota curta explicando que agora a celebração é definida por etapa (link para Configurações › Pipeline).
 
-**`KanbanPage.tsx`** — evoluir:
-- Barra de abas horizontal (scroll horizontal) listando pipelines ativos + botão "+ Novo pipeline" (leva a Configurações).
-- Ler `?pipeline=<id>` da URL; default = primeiro ativo por `ordem`.
-- Colunas geradas dinamicamente a partir de `pipeline_stages` do pipeline ativo (cor, WIP, labels).
-- Drag-and-drop atualiza `leads.stage_id` (e sincroniza `status` via trigger). Só permite mover entre etapas do pipeline ativo.
-- Cards mostram apenas leads com `pipeline_id` = ativo.
+### 6) Permissões (resumo aplicado)
 
-**Novos hooks**: `usePipelines`, `usePipeline(id)`, `usePipelineStages(pipelineId)`, `useUpdateLeadStage`, `useMovePipelineLeads`.
+| Papel     | Ver pipelines | Selecionar no Popover | Criar/editar/excluir |
+|-----------|---------------|-----------------------|----------------------|
+| admin     | sim           | sim                   | sim (Config › Pipeline) |
+| lider     | sim           | sim                   | não                 |
+| user/mod  | sim           | sim                   | não                 |
 
-**Sidebar**: link "Pipelines" continua apontando para `/admin/kanban` (sem mudar rota agora para evitar quebrar bookmarks; podemos renomear depois se você quiser `/admin/pipelines`).
+Rota `/admin/configuracoes` continua acessível, mas a aba Pipeline exibe bloqueio para não-admin.
 
-## Plano de implementação (em etapas)
+### 7) Etapas de implementação
 
-1. **Migração SQL**: criar `pipelines` + `pipeline_stages` + colunas em `leads` + RLS + GRANTs + trigger de sincronização stage↔status + backfill (pipeline "Comercial" por org e mapeamento dos leads).
-2. **Hooks e tipos**: `usePipelines`, `usePipelineStages`, `useUpdateLeadStage`, tipos TS.
-3. **PipelineSettings**: seletor + modal novo pipeline + CRUD ligado a `pipeline_stages` + arquivar/excluir com regras.
-4. **KanbanPage**: abas + colunas dinâmicas + URL param + drag-and-drop no `stage_id`.
-5. **Ajustes finos**: Dashboard/LeadsTable continuam com `status` (sem mudança); LeadDetail mostra etapa/pipeline atual.
+1. **Migration**: colunas de celebração em `pipeline_stages`, tabela `lead_stage_celebrations` + policies admin em `pipelines`/`pipeline_stages`.
+2. **Hooks**: estender `usePipelines.ts` (tipos + payload de `useUpsertStage`); criar `useCelebrateStage` + gancho no `useUpdateLeadStage`.
+3. **PipelineSettings**: campos de celebração por etapa + guard admin.
+4. **KanbanPage**: substituir abas/botão por Popover “Selecionar pipeline” com busca condicional e estado vazio.
+5. **CelebracoesSettings**: remover triggers globais, manter preferências (confete/som/mensagem/ranking) e mensagem explicativa.
+6. **LeadDetail**: garantir que mudança de etapa usa `useUpdateLeadStage`.
+7. Verificar build.
 
-Depois da sua aprovação eu executo na ordem acima. Confirma?
+Aprovar para eu executar?
