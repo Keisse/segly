@@ -98,7 +98,7 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard title="Total de Leads" value={isLoading ? "..." : computedMetrics.total} icon={Users} delay={0} />
           <MetricCard title="Leads Hoje" value={isLoading ? "..." : computedMetrics.today} icon={UserPlus} delay={0.1} />
-          <MetricCard title="Esta Semana" value={isLoading ? "..." : computedMetrics.thisWeek} icon={Calendar} delay={0.2} />
+          <MetricCard title="Esta Semana" value={isLoading ? "..." : computedMetrics.thisWeek} icon={CalendarDays} delay={0.2} />
           <MetricCard title="Este Mês" value={isLoading ? "..." : computedMetrics.thisMonth} icon={TrendingUp} delay={0.3} />
         </div>
 
