@@ -179,7 +179,6 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
               <TableHead>Departamento</TableHead>
               <TableHead>Cargo</TableHead>
               <TableHead>Campanha</TableHead>
-              <TableHead>Score</TableHead>
               <TableHead>Responsável</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -187,9 +186,6 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
           </TableHeader>
           <TableBody>
             {paginatedLeads.map((lead) => {
-              const score = lead.resultado_diagnostico?.percentage ?? 0;
-              const maturityLevel = getMaturityLevel(score);
-              
               return (
                 <TableRow 
                   key={lead.id} 
@@ -212,11 +208,6 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                   <TableCell className="text-sm">{lead.cargo}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {lead.campaign_name || "—"}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${maturityColors[maturityLevel]}`}>
-                      {Math.round(score)}% - {maturityLabels[maturityLevel]}
-                    </span>
                   </TableCell>
                   <TableCell>
                     {editingResponsavel === lead.id ? (
