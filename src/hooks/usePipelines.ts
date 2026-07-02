@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+import { fireConfetti } from "@/hooks/useCelebrationListener";
 
 export type Pipeline = {
   id: string;
@@ -15,7 +15,7 @@ export type Pipeline = {
   is_default: boolean;
 };
 
-export type CelebrateAudience = "owner" | "team" | "admins";
+export type CelebrateAudience = "team" | "admins";
 
 export type PipelineStage = {
   id: string;
@@ -41,20 +41,11 @@ async function maybeCelebrate(leadId: string, stageId: string) {
     const s = stage as { celebrate_enabled?: boolean; celebrate_audience?: CelebrateAudience; nome?: string } | null;
     if (!s?.celebrate_enabled) return;
 
-    // Audience check
     const uRes = await supabase.auth.getUser();
     const uid = uRes.data.user?.id;
     if (!uid) return;
-    const { data: lead } = await supabase.from("leads").select("owner_id").eq("id", leadId).maybeSingle();
-    const ownerId = (lead as { owner_id: string | null } | null)?.owner_id ?? null;
-    if (s.celebrate_audience === "owner" && ownerId && ownerId !== uid) return;
-    if (s.celebrate_audience === "admins") {
-      const { data: rr } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-      const isAdmin = (rr || []).some((r: { role: string }) => r.role === "admin");
-      if (!isAdmin) return;
-    }
 
-    // Dedupe insert — unique PK on (lead_id, stage_id). ignoreDuplicates via upsert.
+    // Dedupe insert — unique PK on (lead_id, stage_id).
     const { data: inserted, error } = await supabase
       .from("lead_stage_celebrations" as never)
       .upsert({ lead_id: leadId, stage_id: stageId, celebrated_by: uid } as never, { onConflict: "lead_id,stage_id", ignoreDuplicates: true })
@@ -62,15 +53,36 @@ async function maybeCelebrate(leadId: string, stageId: string) {
     if (error) return;
     if (!inserted || (inserted as unknown[]).length === 0) return;
 
-    // Fire confetti
-    confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
-    setTimeout(() => confetti({ particleCount: 80, spread: 100, origin: { x: 0.2, y: 0.7 } }), 200);
-    setTimeout(() => confetti({ particleCount: 80, spread: 100, origin: { x: 0.8, y: 0.7 } }), 400);
-    toast.success(`🎉 Etapa "${s.nome}" concluída!`);
+    // Fire local for initiator (if allowed by their preference and audience)
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+    const isAdmin = (roles || []).some((r: { role: string }) => r.role === "admin");
+    const audience = (s.celebrate_audience ?? "team") as CelebrateAudience;
+    if (audience === "team" || isAdmin) {
+      fireConfetti(s.nome);
+    }
+
+    // Broadcast to other users in the same org
+    const { data: prof } = await supabase.from("profiles").select("organization_id").eq("id", uid).maybeSingle();
+    const orgId = (prof as { organization_id?: string } | null)?.organization_id;
+    if (!orgId) return;
+    const ch = supabase.channel(`celebrations:${orgId}`);
+    await new Promise<void>((resolve) => {
+      ch.subscribe((status) => {
+        if (status === "SUBSCRIBED") resolve();
+      });
+      setTimeout(() => resolve(), 1500);
+    });
+    await ch.send({
+      type: "broadcast",
+      event: "celebrate",
+      payload: { audience, stage_name: s.nome, actor_id: uid },
+    });
+    setTimeout(() => supabase.removeChannel(ch), 500);
   } catch {
     // silent
   }
 }
+
 
 const DEFAULT_STAGES = [
   { nome: "Novo", cor: "#64748b", is_won: false, is_lost: false },
