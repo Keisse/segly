@@ -76,7 +76,7 @@ export function AdminSidebar() {
                 onClick={() => setPropositoOpen(true)}
                 className="hover:bg-sidebar-accent/50"
               >
-                <Compass className="h-4 w-4" />
+                <PrayingHandsIcon className="h-4 w-4" />
                 {!collapsed && <span>Nosso Propósito</span>}
               </SidebarMenuButton>
             </SidebarMenuItem>
