@@ -13,9 +13,6 @@ import KanbanPage from "./pages/admin/KanbanPage";
 import PerguntasPage from "./pages/admin/PerguntasPage";
 import AdministradoresPage from "./pages/admin/AdministradoresPage";
 import BaseConhecimentoPage from "./pages/admin/BaseConhecimentoPage";
-import CampanhasPage from "./pages/admin/CampanhasPage";
-import CampanhaEditPage from "./pages/admin/CampanhaEditPage";
-import CampaignPublicPage from "./pages/CampaignPublicPage";
 import LeadDetail from "./pages/LeadDetail";
 import ActionPlanPage from "./pages/ActionPlanPage";
 import TrackingTemplatePage from "./pages/TrackingTemplatePage";
@@ -44,10 +41,8 @@ const App = () => (
           <Route path="/acompanhamento" element={<TrackingTemplatePage />} />
           <Route path="/mail" element={<OutboundCadastro />} />
           <Route path="/obrigada" element={<ObrigadaPage />} />
-          <Route path="/c/:slug" element={<CampaignPublicPage />} />
           <Route path="/admin-login" element={<AdminLogin />} />
 
-          {/* Novo painel admin com sidebar */}
           <Route
             path="/admin"
             element={
@@ -61,9 +56,6 @@ const App = () => (
             <Route path="kanban" element={<KanbanPage />} />
             <Route path="perguntas" element={<PerguntasPage />} />
             <Route path="base-conhecimento" element={<BaseConhecimentoPage />} />
-            <Route path="campanhas" element={<CampanhasPage />} />
-            <Route path="campanhas/nova" element={<CampanhaEditPage />} />
-            <Route path="campanhas/:id" element={<CampanhaEditPage />} />
             <Route path="leads" element={<LeadsPage />} />
             <Route path="clientes" element={<ClientesPage />} />
             <Route path="meu-perfil" element={<MeuPerfilPage />} />
@@ -86,11 +78,8 @@ const App = () => (
             <Route path="lead/:id" element={<LeadDetail />} />
           </Route>
 
-          {/* Compatibilidade com rotas antigas */}
           <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin-dashboard/lead/:id" element={<Navigate to="/admin/dashboard" replace />} />
-
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
