@@ -232,15 +232,19 @@ const AtividadesPage = () => {
               const isCurrentMonth = day.getMonth() === calendarMonth.getMonth();
               const isToday = key === localDateString();
               return (
-                <div key={key} className={`min-h-[92px] border-b border-r p-2 ${isCurrentMonth ? "bg-background" : "bg-muted/15 text-muted-foreground"}`}>
-                  <div className="flex items-start justify-between gap-2">
+                <div key={key} className={`relative min-h-[104px] border-b border-r p-2 ${isCurrentMonth ? "bg-background" : "bg-muted/15 text-muted-foreground"}`}>
+                  <div className="flex justify-end">
                     <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full text-xs ${isToday ? "bg-primary text-primary-foreground font-semibold" : ""}`}>{day.getDate()}</span>
-                    {count > 0 && (
-                      <button onClick={() => openDay(day)} className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-primary text-primary-foreground px-2 text-xs font-bold hover:opacity-90" title={`${count} atividades`}>
-                        {count}
-                      </button>
-                    )}
                   </div>
+                  {count > 0 && (
+                    <button
+                      onClick={() => openDay(day)}
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 inline-flex h-11 min-w-11 items-center justify-center rounded-full bg-amber-500 px-3 text-lg font-extrabold text-white shadow-sm transition hover:bg-amber-600 hover:scale-105"
+                      title={`${count} atividades`}
+                    >
+                      {count}
+                    </button>
+                  )}
                 </div>
               );
             })}
