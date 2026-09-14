@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import LeadsChart from "@/components/admin/LeadsChart";
 import LeadsTable from "@/components/admin/LeadsTable";
 import type { Lead } from "@/types/lead";
 
@@ -146,6 +147,32 @@ export default function AdminDashboard() {
   const filteredClients = useMemo(() => clients.filter((item) => ownerMatches(item.owner_id) && inPeriod(item.data_conversao)), [clients, ownerFilter, start]);
   const filteredContacts = useMemo(() => contacts.filter((item) => ownerMatches(item.user_id) && inPeriod(item.completed_at)), [contacts, ownerFilter, start]);
 
+  const chartData = useMemo(() => {
+    const counts = new Map<string, number>();
+    filteredLeads.forEach((lead) => {
+      const d = new Date(lead.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    let chartStart = start ? new Date(start) : null;
+    if (!chartStart && filteredLeads.length) {
+      chartStart = filteredLeads.reduce((earliest, lead) => {
+        const current = startOfDay(new Date(lead.created_at));
+        return current < earliest ? current : earliest;
+      }, startOfDay(new Date(filteredLeads[0].created_at)));
+    }
+    if (!chartStart) chartStart = startOfDay();
+
+    const chartEnd = startOfDay();
+    const data: { date: string; leads: number }[] = [];
+    for (let cursor = new Date(chartStart); cursor <= chartEnd; cursor.setDate(cursor.getDate() + 1)) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+      data.push({ date: key, leads: counts.get(key) || 0 });
+    }
+    return data;
+  }, [filteredLeads, start]);
+
   const pending = filteredActivities.filter((a) => a.status === "pendente");
   const todayActivities = pending.filter((a) => { const d = new Date(a.scheduled_at); return d >= today && d < tomorrow; });
   const overdueActivities = pending.filter((a) => new Date(a.scheduled_at) < today);
@@ -168,6 +195,10 @@ export default function AdminDashboard() {
   })).filter((stage) => stage.count > 0), [stages, filteredLeads]);
 
   const periodLabel = period === "all" ? "Todo o período" : `Últimos ${period} dias`;
+  const selectedPerson = ownerFilter === "all" ? null : people.find((person) => person.id === ownerFilter);
+  const chartDescription = selectedPerson
+    ? `${periodLabel} · ${selectedPerson.display_name || "Colaborador"}`
+    : `${periodLabel} · Toda a equipe visível`;
 
   return (
     <div className="p-6 space-y-6 max-w-[1500px] mx-auto">
@@ -198,6 +229,8 @@ export default function AdminDashboard() {
           <Button asChild><Link to="/admin/leads/novo"><Plus className="h-4 w-4 mr-2" />Cadastrar lead</Link></Button>
         </div>
       </div>
+
+      <LeadsChart data={chartData} title="Leads por período" description={chartDescription} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard title="Leads no período" value={filteredLeads.length} detail={periodLabel} icon={Users} />
