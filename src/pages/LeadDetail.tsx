@@ -11,6 +11,7 @@ import { useMyRole } from "@/hooks/useMyRole";
 import { LeadActivitiesPanel } from "@/components/admin/LeadActivitiesPanel";
 import { LeadAuditTimeline } from "@/components/admin/LeadAuditTimeline";
 import { LeadEditDialog } from "@/components/admin/LeadEditDialog";
+import { LeadProposalsPanel } from "@/components/admin/LeadProposalsPanel";
 import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors, type LeadStatus } from "@/types/lead";
 import { capitalizeWords } from "@/lib/formatName";
 import { format } from "date-fns";
@@ -97,6 +98,8 @@ const LeadDetail = () => {
             <a href={`https://wa.me/${lead.telefone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-emerald-400 hover:underline"><MessageSquare className="w-4 h-4" />WhatsApp</a>
           </div>
         </motion.div>
+
+        <LeadProposalsPanel leadId={lead.id} ownerId={lead.owner_id ?? null} currentProductId={lead.product_id ?? null} customFields={lead.custom_fields} />
 
         {customEntries.length > 0 && <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
           <div className="flex items-center justify-between gap-3 mb-4"><div><h2 className="text-lg font-semibold text-foreground">Dados do cadastro</h2><p className="text-sm text-muted-foreground">Respostas persistidas do formulário e das etapas deste lead.</p></div><Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3.5 w-3.5 mr-1.5" />Editar</Button></div>
