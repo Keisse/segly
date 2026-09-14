@@ -34,8 +34,17 @@ function pct(n: number, d: number) {
 
 function differenceText(current: number, previous: number, suffix = "") {
   const diff = current - previous;
-  if (diff === 0) return `igual ao período anterior`;
+  if (diff === 0) return "igual ao período anterior";
   return `${diff > 0 ? "+" : ""}${diff}${suffix} vs. período anterior`;
+}
+
+function dayBounds(offset = 0) {
+  const start = new Date();
+  start.setDate(start.getDate() + offset);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
 }
 
 export default function ProdutividadePage() {
@@ -155,6 +164,47 @@ export default function ProdutividadePage() {
     enabled: !!selectedId,
   });
 
+  const daily = useMemo(() => {
+    const today = dayBounds(0);
+    const yesterday = dayBounds(-1);
+    const todayActivities = activities.filter((a) => {
+      const when = new Date(a.scheduled_at);
+      return when >= today.start && when < today.end && a.status !== "cancelada";
+    });
+    const yesterdayActivities = activities.filter((a) => {
+      const when = new Date(a.scheduled_at);
+      return when >= yesterday.start && when < yesterday.end && a.status !== "cancelada";
+    });
+    const completedToday = todayActivities.filter((a) => a.status === "concluida").length;
+    const completedYesterday = yesterdayActivities.filter((a) => a.status === "concluida").length;
+    const pendingToday = todayActivities.filter((a) => a.status === "pendente").length;
+    const overdueNow = todayActivities.filter((a) => a.status === "pendente" && new Date(a.scheduled_at) < new Date()).length;
+    const dailyOnTimeCount = todayActivities.filter((a) => a.completed_at && new Date(a.completed_at) <= new Date(a.scheduled_at)).length;
+    const dailyOnTime = pct(dailyOnTimeCount, todayActivities.filter((a) => new Date(a.scheduled_at) <= new Date()).length);
+    const executionRate = pct(completedToday, todayActivities.length);
+    const yesterdayExecutionRate = pct(completedYesterday, yesterdayActivities.length);
+    const contactsToday = contacts.filter((c) => {
+      const completed = new Date(c.completed_at);
+      return completed >= today.start && completed < today.end;
+    }).length;
+    const contactsYesterday = contacts.filter((c) => {
+      const completed = new Date(c.completed_at);
+      return completed >= yesterday.start && completed < yesterday.end;
+    }).length;
+
+    return {
+      planned: todayActivities.length,
+      completed: completedToday,
+      pending: pendingToday,
+      overdue: overdueNow,
+      dailyOnTime,
+      executionRate,
+      yesterdayExecutionRate,
+      contactsToday,
+      contactsYesterday,
+    };
+  }, [activities, contacts]);
+
   const metrics = useMemo(() => {
     const dueCurrent = activities.filter((a) => {
       const when = new Date(a.scheduled_at);
@@ -246,6 +296,32 @@ export default function ProdutividadePage() {
         <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Nenhum liderado disponível para este usuário.</CardContent></Card>
       ) : (
         <>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Hoje · {selectedPerson?.display_name || "colaborador"}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                <DailyMetric title="Planejadas" value={String(daily.planned)} detail="carga da agenda de hoje" />
+                <DailyMetric title="Concluídas" value={String(daily.completed)} detail={`${daily.executionRate}% da agenda executada`} />
+                <DailyMetric title="Pendentes" value={String(daily.pending)} detail="ainda abertas hoje" />
+                <DailyMetric title="Atrasadas agora" value={String(daily.overdue)} detail="horário já vencido" />
+                <DailyMetric title="Contatos hoje" value={String(daily.contactsToday)} detail={differenceText(daily.contactsToday, daily.contactsYesterday)} />
+                <DailyMetric title="OnTime hoje" value={`${daily.dailyOnTime}%`} detail="atividades vencidas executadas no prazo" />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Execução da agenda do dia</span>
+                  <span>{daily.executionRate}%</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(daily.executionRate, 100)}%` }} />
+                </div>
+                <p className="text-xs text-muted-foreground">{differenceText(daily.executionRate, daily.yesterdayExecutionRate, " p.p.")} na taxa de execução diária.</p>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric icon={Target} title="OnTime" value={`${metrics.currentOnTime}%`} detail={differenceText(metrics.currentOnTime, metrics.previousOnTime, " p.p.")} />
             <Metric icon={Activity} title="Atividades concluídas" value={String(metrics.completedCurrent)} detail={differenceText(metrics.completedCurrent, metrics.completedPrevious)} />
@@ -271,6 +347,16 @@ export default function ProdutividadePage() {
           </Card>
         </>
       )}
+    </div>
+  );
+}
+
+function DailyMetric({ title, value, detail }: { title: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-lg border bg-card p-3">
+      <p className="text-xs text-muted-foreground">{title}</p>
+      <p className="text-2xl font-bold mt-1">{value}</p>
+      <p className="text-[11px] text-muted-foreground mt-1">{detail}</p>
     </div>
   );
 }
