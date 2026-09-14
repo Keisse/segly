@@ -7,6 +7,7 @@ import { PartyPopper, Mail, MessageCircle, User } from "lucide-react";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { capitalizeWords } from "@/lib/formatName";
 import { PipelineTabs } from "@/components/admin/PipelineTabs";
+import { StageTransitionDialog } from "@/components/admin/StageTransitionDialog";
 
 type LeadRow = {
   id: string;
@@ -15,10 +16,18 @@ type LeadRow = {
   cargo: string | null;
   email: string | null;
   telefone: string | null;
+  fonte?: string | null;
+  custom_fields?: Record<string, unknown> | null;
   stage_id: string | null;
   owner_id: string | null;
   resultado_diagnostico: { percentage?: number } | null;
 };
+
+type PendingMove = {
+  lead: LeadRow;
+  stageId: string;
+  stageName: string;
+} | null;
 
 const KanbanPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -29,6 +38,12 @@ const KanbanPage = () => {
     if (fromUrl && pipelines.some((p) => p.id === fromUrl)) return fromUrl;
     return pipelines[0]?.id ?? null;
   }, [pipelines, searchParams]);
+
+  const activePipeline = useMemo(
+    () => pipelines.find((p) => p.id === activePipelineId) ?? null,
+    [pipelines, activePipelineId]
+  );
+  const isAcelera = activePipeline?.nome === "Pipeline Acelera";
 
   useEffect(() => {
     if (activePipelineId && searchParams.get("pipeline") !== activePipelineId) {
@@ -43,6 +58,7 @@ const KanbanPage = () => {
   const leads = leadsRaw as unknown as LeadRow[];
   const updateStage = useUpdateLeadStage();
   const [dragId, setDragId] = useState<string | null>(null);
+  const [pendingMove, setPendingMove] = useState<PendingMove>(null);
 
   const { data: members = [] } = useOrgMembers();
   const ownerMap = useMemo(() => {
@@ -59,10 +75,30 @@ const KanbanPage = () => {
   }, [stages, leads]);
 
   const handleDrop = (stageId: string) => {
-    if (dragId && activePipelineId) {
-      updateStage.mutate({ leadId: dragId, stageId, pipelineId: activePipelineId });
-      setDragId(null);
+    if (!dragId || !activePipelineId) return;
+
+    const lead = leads.find((item) => item.id === dragId);
+    const stage = stages.find((item) => item.id === stageId);
+    setDragId(null);
+
+    if (!lead || !stage || lead.stage_id === stageId) return;
+
+    if (isAcelera) {
+      setPendingMove({ lead, stageId, stageName: stage.nome });
+      return;
     }
+
+    updateStage.mutate({ leadId: lead.id, stageId, pipelineId: activePipelineId });
+  };
+
+  const confirmAceleraMove = async () => {
+    if (!pendingMove || !activePipelineId) return;
+    await updateStage.mutateAsync({
+      leadId: pendingMove.lead.id,
+      stageId: pendingMove.stageId,
+      pipelineId: activePipelineId,
+    });
+    setPendingMove(null);
   };
 
   const selectPipeline = (id: string) => {
@@ -75,7 +111,11 @@ const KanbanPage = () => {
     <div className="p-6 space-y-4">
       <div>
         <h1 className="text-2xl font-display font-bold">Pipelines</h1>
-        <p className="text-sm text-muted-foreground">Arraste os cards entre etapas para movê-los.</p>
+        <p className="text-sm text-muted-foreground">
+          {isAcelera
+            ? "Arraste os cards entre etapas. No Pipeline Acelera, o formulário da nova etapa será aberto antes da movimentação."
+            : "Arraste os cards entre etapas para movê-los."}
+        </p>
       </div>
 
       <PipelineTabs
@@ -83,7 +123,6 @@ const KanbanPage = () => {
         activeId={activePipelineId}
         onSelect={selectPipeline}
       />
-
 
       {!activePipelineId ? (
         <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p>
@@ -93,7 +132,7 @@ const KanbanPage = () => {
         <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p>
       ) : (
         <div
-          className="grid gap-3"
+          className="grid gap-3 overflow-x-auto pb-2"
           style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(220px, 1fr))` }}
         >
           {stages.map((col) => {
@@ -176,6 +215,15 @@ const KanbanPage = () => {
           })}
         </div>
       )}
+
+      <StageTransitionDialog
+        open={!!pendingMove}
+        onOpenChange={(open) => { if (!open) setPendingMove(null); }}
+        lead={pendingMove?.lead ?? null}
+        stageId={pendingMove?.stageId ?? null}
+        stageName={pendingMove?.stageName ?? "etapa"}
+        onConfirm={confirmAceleraMove}
+      />
     </div>
   );
 };
