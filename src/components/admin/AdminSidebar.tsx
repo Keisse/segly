@@ -10,6 +10,8 @@ import {
   UserCircle,
   UserPlus,
   CalendarCheck2,
+  CalendarDays,
+  Gauge,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -31,14 +33,16 @@ import { NossoPropositoDialog } from "./NossoPropositoDialog";
 
 const seglyLogo = "/segly-logo.png";
 
-type Item = { title: string; url: string; icon: any; adminOnly?: boolean };
+type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leaderOnly?: boolean };
 
 const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+  { title: "Agenda", url: "/admin/agenda", icon: CalendarDays },
   { title: "Cadastrar Lead", url: "/admin/leads/novo", icon: UserPlus },
   { title: "Leads", url: "/admin/leads", icon: Users },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
   { title: "Atividades", url: "/admin/atividades", icon: CalendarCheck2 },
+  { title: "Produtividade", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Meu Perfil", url: "/admin/meu-perfil", icon: UserCircle },
 ];
@@ -49,6 +53,7 @@ export function AdminSidebar() {
   const { signOut } = useAuth();
   const { data: role } = useMyRole();
   const isAdmin = role === "admin";
+  const isLeader = role === "admin" || role === "lider";
   const navigate = useNavigate();
   const [propositoOpen, setPropositoOpen] = useState(false);
 
@@ -57,7 +62,11 @@ export function AdminSidebar() {
     navigate("/admin-login");
   };
 
-  const visibleMain = mainItems.filter((i) => !i.adminOnly || isAdmin);
+  const visibleMain = mainItems.filter((i) => {
+    if (i.adminOnly && !isAdmin) return false;
+    if (i.leaderOnly && !isLeader) return false;
+    return true;
+  });
 
   return (
     <Sidebar collapsible="icon">
