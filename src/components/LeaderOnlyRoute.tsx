@@ -6,7 +6,12 @@ type Props = { children: ReactNode };
 
 export default function LeaderOnlyRoute({ children }: Props) {
   const { data: role, isLoading } = useMyRole();
+
   if (isLoading) return null;
-  if (role !== "admin" && role !== "lider") return <Navigate to="/admin/agenda" replace />;
+
+  if (role !== "admin" && role !== "lider") {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
   return <>{children}</>;
 }
