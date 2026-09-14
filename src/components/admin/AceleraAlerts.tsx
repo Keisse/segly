@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, Clock3, AlertTriangle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Bell, Clock3, AlertTriangle, CalendarClock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { usePipelines, usePipelineStages, useLeadsByPipeline } from "@/hooks/usePipelines";
+import { supabase } from "@/integrations/supabase/client";
 
 function elapsedHours(value?: string | null) {
   if (!value) return 0;
@@ -19,6 +21,19 @@ function formatAge(hours: number) {
   return rem ? `${days}d ${rem}h` : `${days}d`;
 }
 
+function formatWhen(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
+}
+
+type ActivityAlertRow = {
+  id: string;
+  lead_id: string | null;
+  type: string;
+  title: string | null;
+  scheduled_at: string;
+  lead?: { id: string; nome: string; empresa: string | null } | null;
+};
+
 export function AceleraAlerts() {
   const { user } = useAuth();
   const { data: pipelines = [] } = usePipelines();
@@ -32,11 +47,31 @@ export function AceleraAlerts() {
     return () => window.clearInterval(id);
   }, []);
 
+  const { data: dueActivities = [] } = useQuery({
+    queryKey: ["acelera-due-alerts", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const limit = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("activities" as never)
+        .select("id, lead_id, type, title, scheduled_at, lead:leads(id,nome,empresa)")
+        .eq("responsible_id", user.id)
+        .eq("status", "pendente")
+        .in("type", ["retorno_cliente", "retorno_standby"])
+        .lte("scheduled_at", limit)
+        .order("scheduled_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as ActivityAlertRow[];
+    },
+    enabled: !!user?.id,
+    refetchInterval: 60_000,
+  });
+
   const novoStage = stages.find((s) => s.nome.toLocaleLowerCase("pt-BR") === "novo");
   const cotarStage = stages.find((s) => s.nome.toLocaleLowerCase("pt-BR") === "cotar");
   const stageOrder = useMemo(() => new Map(stages.map((stage) => [stage.id, stage.ordem])), [stages]);
 
-  const alerts = useMemo(() => {
+  const leadAlerts = useMemo(() => {
     if (!user?.id || !novoStage || !cotarStage) return [];
 
     return (leads as Array<{
@@ -55,29 +90,55 @@ export function AceleraAlerts() {
 
         if (hours >= 48 && hasNotReachedCotar) {
           return {
-            lead,
-            hours,
+            id: `lead-48-${lead.id}`,
+            leadId: lead.id,
             level: "critical" as const,
             title: "Lead há mais de 48h sem chegar em Cotar",
+            subject: lead.empresa || lead.nome,
             message: "Este lead precisa avançar para a etapa Cotar.",
+            meta: `Há ${formatAge(hours)} desde a entrada do lead`,
           };
         }
 
         if (hours >= 24 && lead.stage_id === novoStage.id) {
           return {
-            lead,
-            hours,
+            id: `lead-24-${lead.id}`,
+            leadId: lead.id,
             level: "warning" as const,
             title: "Lead novo há mais de 24h",
+            subject: lead.empresa || lead.nome,
             message: "Faça o primeiro contato e avance a jornada.",
+            meta: `Há ${formatAge(hours)} desde a entrada do lead`,
           };
         }
 
         return null;
       })
-      .filter(Boolean)
-      .sort((a, b) => (b?.hours ?? 0) - (a?.hours ?? 0));
+      .filter(Boolean);
   }, [leads, novoStage, cotarStage, stageOrder, user?.id]);
+
+  const activityAlerts = useMemo(() => {
+    const now = Date.now();
+    return dueActivities.map((activity) => {
+      const isOverdue = new Date(activity.scheduled_at).getTime() < now;
+      const standby = activity.type === "retorno_standby";
+      return {
+        id: `activity-${activity.id}`,
+        leadId: activity.lead_id,
+        level: isOverdue ? ("critical" as const) : ("warning" as const),
+        title: standby ? "Stand-by próximo do contato" : "Retorno de cliente",
+        subject: activity.lead?.empresa || activity.lead?.nome || activity.title || "Atividade",
+        message: isOverdue ? "Esta atividade está atrasada." : "Esta atividade acontece nas próximas 24 horas.",
+        meta: formatWhen(activity.scheduled_at),
+        activity: true,
+      };
+    });
+  }, [dueActivities]);
+
+  const alerts = useMemo(
+    () => [...leadAlerts, ...activityAlerts].sort((a, b) => (a.level === b.level ? 0 : a.level === "critical" ? -1 : 1)),
+    [leadAlerts, activityAlerts]
+  );
 
   const total = alerts.length;
   const critical = alerts.filter((a) => a?.level === "critical").length;
@@ -118,24 +179,26 @@ export function AceleraAlerts() {
               {alerts.map((alert) => {
                 if (!alert) return null;
                 const isCritical = alert.level === "critical";
-                return (
-                  <Link
-                    key={alert.lead.id}
-                    to={`/admin/lead/${alert.lead.id}`}
-                    className="block p-4 hover:bg-accent/60 transition-colors"
-                  >
-                    <div className="flex gap-3">
-                      <div className={`mt-0.5 h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${isCritical ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"}`}>
-                        {isCritical ? <AlertTriangle className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">{alert.title}</p>
-                        <p className="text-sm truncate mt-0.5">{alert.lead.empresa || alert.lead.nome}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{alert.message}</p>
-                        <p className="text-[11px] text-muted-foreground mt-2">Há {formatAge(alert.hours)} desde a entrada do lead</p>
-                      </div>
+                const content = (
+                  <div className="flex gap-3">
+                    <div className={`mt-0.5 h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${isCritical ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"}`}>
+                      {"activity" in alert ? <CalendarClock className="h-4 w-4" /> : isCritical ? <AlertTriangle className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">{alert.title}</p>
+                      <p className="text-sm truncate mt-0.5">{alert.subject}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{alert.message}</p>
+                      <p className="text-[11px] text-muted-foreground mt-2">{alert.meta}</p>
+                    </div>
+                  </div>
+                );
+
+                return alert.leadId ? (
+                  <Link key={alert.id} to={`/admin/lead/${alert.leadId}`} className="block p-4 hover:bg-accent/60 transition-colors">
+                    {content}
                   </Link>
+                ) : (
+                  <div key={alert.id} className="p-4">{content}</div>
                 );
               })}
             </div>
