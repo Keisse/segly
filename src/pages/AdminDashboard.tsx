@@ -1,304 +1,265 @@
-import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
-import { Users, UserPlus, CalendarDays, TrendingUp, CalendarIcon, X, Plus } from "lucide-react";
-import { NovoLeadDialog } from "@/components/leads/NovoLeadDialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+  AlertTriangle,
+  CalendarCheck2,
+  CheckCircle2,
+  Clock3,
+  KanbanSquare,
+  Plus,
+  Target,
+  TrendingUp,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useMyRole } from "@/hooks/useMyRole";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useDashboardMetrics } from "@/hooks/useLeads";
-import { useCampaigns } from "@/hooks/useCampaigns";
-import MetricCard from "@/components/admin/MetricCard";
-import LeadsChart from "@/components/admin/LeadsChart";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LeadsTable from "@/components/admin/LeadsTable";
-import DashboardFilters from "@/components/admin/DashboardFilters";
-import DistributionCharts from "@/components/admin/DistributionCharts";
-import type { LeadStatus } from "@/types/lead";
+import type { Lead } from "@/types/lead";
 
-interface FiltersState {
-  status?: LeadStatus;
-  startDate?: Date;
-  endDate?: Date;
-  porte?: string;
-  departamento?: string;
-  cargo?: string;
-  searchName?: string;
+type Period = "7" | "30" | "90" | "all";
+type ProfileRow = { id: string; display_name: string | null; lider_id: string | null; is_active: boolean | null };
+type ActivityRow = { id: string; responsible_id: string; scheduled_at: string; completed_at: string | null; status: string };
+type ClientRow = { id: string; owner_id: string | null; data_conversao: string; status: string | null };
+type ContactRow = { id: string; user_id: string; completed_at: string; on_time: boolean | null };
+type StageRow = { id: string; pipeline_id: string; nome: string; ordem: number; is_won: boolean; is_lost: boolean };
+type LeadRow = Lead & { stage_entered_at?: string | null };
+
+function startOfDay(date = new Date()) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
-type FonteTab = "todos" | "inbound" | "outbound";
+function periodStart(period: Period) {
+  if (period === "all") return null;
+  const d = startOfDay();
+  d.setDate(d.getDate() - (Number(period) - 1));
+  return d;
+}
 
-const AdminDashboard = () => {
-  const { data: metrics, isLoading } = useDashboardMetrics();
-  const { data: campaigns = [] } = useCampaigns();
-  const [openNewLead, setOpenNewLead] = useState(false);
-  const [filters, setFilters] = useState<FiltersState>({});
-  const [fonteTab, setFonteTab] = useState<FonteTab>("todos");
-  const [campaignFilter, setCampaignFilter] = useState<string>("all");
+function percent(part: number, total: number) {
+  if (!total) return 0;
+  return Math.round((part / total) * 100);
+}
 
-  const filteredLeads = useMemo(() => {
-    if (!metrics?.leads) return [];
-    return metrics.leads.filter((lead) => {
-      if (fonteTab !== "todos") {
-        const leadFonte = (lead as any).fonte || "inbound";
-        if (fonteTab === "outbound" && leadFonte !== "outbound") return false;
-        if (fonteTab === "inbound" && leadFonte !== "inbound" && leadFonte !== "organico") return false;
-      }
-      if (campaignFilter !== "all" && lead.campaign_id !== campaignFilter) return false;
-      if (filters.status && lead.status !== filters.status) return false;
-      if (filters.startDate && new Date(lead.created_at) < filters.startDate) return false;
-      if (filters.endDate && new Date(lead.created_at) > filters.endDate) return false;
-      if (filters.porte && lead.porte_empresa !== filters.porte) return false;
-      if (filters.departamento && lead.departamento !== filters.departamento) return false;
-      if (filters.cargo && lead.cargo !== filters.cargo) return false;
-      if (filters.searchName && !lead.nome.toLowerCase().includes(filters.searchName.toLowerCase())) return false;
-      return true;
-    });
-  }, [metrics?.leads, filters, fonteTab, campaignFilter]);
+function KpiCard({ title, value, detail, icon: Icon }: { title: string; value: string | number; detail: string; icon: any }) {
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className="mt-1 text-3xl font-bold tracking-tight">{value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+          </div>
+          <div className="rounded-xl bg-primary/10 p-2.5 text-primary"><Icon className="h-5 w-5" /></div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-  const todayStart = useMemo(() => {
-    const d = new Date(); d.setHours(0,0,0,0); return d;
-  }, []);
-  const weekStart = useMemo(() => {
-    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - d.getDay()); return d;
-  }, []);
-  const monthStart = useMemo(() => {
-    const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
-  }, []);
+export default function AdminDashboard() {
+  const { user } = useAuth();
+  const { data: role } = useMyRole();
+  const [period, setPeriod] = useState<Period>("30");
+  const [ownerFilter, setOwnerFilter] = useState("all");
 
-  const computedMetrics = useMemo(() => ({
-    total: filteredLeads.length,
-    today: filteredLeads.filter((l) => new Date(l.created_at) >= todayStart).length,
-    thisWeek: filteredLeads.filter((l) => new Date(l.created_at) >= weekStart).length,
-    thisMonth: filteredLeads.filter((l) => new Date(l.created_at) >= monthStart).length,
-  }), [filteredLeads, todayStart, weekStart, monthStart]);
+  const { data: leads = [], isLoading: leadsLoading } = useQuery({
+    queryKey: ["dashboard-v2-leads"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as LeadRow[];
+    },
+  });
 
-  const setQuickPeriod = (days: number) => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    setFilters({ ...filters, startDate, endDate });
-  };
+  const { data: activities = [] } = useQuery({
+    queryKey: ["dashboard-v2-activities"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("activities" as never).select("id,responsible_id,scheduled_at,completed_at,status");
+      if (error) throw error;
+      return (data ?? []) as unknown as ActivityRow[];
+    },
+  });
 
-  const setCurrentMonth = () => {
-    const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    setFilters({ ...filters, startDate, endDate });
-  };
+  const { data: clients = [] } = useQuery({
+    queryKey: ["dashboard-v2-clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clientes" as never).select("id,owner_id,data_conversao,status");
+      if (error) throw error;
+      return (data ?? []) as unknown as ClientRow[];
+    },
+  });
 
-  const isPeriodActive = (days: number) => {
-    if (!filters.startDate || !filters.endDate) return false;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    return (
-      format(filters.startDate, "yyyy-MM-dd") === format(startDate, "yyyy-MM-dd") &&
-      format(filters.endDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
-    );
-  };
+  const { data: contacts = [] } = useQuery({
+    queryKey: ["dashboard-v2-contacts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("contact_execution_log" as never).select("id,user_id,completed_at,on_time");
+      if (error) throw error;
+      return (data ?? []) as unknown as ContactRow[];
+    },
+  });
 
-  const isCurrentMonthActive = () => {
-    if (!filters.startDate || !filters.endDate) return false;
-    const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    return (
-      format(filters.startDate, "yyyy-MM-dd") === format(startDate, "yyyy-MM-dd") &&
-      format(filters.endDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
-    );
-  };
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["dashboard-v2-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id,display_name,lider_id,is_active").eq("is_active", true).order("display_name");
+      if (error) throw error;
+      return (data ?? []) as ProfileRow[];
+    },
+  });
 
-  const hasDateFilters = filters.startDate || filters.endDate;
+  const { data: stages = [] } = useQuery({
+    queryKey: ["dashboard-v2-stages"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("pipeline_stages" as never).select("id,pipeline_id,nome,ordem,is_won,is_lost").order("ordem");
+      if (error) throw error;
+      return (data ?? []) as unknown as StageRow[];
+    },
+  });
 
-  const clearDateFilters = () => {
-    setFilters({ ...filters, startDate: undefined, endDate: undefined });
-  };
+  const people = useMemo(() => {
+    if (!user) return [];
+    if (role === "admin") return profiles;
+    if (role === "lider") return profiles.filter((p) => p.id === user.id || p.lider_id === user.id);
+    return profiles.filter((p) => p.id === user.id);
+  }, [profiles, role, user]);
+
+  const start = useMemo(() => periodStart(period), [period]);
+  const now = new Date();
+  const today = startOfDay(now);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const ownerMatches = (ownerId: string | null | undefined) => ownerFilter === "all" || ownerId === ownerFilter;
+  const inPeriod = (value: string | null | undefined) => !start || (!!value && new Date(value) >= start);
+
+  const filteredLeads = useMemo(() => leads.filter((lead) => ownerMatches(lead.owner_id) && inPeriod(lead.created_at)), [leads, ownerFilter, start]);
+  const filteredActivities = useMemo(() => activities.filter((item) => ownerMatches(item.responsible_id)), [activities, ownerFilter]);
+  const filteredClients = useMemo(() => clients.filter((item) => ownerMatches(item.owner_id) && inPeriod(item.data_conversao)), [clients, ownerFilter, start]);
+  const filteredContacts = useMemo(() => contacts.filter((item) => ownerMatches(item.user_id) && inPeriod(item.completed_at)), [contacts, ownerFilter, start]);
+
+  const pending = filteredActivities.filter((a) => a.status === "pendente");
+  const todayActivities = pending.filter((a) => { const d = new Date(a.scheduled_at); return d >= today && d < tomorrow; });
+  const overdueActivities = pending.filter((a) => new Date(a.scheduled_at) < today);
+  const completedInPeriod = filteredActivities.filter((a) => a.status === "concluida" && inPeriod(a.completed_at));
+  const onTimeContacts = filteredContacts.filter((c) => c.on_time === true).length;
+
+  const wonStageIds = new Set(stages.filter((s) => s.is_won).map((s) => s.id));
+  const lostStageIds = new Set(stages.filter((s) => s.is_lost).map((s) => s.id));
+  const wonLeads = filteredLeads.filter((l) => l.stage_id && wonStageIds.has(l.stage_id));
+  const lostLeads = filteredLeads.filter((l) => l.stage_id && lostStageIds.has(l.stage_id));
+  const activeLeads = filteredLeads.filter((l) => !l.stage_id || (!wonStageIds.has(l.stage_id) && !lostStageIds.has(l.stage_id)));
+  const conversionBase = filteredLeads.length;
+  const conversionCount = filteredClients.length || wonLeads.length;
+  const conversionRate = percent(conversionCount, conversionBase);
+  const onTimeRate = percent(onTimeContacts, filteredContacts.length);
+
+  const pipelineBreakdown = useMemo(() => stages.map((stage) => ({
+    ...stage,
+    count: filteredLeads.filter((lead) => lead.stage_id === stage.id).length,
+  })).filter((stage) => stage.count > 0), [stages, filteredLeads]);
+
+  const periodLabel = period === "all" ? "Todo o período" : `Últimos ${period} dias`;
 
   return (
-    <div className="py-6 px-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-start justify-between gap-3 flex-wrap"
-        >
-          <div>
-            <h1 className="text-2xl font-display font-bold text-foreground">
-              Dashboard
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Gerencie seus leads do diagnóstico
-            </p>
-          </div>
-          <Button onClick={() => setOpenNewLead(true)}>
-            <Plus className="w-4 h-4 mr-1.5" /> Novo Lead
-          </Button>
-        </motion.div>
-        <NovoLeadDialog open={openNewLead} onOpenChange={setOpenNewLead} />
-
-
-        {/* Date Filter Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-4"
-        >
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-foreground">Período:</span>
-
-            <Button
-              variant={isPeriodActive(0) ? "default" : "outline"}
-              size="sm"
-              onClick={() => setQuickPeriod(0)}
-            >
-              Hoje
-            </Button>
-            <Button
-              variant={isPeriodActive(7) ? "default" : "outline"}
-              size="sm"
-              onClick={() => setQuickPeriod(7)}
-            >
-              7 dias
-            </Button>
-            <Button
-              variant={isPeriodActive(30) ? "default" : "outline"}
-              size="sm"
-              onClick={() => setQuickPeriod(30)}
-            >
-              30 dias
-            </Button>
-            <Button
-              variant={isCurrentMonthActive() ? "default" : "outline"}
-              size="sm"
-              onClick={setCurrentMonth}
-            >
-              Este mês
-            </Button>
-
-            <div className="h-6 w-px bg-border/50" />
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="justify-start text-left font-normal gap-2"
-                >
-                  <CalendarIcon className="w-4 h-4" />
-                  {filters.startDate
-                    ? format(filters.startDate, "dd/MM/yy", { locale: ptBR })
-                    : "De"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card pointer-events-auto">
-                <Calendar
-                  mode="single"
-                  selected={filters.startDate}
-                  onSelect={(date) =>
-                    setFilters({ ...filters, startDate: date || undefined })
-                  }
-                  locale={ptBR}
-                />
-              </PopoverContent>
-            </Popover>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="justify-start text-left font-normal gap-2"
-                >
-                  <CalendarIcon className="w-4 h-4" />
-                  {filters.endDate
-                    ? format(filters.endDate, "dd/MM/yy", { locale: ptBR })
-                    : "Até"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card pointer-events-auto">
-                <Calendar
-                  mode="single"
-                  selected={filters.endDate}
-                  onSelect={(date) =>
-                    setFilters({ ...filters, endDate: date || undefined })
-                  }
-                  locale={ptBR}
-                />
-              </PopoverContent>
-            </Popover>
-
-            {hasDateFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearDateFilters}
-                className="text-xs text-muted-foreground gap-1"
-              >
-                <X className="w-3 h-3" />
-                Limpar
-              </Button>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard title="Total de Leads" value={isLoading ? "..." : computedMetrics.total} icon={Users} delay={0} />
-          <MetricCard title="Leads Hoje" value={isLoading ? "..." : computedMetrics.today} icon={UserPlus} delay={0.1} />
-          <MetricCard title="Esta Semana" value={isLoading ? "..." : computedMetrics.thisWeek} icon={CalendarDays} delay={0.2} />
-          <MetricCard title="Este Mês" value={isLoading ? "..." : computedMetrics.thisMonth} icon={TrendingUp} delay={0.3} />
+    <div className="p-6 space-y-6 max-w-[1500px] mx-auto">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold">Dashboard Comercial</h1>
+          <p className="text-sm text-muted-foreground">Visão rápida de carteira, conversão e execução do follow-up.</p>
         </div>
-
-        {/* Chart */}
-        {metrics?.chartData && <LeadsChart data={metrics.chartData} />}
-
-        {/* Distribution Charts */}
-        {metrics && (
-          <DistributionCharts
-            cargoDistribution={metrics.cargoDistribution}
-            departamentoDistribution={metrics.departamentoDistribution}
-          />
-        )}
-
-        {/* Campaign Filter */}
-        <h2 className="text-lg font-semibold text-foreground">Campanhas</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <Select value={campaignFilter} onValueChange={setCampaignFilter}>
-            <SelectTrigger className="w-[260px] bg-card">
-              <SelectValue placeholder="Campanha" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all">Todas as campanhas</SelectItem>
-              {campaigns.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
+        <div className="flex flex-wrap gap-2">
+          <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+              <SelectItem value="all">Todo o período</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        <DashboardFilters filters={filters} onFiltersChange={setFilters} filteredLeads={filteredLeads} fonteTab={fonteTab} />
-
-        {/* Leads Table */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">
-              Leads ({filteredLeads.length})
-            </h2>
-          </div>
-          <LeadsTable leads={filteredLeads} isLoading={isLoading} />
+          {(role === "admin" || role === "lider") && (
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+              <SelectTrigger className="w-[220px]"><SelectValue placeholder="Colaborador" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toda a equipe visível</SelectItem>
+                {people.map((person) => <SelectItem key={person.id} value={person.id}>{person.display_name || "Usuário"}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          <Button asChild><Link to="/admin/leads/novo"><Plus className="h-4 w-4 mr-2" />Cadastrar lead</Link></Button>
         </div>
       </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard title="Leads no período" value={filteredLeads.length} detail={periodLabel} icon={Users} />
+        <KpiCard title="Em andamento" value={activeLeads.length} detail={`${wonLeads.length} ganhos · ${lostLeads.length} perdidos`} icon={KanbanSquare} />
+        <KpiCard title="Clientes convertidos" value={conversionCount} detail={`${conversionRate}% de conversão no período`} icon={UserCheck} />
+        <KpiCard title="Execução no prazo" value={`${onTimeRate}%`} detail={`${onTimeContacts} de ${filteredContacts.length} contatos concluídos no prazo`} icon={Target} />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard title="Follow-ups de hoje" value={todayActivities.length} detail="Pendentes para hoje" icon={Clock3} />
+        <KpiCard title="Follow-ups atrasados" value={overdueActivities.length} detail="Precisam de atenção" icon={AlertTriangle} />
+        <KpiCard title="Atividades concluídas" value={completedInPeriod.length} detail={periodLabel} icon={CheckCircle2} />
+        <KpiCard title="Contatos executados" value={filteredContacts.length} detail={periodLabel} icon={CalendarCheck2} />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" />Funil atual</CardTitle></CardHeader>
+          <CardContent>
+            {pipelineBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">Ainda não há leads nas etapas do pipeline para o filtro selecionado.</p>
+            ) : (
+              <div className="space-y-3">
+                {pipelineBreakdown.map((stage) => {
+                  const share = percent(stage.count, filteredLeads.length);
+                  return (
+                    <div key={stage.id} className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <div className="flex items-center gap-2"><span className="font-medium">{stage.nome}</span>{stage.is_won && <Badge variant="secondary">Ganho</Badge>}{stage.is_lost && <Badge variant="destructive">Perdido</Badge>}</div>
+                        <span className="font-semibold">{stage.count} <span className="font-normal text-muted-foreground">({share}%)</span></span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(share, 2)}%` }} /></div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-base">Prioridades de hoje</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <Link to="/admin/atividades" className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30">
+              <div><p className="font-medium">Follow-ups atrasados</p><p className="text-xs text-muted-foreground">Resolver pendências antes de novas tarefas</p></div><Badge variant={overdueActivities.length ? "destructive" : "secondary"}>{overdueActivities.length}</Badge>
+            </Link>
+            <Link to="/admin/atividades" className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30">
+              <div><p className="font-medium">A fazer hoje</p><p className="text-xs text-muted-foreground">Atividades programadas para hoje</p></div><Badge variant="secondary">{todayActivities.length}</Badge>
+            </Link>
+            <Link to="/admin/kanban" className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30">
+              <div><p className="font-medium">Leads em andamento</p><p className="text-xs text-muted-foreground">Carteira comercial ativa</p></div><Badge variant="secondary">{activeLeads.length}</Badge>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3"><CardTitle className="text-base">Leads recentes ({filteredLeads.length})</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <LeadsTable leads={filteredLeads.slice(0, 20)} isLoading={leadsLoading} />
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default AdminDashboard;
+}
