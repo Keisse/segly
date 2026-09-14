@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarClock, Loader2, PackagePercent } from "lucide-react";
+import { CalendarClock, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhone } from "@/lib/phone";
@@ -232,7 +232,7 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
 
         {isImplanted && (
           <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
-            <div className="flex items-start gap-3"><PackagePercent className="h-5 w-5 text-primary shrink-0 mt-0.5" /><div><p className="font-semibold">Produto vendido *</p><p className="text-xs text-muted-foreground">A comissão só entra na previsão de pagamento quando o boleto estiver marcado como pago.</p></div></div>
+            <div className="flex items-start gap-3"><Package className="h-5 w-5 text-primary shrink-0 mt-0.5" /><div><p className="font-semibold">Produto vendido *</p><p className="text-xs text-muted-foreground">A comissão só entra na previsão de pagamento quando o boleto estiver marcado como pago.</p></div></div>
             <Select value={productId} onValueChange={setProductId} disabled={productsLoading}>
               <SelectTrigger><SelectValue placeholder={productsLoading ? "Carregando produtos..." : "Selecione o produto"} /></SelectTrigger>
               <SelectContent>{products.map((product) => <SelectItem key={product.id} value={product.id}>{product.name} · {product.category}{product.insurer_name ? ` · ${product.insurer_name}` : ""}</SelectItem>)}</SelectContent>
