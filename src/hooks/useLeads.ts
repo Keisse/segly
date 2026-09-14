@@ -27,6 +27,7 @@ function transformLead(row: any): Lead {
     owner_id: row.owner_id || null,
     pipeline_id: row.pipeline_id || null,
     stage_id: row.stage_id || null,
+    custom_fields: (row.custom_fields && typeof row.custom_fields === "object" ? row.custom_fields : {}) as Record<string, unknown>,
   };
 }
 
@@ -150,20 +151,12 @@ export function useUpdateNote() {
     mutationFn: async ({ id, noteId, texto }: { id: string; noteId: string; texto: string }) => {
       const cleanText = texto.trim();
       if (!cleanText) throw new Error("A nota não pode ficar vazia.");
-
       const { data: lead, error: fetchError } = await supabase.from("leads").select("notas").eq("id", id).single();
       if (fetchError) throw fetchError;
       const currentNotas = (lead?.notas as unknown as Nota[]) || [];
-      const index = currentNotas.findIndex((nota) => nota.id === noteId);
-      if (index < 0) throw new Error("Nota não encontrada.");
-
+      if (!currentNotas.some((nota) => nota.id === noteId)) throw new Error("Nota não encontrada.");
       const updatedNotas = currentNotas.map((nota) => nota.id === noteId ? { ...nota, texto: cleanText } : nota);
-      const { data, error } = await supabase
-        .from("leads")
-        .update({ notas: updatedNotas as unknown as Json })
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await supabase.from("leads").update({ notas: updatedNotas as unknown as Json }).eq("id", id).select().single();
       if (error) throw error;
       return transformLead(data);
     },
@@ -186,12 +179,7 @@ export function useAddHistoricoItem() {
       if (fetchError) throw fetchError;
       const currentHistorico = (lead?.historico as unknown as HistoricoItem[]) || [];
       const newItem: HistoricoItem = { ...item, id: crypto.randomUUID() };
-      const { data, error } = await supabase
-        .from("leads")
-        .update({ historico: [...currentHistorico, newItem] as unknown as Json })
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await supabase.from("leads").update({ historico: [...currentHistorico, newItem] as unknown as Json }).eq("id", id).select().single();
       if (error) throw error;
       return transformLead(data);
     },
@@ -210,8 +198,7 @@ export function useDashboardMetrics() {
     queryFn: async () => {
       const now = new Date();
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const startOfWeek = new Date(startOfToday);
-      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      const startOfWeek = new Date(startOfToday); startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const { data: allLeads, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
       if (error) throw error;
@@ -220,20 +207,11 @@ export function useDashboardMetrics() {
       const today = leads.filter((l) => new Date(l.created_at) >= startOfToday).length;
       const thisWeek = leads.filter((l) => new Date(l.created_at) >= startOfWeek).length;
       const thisMonth = leads.filter((l) => new Date(l.created_at) >= startOfMonth).length;
-      const last30Days = new Date();
-      last30Days.setDate(last30Days.getDate() - 30);
+      const last30Days = new Date(); last30Days.setDate(last30Days.getDate() - 30);
       const dailyCounts: Record<string, number> = {};
-      leads.filter((l) => new Date(l.created_at) >= last30Days).forEach((l) => {
-        const date = new Date(l.created_at).toISOString().split("T")[0];
-        dailyCounts[date] = (dailyCounts[date] || 0) + 1;
-      });
+      leads.filter((l) => new Date(l.created_at) >= last30Days).forEach((l) => { const date = new Date(l.created_at).toISOString().split("T")[0]; dailyCounts[date] = (dailyCounts[date] || 0) + 1; });
       const chartData = [];
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split("T")[0];
-        chartData.push({ date: dateStr, leads: dailyCounts[dateStr] || 0 });
-      }
+      for (let i = 29; i >= 0; i--) { const date = new Date(); date.setDate(date.getDate() - i); const dateStr = date.toISOString().split("T")[0]; chartData.push({ date: dateStr, leads: dailyCounts[dateStr] || 0 }); }
       const cargoDistribution = leads.reduce((acc, l) => { acc[l.cargo] = (acc[l.cargo] || 0) + 1; return acc; }, {} as Record<string, number>);
       const departamentoDistribution = leads.reduce((acc, l) => { acc[l.departamento] = (acc[l.departamento] || 0) + 1; return acc; }, {} as Record<string, number>);
       const statusDistribution = leads.reduce((acc, l) => { acc[l.status] = (acc[l.status] || 0) + 1; return acc; }, {} as Record<string, number>);
@@ -250,12 +228,7 @@ export function useUpdateLeadResponsavel() {
       if (error) throw error;
       return transformLead(data);
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-      queryClient.invalidateQueries({ queryKey: ["lead", data.id] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
-      toast.success("Responsável atualizado!");
-    },
+    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ["leads"] }); queryClient.invalidateQueries({ queryKey: ["lead", data.id] }); queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] }); toast.success("Responsável atualizado!"); },
     onError: () => toast.error("Erro ao atualizar responsável."),
   });
 }
@@ -268,13 +241,7 @@ export function useUpdateLeadOwner() {
       if (error) throw error;
       return transformLead(data);
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-      queryClient.invalidateQueries({ queryKey: ["lead", data.id] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
-      queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
-      toast.success("Responsável atribuído!");
-    },
+    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ["leads"] }); queryClient.invalidateQueries({ queryKey: ["lead", data.id] }); queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] }); queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] }); toast.success("Responsável atribuído!"); },
     onError: (error: Error) => toast.error(error.message || "Erro ao atribuir responsável."),
   });
 }
@@ -282,16 +249,8 @@ export function useUpdateLeadOwner() {
 export function useDeleteLead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("leads").delete().eq("id", id);
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
-      toast.success("Lead excluído com sucesso!");
-    },
+    mutationFn: async (id: string) => { const { error } = await supabase.from("leads").delete().eq("id", id); if (error) throw error; return id; },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["leads"] }); queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] }); toast.success("Lead excluído com sucesso!"); },
     onError: () => toast.error("Erro ao excluir lead."),
   });
 }
