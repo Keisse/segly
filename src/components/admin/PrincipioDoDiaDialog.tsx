@@ -13,14 +13,14 @@ export function PrincipioDoDiaDialog({
 }) {
   const { data, isLoading } = useTodayPrinciple();
   const save = useSavePrinciple();
-  const [cracked, setCracked] = useState(false);
+  const [opened, setOpened] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setCracked(false);
+    setOpened(false);
     setSaved(false);
-    const t = setTimeout(() => setCracked(true), 350);
+    const t = setTimeout(() => setOpened(true), 350);
     return () => clearTimeout(t);
   }, [open, data?.principle.id]);
 
@@ -37,7 +37,6 @@ export function PrincipioDoDiaDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0 overflow-hidden border-none bg-transparent shadow-none [&>button]:hidden">
-
         <div className="relative rounded-2xl bg-card border border-border shadow-2xl p-6 pt-8 text-center">
           <button
             onClick={() => onOpenChange(false)}
@@ -52,18 +51,17 @@ export function PrincipioDoDiaDialog({
             Princípio do Dia
           </div>
 
-          {/* Fortune cookie */}
-          <div className="relative h-40 mt-4 mb-2 flex items-center justify-center">
-            <FortuneCookie cracked={cracked} />
+          <div className="relative h-44 mt-3 mb-2 flex items-center justify-center">
+            <AnimatedScroll opened={opened} />
           </div>
 
           <div
             className={`transition-all duration-700 ease-out ${
-              cracked ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+              opened ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
           >
             {isLoading || !data ? (
-              <p className="text-sm text-muted-foreground">Preparando seu princípio…</p>
+              <p className="text-sm text-muted-foreground">Abrindo seu pergaminho…</p>
             ) : (
               <>
                 <p className="text-lg font-medium leading-relaxed px-2 text-foreground">
@@ -95,63 +93,59 @@ export function PrincipioDoDiaDialog({
   );
 }
 
-function FortuneCookie({ cracked }: { cracked: boolean }) {
-  // SVG-based cookie that splits open when cracked
+function AnimatedScroll({ opened }: { opened: boolean }) {
   return (
-    <svg
-      viewBox="0 0 200 140"
-      className="w-40 h-28"
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id="cookie" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#E9B96A" />
-          <stop offset="100%" stopColor="#B77E3A" />
-        </linearGradient>
-      </defs>
-      {/* Paper strip */}
-      <g
+    <div className="relative w-48 h-36 flex items-center justify-center" aria-hidden="true">
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 transition-all duration-700 ease-out overflow-hidden shadow-lg"
         style={{
-          transform: cracked ? "translateY(-6px)" : "translateY(20px)",
-          opacity: cracked ? 1 : 0,
-          transition: "all 500ms ease-out",
+          width: opened ? "168px" : "46px",
+          height: opened ? "104px" : "18px",
+          transform: `translate(-50%, -50%) scale(${opened ? 1 : 0.92})`,
+          borderRadius: opened ? "8px" : "12px",
+          background: "linear-gradient(180deg, #F5E3B7 0%, #E8C98A 100%)",
+          border: "1px solid #B48A4A",
         }}
       >
-        <rect x="80" y="30" width="40" height="60" rx="2" fill="hsl(var(--card))" stroke="hsl(var(--border))" />
-        <line x1="86" y1="42" x2="114" y2="42" stroke="hsl(var(--muted-foreground))" strokeWidth="1.2" />
-        <line x1="86" y1="52" x2="114" y2="52" stroke="hsl(var(--muted-foreground))" strokeWidth="1.2" />
-        <line x1="86" y1="62" x2="104" y2="62" stroke="hsl(var(--muted-foreground))" strokeWidth="1.2" />
-      </g>
-      {/* Left half */}
-      <g
+        <div
+          className="absolute inset-x-5 top-7 space-y-2 transition-opacity duration-500"
+          style={{ opacity: opened ? 1 : 0 }}
+        >
+          <div className="h-px bg-[#9A7747]/55" />
+          <div className="h-px bg-[#9A7747]/45" />
+          <div className="h-px bg-[#9A7747]/35 w-3/4 mx-auto" />
+        </div>
+      </div>
+
+      <div
+        className="absolute transition-all duration-700 ease-out rounded-full shadow-md"
         style={{
-          transformOrigin: "100px 100px",
-          transform: cracked ? "translate(-24px,4px) rotate(-14deg)" : "translate(0,0) rotate(0)",
-          transition: "transform 600ms cubic-bezier(.4,.6,.3,1.2)",
+          width: "22px",
+          height: "116px",
+          left: opened ? "4px" : "73px",
+          top: "10px",
+          background: "linear-gradient(90deg, #8C5D2C 0%, #C68A47 45%, #7A4E24 100%)",
+          transform: opened ? "rotate(-1deg)" : "rotate(90deg)",
         }}
-      >
-        <path
-          d="M100 40 Q60 40 45 90 Q60 120 100 110 Z"
-          fill="url(#cookie)"
-          stroke="#8B5A2B"
-          strokeWidth="1.5"
-        />
-      </g>
-      {/* Right half */}
-      <g
+      />
+      <div
+        className="absolute transition-all duration-700 ease-out rounded-full shadow-md"
         style={{
-          transformOrigin: "100px 100px",
-          transform: cracked ? "translate(24px,4px) rotate(14deg)" : "translate(0,0) rotate(0)",
-          transition: "transform 600ms cubic-bezier(.4,.6,.3,1.2)",
+          width: "22px",
+          height: "116px",
+          right: opened ? "4px" : "73px",
+          top: "10px",
+          background: "linear-gradient(90deg, #8C5D2C 0%, #C68A47 45%, #7A4E24 100%)",
+          transform: opened ? "rotate(1deg)" : "rotate(90deg)",
         }}
+      />
+
+      <div
+        className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.25em] text-[#7A5A2F] font-semibold transition-all duration-700"
+        style={{ opacity: opened ? 1 : 0, transform: `translate(-50%, ${opened ? "0" : "8px"})` }}
       >
-        <path
-          d="M100 40 Q140 40 155 90 Q140 120 100 110 Z"
-          fill="url(#cookie)"
-          stroke="#8B5A2B"
-          strokeWidth="1.5"
-        />
-      </g>
-    </svg>
+        Pergaminho
+      </div>
+    </div>
   );
 }
