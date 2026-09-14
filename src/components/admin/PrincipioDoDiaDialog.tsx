@@ -51,8 +51,11 @@ export function PrincipioDoDiaDialog({
             Princípio do Dia
           </div>
 
-          <div className="relative h-44 mt-3 mb-2 flex items-center justify-center">
-            <AnimatedScroll opened={opened} />
+          <div className="relative min-h-52 mt-3 mb-2 flex items-center justify-center">
+            <AnimatedScroll
+              opened={opened}
+              phrase={isLoading || !data ? "Abrindo seu princípio de hoje…" : data.principle.phrase}
+            />
           </div>
 
           <div
@@ -60,31 +63,24 @@ export function PrincipioDoDiaDialog({
               opened ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
           >
-            {isLoading || !data ? (
-              <p className="text-sm text-muted-foreground">Abrindo seu pergaminho…</p>
-            ) : (
-              <>
-                <p className="text-lg font-medium leading-relaxed px-2 text-foreground">
-                  “{data.principle.phrase}”
-                </p>
-                <div className="flex items-center justify-center gap-2 mt-6">
-                  <Button
-                    variant={saved ? "secondary" : "default"}
-                    onClick={handleSave}
-                    disabled={save.isPending || !data.historyId}
-                    className="gap-2"
-                  >
-                    {saved ? (
-                      <><BookmarkCheck className="h-4 w-4" /> Salvo</>
-                    ) : (
-                      <><Bookmark className="h-4 w-4" /> Salvar</>
-                    )}
-                  </Button>
-                  <Button variant="outline" onClick={() => onOpenChange(false)}>
-                    Fechar
-                  </Button>
-                </div>
-              </>
+            {!isLoading && data && (
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <Button
+                  variant={saved ? "secondary" : "default"}
+                  onClick={handleSave}
+                  disabled={save.isPending || !data.historyId}
+                  className="gap-2"
+                >
+                  {saved ? (
+                    <><BookmarkCheck className="h-4 w-4" /> Salvo</>
+                  ) : (
+                    <><Bookmark className="h-4 w-4" /> Salvar</>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  Fechar
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -93,37 +89,35 @@ export function PrincipioDoDiaDialog({
   );
 }
 
-function AnimatedScroll({ opened }: { opened: boolean }) {
+function AnimatedScroll({ opened, phrase }: { opened: boolean; phrase: string }) {
   return (
-    <div className="relative w-48 h-36 flex items-center justify-center" aria-hidden="true">
+    <div className="relative w-[310px] h-48 flex items-center justify-center">
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 transition-all duration-700 ease-out overflow-hidden shadow-lg"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 transition-all duration-700 ease-out overflow-hidden shadow-lg flex items-center justify-center"
         style={{
-          width: opened ? "168px" : "46px",
-          height: opened ? "104px" : "18px",
+          width: opened ? "260px" : "54px",
+          height: opened ? "150px" : "22px",
           transform: `translate(-50%, -50%) scale(${opened ? 1 : 0.92})`,
-          borderRadius: opened ? "8px" : "12px",
-          background: "linear-gradient(180deg, #F5E3B7 0%, #E8C98A 100%)",
+          borderRadius: opened ? "10px" : "12px",
+          background: "linear-gradient(180deg, #F7E8BD 0%, #EBCB8B 100%)",
           border: "1px solid #B48A4A",
         }}
       >
-        <div
-          className="absolute inset-x-5 top-7 space-y-2 transition-opacity duration-500"
+        <p
+          className="px-9 text-center text-[15px] leading-relaxed font-medium text-[#4E3A23] transition-opacity duration-500"
           style={{ opacity: opened ? 1 : 0 }}
         >
-          <div className="h-px bg-[#9A7747]/55" />
-          <div className="h-px bg-[#9A7747]/45" />
-          <div className="h-px bg-[#9A7747]/35 w-3/4 mx-auto" />
-        </div>
+          “{phrase}”
+        </p>
       </div>
 
       <div
         className="absolute transition-all duration-700 ease-out rounded-full shadow-md"
         style={{
-          width: "22px",
-          height: "116px",
-          left: opened ? "4px" : "73px",
-          top: "10px",
+          width: "24px",
+          height: "166px",
+          left: opened ? "10px" : "142px",
+          top: "7px",
           background: "linear-gradient(90deg, #8C5D2C 0%, #C68A47 45%, #7A4E24 100%)",
           transform: opened ? "rotate(-1deg)" : "rotate(90deg)",
         }}
@@ -131,21 +125,14 @@ function AnimatedScroll({ opened }: { opened: boolean }) {
       <div
         className="absolute transition-all duration-700 ease-out rounded-full shadow-md"
         style={{
-          width: "22px",
-          height: "116px",
-          right: opened ? "4px" : "73px",
-          top: "10px",
+          width: "24px",
+          height: "166px",
+          right: opened ? "10px" : "142px",
+          top: "7px",
           background: "linear-gradient(90deg, #8C5D2C 0%, #C68A47 45%, #7A4E24 100%)",
           transform: opened ? "rotate(1deg)" : "rotate(90deg)",
         }}
       />
-
-      <div
-        className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.25em] text-[#7A5A2F] font-semibold transition-all duration-700"
-        style={{ opacity: opened ? 1 : 0, transform: `translate(-50%, ${opened ? "0" : "8px"})` }}
-      >
-        Pergaminho
-      </div>
     </div>
   );
 }
