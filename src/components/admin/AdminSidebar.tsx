@@ -13,7 +13,7 @@ import {
   Gauge,
   PauseCircle,
   History,
-  PackagePercent,
+  Package,
   CircleDollarSign,
 } from "lucide-react";
 import { useState } from "react";
@@ -47,7 +47,7 @@ const mainItems: Item[] = [
   { title: "Follow-up", url: "/admin/atividades", icon: CalendarCheck2 },
   { title: "Produtividade", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Comissões", url: "/admin/comissoes", icon: CircleDollarSign, leaderOnly: true },
-  { title: "Produtos e Comissões", url: "/admin/produtos", icon: PackagePercent, adminOnly: true },
+  { title: "Produtos e Comissões", url: "/admin/produtos", icon: Package, adminOnly: true },
   { title: "Auditoria", url: "/admin/auditoria", icon: History, leaderOnly: true },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Meu Perfil", url: "/admin/meu-perfil", icon: UserCircle },
