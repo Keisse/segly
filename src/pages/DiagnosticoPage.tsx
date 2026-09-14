@@ -33,19 +33,16 @@ const DiagnosticoPage = () => {
   const insertLead = useInsertLead();
   const sendWebhook = useSendWebhook();
 
-  // Redirect to home if no lead data (only in production, not in preview/dev)
   useEffect(() => {
-    if (!state?.leadData && !window.location.search.includes("__lovable_token")) {
+    if (!state?.leadData) {
       navigate("/mail", { replace: true });
     }
   }, [state, navigate]);
 
-  // Scroll to top on mount
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
 
-  // Meta Pixel for questions stage
   useEffect(() => {
     const PIXEL_ID = "1162724298777679";
     const SCRIPT_ID = "meta-pixel-script";
@@ -136,7 +133,6 @@ const DiagnosticoPage = () => {
         fonte: "tráfego",
       });
 
-      // Navigate to result page (back on Index with result state)
       navigate("/", {
         state: {
           view: "result",
@@ -151,7 +147,7 @@ const DiagnosticoPage = () => {
     }
   };
 
-  if (!state?.leadData && !window.location.search.includes("__lovable_token")) return null;
+  if (!state?.leadData) return null;
 
   return (
     <div className="min-h-screen">
