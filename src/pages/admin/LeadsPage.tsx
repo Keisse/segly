@@ -1,15 +1,15 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLeads } from "@/hooks/useLeads";
 import LeadsTable from "@/components/admin/LeadsTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Search } from "lucide-react";
-import { NovoLeadDialog } from "@/components/leads/NovoLeadDialog";
 
 const LeadsPage = () => {
+  const navigate = useNavigate();
   const { data: leads = [], isLoading } = useLeads();
   const [search, setSearch] = useState("");
-  const [openNew, setOpenNew] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -31,7 +31,7 @@ const LeadsPage = () => {
             Lista centralizada com busca, filtros e ordenação. O acesso respeita seu papel.
           </p>
         </div>
-        <Button onClick={() => setOpenNew(true)}>
+        <Button onClick={() => navigate("/admin/leads/novo")}>
           <Plus className="w-4 h-4 mr-1.5" /> Novo Lead
         </Button>
       </div>
@@ -45,10 +45,8 @@ const LeadsPage = () => {
         />
       </div>
       <LeadsTable leads={filtered} isLoading={isLoading} />
-      <NovoLeadDialog open={openNew} onOpenChange={setOpenNew} />
     </div>
   );
 };
 
 export default LeadsPage;
-
