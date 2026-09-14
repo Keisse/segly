@@ -21,8 +21,11 @@ import {
   MessageSquare,
   Plus,
   Loader2,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
-import { useLead, useAddNote, useUpdateLeadStatus } from "@/hooks/useLeads";
+import { useLead, useAddNote, useUpdateNote, useUpdateLeadStatus } from "@/hooks/useLeads";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyRole } from "@/hooks/useMyRole";
 import { LeadActivitiesPanel } from "@/components/admin/LeadActivitiesPanel";
@@ -56,8 +59,11 @@ const LeadDetail = () => {
   const { data: role } = useMyRole();
   const { data: lead, isLoading } = useLead(id || "");
   const addNote = useAddNote();
+  const updateNote = useUpdateNote();
   const updateStatus = useUpdateLeadStatus();
   const [newNote, setNewNote] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
   const canViewAudit = role === "admin" || role === "lider";
 
   if (isLoading) {
@@ -106,6 +112,24 @@ const LeadDetail = () => {
 
   const handleStatusChange = (newStatus: LeadStatus) => {
     updateStatus.mutate({ id: lead.id, status: newStatus });
+  };
+
+  const startEditNote = (noteId: string, text: string) => {
+    setEditingNoteId(noteId);
+    setEditingNoteText(text);
+  };
+
+  const cancelEditNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteText("");
+  };
+
+  const saveEditNote = (noteId: string) => {
+    if (!editingNoteText.trim()) return;
+    updateNote.mutate(
+      { id: lead.id, noteId, texto: editingNoteText },
+      { onSuccess: cancelEditNote }
+    );
   };
 
   return (
@@ -192,9 +216,35 @@ const LeadDetail = () => {
             <Button onClick={handleAddNote} disabled={!newNote.trim() || addNote.isPending} className="shrink-0">{addNote.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}</Button>
           </div>
           <div className="space-y-3">
-            {lead.notas.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">Nenhuma nota ainda</p> : [...lead.notas].reverse().map((nota) => (
-              <div key={nota.id} className="bg-secondary/30 rounded-lg p-3 space-y-1"><div className="flex items-center justify-between text-xs text-muted-foreground"><span>{nota.autor}</span><span>{format(new Date(nota.data), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span></div><p className="text-sm text-foreground">{nota.texto}</p></div>
-            ))}
+            {lead.notas.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">Nenhuma nota ainda</p> : [...lead.notas].reverse().map((nota) => {
+              const isEditing = editingNoteId === nota.id;
+              return (
+                <div key={nota.id} className="bg-secondary/30 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2"><span>{nota.autor}</span><span>•</span><span>{format(new Date(nota.data), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span></div>
+                    {!isEditing && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditNote(nota.id, nota.texto)} aria-label="Editar nota">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <Textarea value={editingNoteText} onChange={(e) => setEditingNoteText(e.target.value)} rows={3} autoFocus />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={cancelEditNote} disabled={updateNote.isPending}><X className="h-3.5 w-3.5 mr-1" />Cancelar</Button>
+                        <Button size="sm" onClick={() => saveEditNote(nota.id)} disabled={!editingNoteText.trim() || updateNote.isPending}>
+                          {updateNote.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1" />}Salvar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{nota.texto}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </motion.div>
 
