@@ -29,6 +29,7 @@ import AgendaPage from "./pages/admin/AgendaPage";
 import AgendaItemPage from "./pages/admin/AgendaItemPage";
 import ProdutividadePage from "./pages/admin/ProdutividadePage";
 import StandbyPage from "./pages/admin/StandbyPage";
+import AuditoriaPage from "./pages/admin/AuditoriaPage";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,14 @@ const App = () => (
               element={
                 <LeaderOnlyRoute>
                   <ProdutividadePage />
+                </LeaderOnlyRoute>
+              }
+            />
+            <Route
+              path="auditoria"
+              element={
+                <LeaderOnlyRoute>
+                  <AuditoriaPage />
                 </LeaderOnlyRoute>
               }
             />
