@@ -10,9 +10,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLayout from "./pages/AdminLayout";
 import KanbanPage from "./pages/admin/KanbanPage";
-import PerguntasPage from "./pages/admin/PerguntasPage";
 import AdministradoresPage from "./pages/admin/AdministradoresPage";
-import BaseConhecimentoPage from "./pages/admin/BaseConhecimentoPage";
 import LeadDetail from "./pages/LeadDetail";
 import ActionPlanPage from "./pages/ActionPlanPage";
 import TrackingTemplatePage from "./pages/TrackingTemplatePage";
@@ -54,8 +52,6 @@ const App = () => (
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="kanban" element={<KanbanPage />} />
-            <Route path="perguntas" element={<PerguntasPage />} />
-            <Route path="base-conhecimento" element={<BaseConhecimentoPage />} />
             <Route path="leads" element={<LeadsPage />} />
             <Route path="clientes" element={<ClientesPage />} />
             <Route path="meu-perfil" element={<MeuPerfilPage />} />
