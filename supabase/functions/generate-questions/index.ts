@@ -81,32 +81,34 @@ Deno.serve(async (req) => {
 
     const userPrompt = `CONTEXTO DO DIAGNÓSTICO:\n${context}\n\n${kbText ? `BASE DE CONHECIMENTO DISPONÍVEL:\n${kbText}\n\n` : ""}Gere as 30 perguntas seguindo o formato JSON especificado.`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-        "Content-Type": "application/json",
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY não configurada" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const aiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+          generationConfig: { responseMimeType: "application/json" },
+        }),
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+    );
 
     if (!aiRes.ok) {
       const t = await aiRes.text();
       console.error("AI error:", aiRes.status, t);
       if (aiRes.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido" }), { status: 429, headers: corsHeaders });
-      if (aiRes.status === 402) return new Response(JSON.stringify({ error: "Créditos esgotados. Adicione créditos em Settings > Workspace > Usage." }), { status: 402, headers: corsHeaders });
+      if (aiRes.status === 402 || aiRes.status === 403) return new Response(JSON.stringify({ error: "Acesso à API de IA negado ou cota esgotada." }), { status: aiRes.status, headers: corsHeaders });
       throw new Error("Falha na IA");
     }
 
     const aiData = await aiRes.json();
-    const content = aiData.choices?.[0]?.message?.content;
+    const content = (aiData.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p.text || "").join("");
     const parsed = JSON.parse(content);
 
     const { data: inserted, error: insertErr } = await supabase
