@@ -35,7 +35,6 @@ import {
 import { capitalizeWords } from "@/lib/formatName";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import seglyLogo from "@/assets/segly-logo.png.asset.json";
 import {
   RadarChart,
   PolarGrid,
@@ -44,6 +43,8 @@ import {
   Radar,
   ResponsiveContainer,
 } from "recharts";
+
+const seglyLogo = "/segly-logo.png";
 
 const LeadDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -113,7 +114,7 @@ const LeadDetail = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/admin/dashboard")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <img src={seglyLogo.url} alt="Segly" className="h-8" />
+          <img src={seglyLogo} alt="Segly" className="h-8" />
         </motion.div>
 
         <motion.div
