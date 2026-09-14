@@ -5,37 +5,53 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Limite prático de payload inline da Gemini API (~20MB de request)
+const INLINE_LIMIT_BYTES = 18 * 1024 * 1024;
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
 async function transcribeAudio(blob: Blob, filename: string): Promise<string> {
-  // Usa Lovable AI (Gemini multimodal) para transcrever
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY não configurada");
+
   const buffer = await blob.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  if (buffer.byteLength > INLINE_LIMIT_BYTES) {
+    throw new Error("Arquivo muito grande para transcrição automática (limite ~18MB).");
+  }
+  const base64 = toBase64(new Uint8Array(buffer));
   const mimeType = blob.type || (filename.endsWith(".mp3") ? "audio/mpeg" : "audio/wav");
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-      "Content-Type": "application/json",
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: "Transcreva integralmente o áudio a seguir em português. Retorne apenas o texto transcrito, sem comentários." },
+              { inlineData: { mimeType, data: base64 } },
+            ],
+          },
+        ],
+      }),
     },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Transcreva integralmente o áudio a seguir em português. Retorne apenas o texto transcrito, sem comentários." },
-            { type: "input_audio", input_audio: { data: base64, format: mimeType.includes("mpeg") ? "mp3" : "wav" } },
-          ],
-        },
-      ],
-    }),
-  });
+  );
   if (!res.ok) {
     const t = await res.text();
     throw new Error(`Transcrição falhou: ${t}`);
   }
   const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
+  return (data.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p.text || "").join("");
 }
 
 async function extractTextFromUrl(url: string): Promise<string> {
