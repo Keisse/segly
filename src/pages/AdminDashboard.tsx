@@ -52,15 +52,15 @@ function percent(part: number, total: number) {
 
 function KpiCard({ title, value, detail, icon: Icon }: { title: string; value: string | number; detail: string; icon: any }) {
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="mt-1 text-3xl font-bold tracking-tight">{value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+    <Card className="min-w-0">
+      <CardContent className="p-4 xl:p-5">
+        <div className="flex items-start justify-between gap-2 xl:gap-3 min-w-0">
+          <div className="min-w-0">
+            <p className="text-xs xl:text-sm text-muted-foreground leading-snug">{title}</p>
+            <p className="mt-1 text-2xl xl:text-3xl font-bold tracking-tight">{value}</p>
+            <p className="mt-1 text-[11px] xl:text-xs text-muted-foreground leading-snug break-words">{detail}</p>
           </div>
-          <div className="rounded-xl bg-primary/10 p-2.5 text-primary"><Icon className="h-5 w-5" /></div>
+          <div className="shrink-0 rounded-xl bg-primary/10 p-2 xl:p-2.5 text-primary"><Icon className="h-4 w-4 xl:h-5 xl:w-5" /></div>
         </div>
       </CardContent>
     </Card>
@@ -201,15 +201,15 @@ export default function AdminDashboard() {
     : `${periodLabel} · Toda a equipe visível`;
 
   return (
-    <div className="p-6 space-y-6 max-w-[1500px] mx-auto">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Dashboard Comercial</h1>
+    <div className="w-full min-w-0 max-w-[1500px] mx-auto overflow-x-hidden p-3 sm:p-4 lg:p-5 xl:p-6 space-y-4 lg:space-y-5 xl:space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-display font-bold">Dashboard Comercial</h1>
           <p className="text-sm text-muted-foreground">Visão rápida de carteira, conversão e execução do follow-up.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:flex-wrap lg:justify-end">
           <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full lg:w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="7">Últimos 7 dias</SelectItem>
               <SelectItem value="30">Últimos 30 dias</SelectItem>
@@ -219,35 +219,37 @@ export default function AdminDashboard() {
           </Select>
           {(role === "admin" || role === "lider") && (
             <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-              <SelectTrigger className="w-[220px]"><SelectValue placeholder="Colaborador" /></SelectTrigger>
+              <SelectTrigger className="w-full lg:w-[220px]"><SelectValue placeholder="Colaborador" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toda a equipe visível</SelectItem>
                 {people.map((person) => <SelectItem key={person.id} value={person.id}>{person.display_name || "Usuário"}</SelectItem>)}
               </SelectContent>
             </Select>
           )}
-          <Button asChild><Link to="/admin/leads/novo"><Plus className="h-4 w-4 mr-2" />Cadastrar lead</Link></Button>
+          <Button asChild className="w-full sm:col-span-2 lg:w-auto lg:col-span-1"><Link to="/admin/leads/novo"><Plus className="h-4 w-4 mr-2" />Cadastrar lead</Link></Button>
         </div>
       </div>
 
-      <LeadsChart data={chartData} title="Leads por período" description={chartDescription} />
+      <div className="min-w-0 w-full overflow-hidden">
+        <LeadsChart data={chartData} title="Leads por período" description={chartDescription} />
+      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard title="Leads no período" value={filteredLeads.length} detail={periodLabel} icon={Users} />
         <KpiCard title="Em andamento" value={activeLeads.length} detail={`${wonLeads.length} ganhos · ${lostLeads.length} perdidos`} icon={KanbanSquare} />
         <KpiCard title="Clientes convertidos" value={conversionCount} detail={`${conversionRate}% de conversão no período`} icon={UserCheck} />
         <KpiCard title="Execução no prazo" value={`${onTimeRate}%`} detail={`${onTimeContacts} de ${filteredContacts.length} contatos concluídos no prazo`} icon={Target} />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard title="Follow-ups de hoje" value={todayActivities.length} detail="Pendentes para hoje" icon={Clock3} />
         <KpiCard title="Follow-ups atrasados" value={overdueActivities.length} detail="Precisam de atenção" icon={AlertTriangle} />
         <KpiCard title="Atividades concluídas" value={completedInPeriod.length} detail={periodLabel} icon={CheckCircle2} />
         <KpiCard title="Contatos executados" value={filteredContacts.length} detail={periodLabel} icon={CalendarCheck2} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
-        <Card>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,.75fr)] xl:gap-6">
+        <Card className="min-w-0">
           <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" />Funil atual</CardTitle></CardHeader>
           <CardContent>
             {pipelineBreakdown.length === 0 ? (
@@ -257,10 +259,10 @@ export default function AdminDashboard() {
                 {pipelineBreakdown.map((stage) => {
                   const share = percent(stage.count, filteredLeads.length);
                   return (
-                    <div key={stage.id} className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-3 text-sm">
-                        <div className="flex items-center gap-2"><span className="font-medium">{stage.nome}</span>{stage.is_won && <Badge variant="secondary">Ganho</Badge>}{stage.is_lost && <Badge variant="destructive">Perdido</Badge>}</div>
-                        <span className="font-semibold">{stage.count} <span className="font-normal text-muted-foreground">({share}%)</span></span>
+                    <div key={stage.id} className="space-y-1.5 min-w-0">
+                      <div className="flex items-center justify-between gap-3 text-sm min-w-0">
+                        <div className="flex min-w-0 items-center gap-2"><span className="font-medium truncate">{stage.nome}</span>{stage.is_won && <Badge variant="secondary">Ganho</Badge>}{stage.is_lost && <Badge variant="destructive">Perdido</Badge>}</div>
+                        <span className="shrink-0 font-semibold">{stage.count} <span className="font-normal text-muted-foreground">({share}%)</span></span>
                       </div>
                       <div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(share, 2)}%` }} /></div>
                     </div>
@@ -271,25 +273,25 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="pb-3"><CardTitle className="text-base">Prioridades de hoje</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <Link to="/admin/atividades" className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30">
-              <div><p className="font-medium">Follow-ups atrasados</p><p className="text-xs text-muted-foreground">Resolver pendências antes de novas tarefas</p></div><Badge variant={overdueActivities.length ? "destructive" : "secondary"}>{overdueActivities.length}</Badge>
+            <Link to="/admin/atividades" className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/30 min-w-0">
+              <div className="min-w-0"><p className="font-medium">Follow-ups atrasados</p><p className="text-xs text-muted-foreground leading-snug">Resolver pendências antes de novas tarefas</p></div><Badge className="shrink-0" variant={overdueActivities.length ? "destructive" : "secondary"}>{overdueActivities.length}</Badge>
             </Link>
-            <Link to="/admin/atividades" className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30">
-              <div><p className="font-medium">A fazer hoje</p><p className="text-xs text-muted-foreground">Atividades programadas para hoje</p></div><Badge variant="secondary">{todayActivities.length}</Badge>
+            <Link to="/admin/atividades" className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/30 min-w-0">
+              <div className="min-w-0"><p className="font-medium">A fazer hoje</p><p className="text-xs text-muted-foreground leading-snug">Atividades programadas para hoje</p></div><Badge className="shrink-0" variant="secondary">{todayActivities.length}</Badge>
             </Link>
-            <Link to="/admin/kanban" className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30">
-              <div><p className="font-medium">Leads em andamento</p><p className="text-xs text-muted-foreground">Carteira comercial ativa</p></div><Badge variant="secondary">{activeLeads.length}</Badge>
+            <Link to="/admin/kanban" className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/30 min-w-0">
+              <div className="min-w-0"><p className="font-medium">Leads em andamento</p><p className="text-xs text-muted-foreground leading-snug">Carteira comercial ativa</p></div><Badge className="shrink-0" variant="secondary">{activeLeads.length}</Badge>
             </Link>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="min-w-0 w-full overflow-hidden">
         <CardHeader className="pb-3"><CardTitle className="text-base">Leads recentes ({filteredLeads.length})</CardTitle></CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 min-w-0">
           <LeadsTable leads={filteredLeads.slice(0, 20)} isLoading={leadsLoading} />
         </CardContent>
       </Card>
