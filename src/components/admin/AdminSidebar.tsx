@@ -39,12 +39,12 @@ type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leader
 
 const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
-  { title: "Agenda", url: "/admin/agenda", icon: CalendarDays },
   { title: "Cadastrar Lead", url: "/admin/leads/novo", icon: UserPlus },
   { title: "Leads", url: "/admin/leads", icon: Users },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
   { title: "Stand-by", url: "/admin/standby", icon: PauseCircle },
-  { title: "Atividades", url: "/admin/atividades", icon: CalendarCheck2 },
+  { title: "Agenda", url: "/admin/agenda", icon: CalendarDays },
+  { title: "Follow-up", url: "/admin/atividades", icon: CalendarCheck2 },
   { title: "Produtividade", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Auditoria", url: "/admin/auditoria", icon: History, leaderOnly: true },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
