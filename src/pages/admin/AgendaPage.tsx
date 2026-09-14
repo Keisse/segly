@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarPlus, CheckCircle2, Clock3, ListTodo } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { completeActivity } from "@/lib/activityCompletion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 type AgendaItem = {
   id: string;
   lead_id: string | null;
+  responsible_id: string;
   title: string | null;
   type: string;
   kind: string;
@@ -60,7 +62,7 @@ export default function AgendaPage() {
       if (!user) return [];
       const { data, error } = await supabase
         .from("activities" as never)
-        .select("id, lead_id, title, type, kind, scheduled_at, notes, status, lead:leads(id,nome,empresa)")
+        .select("id, lead_id, responsible_id, title, type, kind, scheduled_at, notes, status, lead:leads(id,nome,empresa)")
         .eq("responsible_id", user.id)
         .eq("status", "pendente")
         .gte("scheduled_at", start.toISOString())
@@ -117,17 +119,14 @@ export default function AgendaPage() {
   });
 
   const completeItem = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("activities" as never)
-        .update({ status: "concluida", completed_at: new Date().toISOString() } as never)
-        .eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: completeActivity,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["agenda-today"] });
       qc.invalidateQueries({ queryKey: ["activities-page"] });
       qc.invalidateQueries({ queryKey: ["pending-activities"] });
+      qc.invalidateQueries({ queryKey: ["lead-activities"] });
+      qc.invalidateQueries({ queryKey: ["productivity-activities"] });
+      qc.invalidateQueries({ queryKey: ["productivity-contact-log"] });
       toast.success("Atividade concluída.");
     },
     onError: (error: Error) => toast.error(error.message),
@@ -189,7 +188,7 @@ export default function AgendaPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => completeItem.mutate(item.id)}
+                    onClick={() => completeItem.mutate(item)}
                     disabled={completeItem.isPending}
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
