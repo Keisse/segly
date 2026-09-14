@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { CalendarClock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhone } from "@/lib/phone";
@@ -71,10 +71,16 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
     setValues(initial);
   }, [open, lead, fields]);
 
-  const requiredMissing = useMemo(
-    () => fields.filter((field) => field.required && !String(values[field.field_key] ?? "").trim()),
-    [fields, values]
-  );
+  const stayedWithCurrentOperator = stageName === "Perdido" && values.motivo_perda === "Permaneceu na operadora atual";
+
+  const requiredMissing = useMemo(() => {
+    const missing = fields.filter((field) => field.required && !String(values[field.field_key] ?? "").trim());
+    if (stayedWithCurrentOperator && !String(values.data_nova_abordagem ?? "").trim()) {
+      const followUpField = fields.find((field) => field.field_key === "data_nova_abordagem");
+      if (followUpField && !missing.some((field) => field.id === followUpField.id)) missing.push(followUpField);
+    }
+    return missing;
+  }, [fields, values, stayedWithCurrentOperator]);
 
   const changeValue = (field: PipelineStageField, value: string) => {
     let next = value;
@@ -122,9 +128,11 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
       if (stageName === "Perdido" && values.data_nova_abordagem) {
         return {
           type: "nova_abordagem",
-          title: "Nova abordagem ao lead",
+          title: stayedWithCurrentOperator ? "Retomar cliente que permaneceu na operadora atual" : "Nova abordagem ao lead",
           scheduledAt: toScheduledAt(values.data_nova_abordagem),
-          notes: values.motivo_perda || null,
+          notes: [values.motivo_perda, values.operadora_atual ? `Operadora atual: ${values.operadora_atual}` : null]
+            .filter(Boolean)
+            .join(" · ") || null,
         };
       }
       return null;
@@ -192,6 +200,14 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
     if (requiredMissing.length > 0) {
       toast.error(`Preencha os campos obrigatórios: ${requiredMissing.map((f) => f.label).join(", ")}`);
       return;
+    }
+
+    if (stayedWithCurrentOperator) {
+      const followUp = new Date(`${values.data_nova_abordagem}T09:00:00`);
+      if (Number.isNaN(followUp.getTime()) || followUp.getTime() <= Date.now()) {
+        toast.error("A data da nova abordagem precisa ser uma data futura.");
+        return;
+      }
     }
 
     setSaving(true);
@@ -274,18 +290,31 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
           </DialogDescription>
         </DialogHeader>
 
+        {stayedWithCurrentOperator && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 flex gap-3 text-sm">
+            <CalendarClock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold">Este lead não será esquecido.</p>
+              <p className="text-muted-foreground mt-1">Informe uma data futura em “Data da nova abordagem”. O Segly criará automaticamente uma atividade para o responsável comercial e o lead voltará a aparecer na operação nessa data.</p>
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
         ) : fields.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4">Esta etapa não possui campos adicionais.</p>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 py-2">
-            {fields.map((field) => (
-              <div key={field.id} className={field.field_type === "long_text" ? "space-y-2 md:col-span-2" : "space-y-2"}>
-                <Label htmlFor={field.field_key}>{field.label}{field.required ? " *" : ""}</Label>
-                {renderField(field)}
-              </div>
-            ))}
+            {fields.map((field) => {
+              const isConditionalRequired = stayedWithCurrentOperator && field.field_key === "data_nova_abordagem";
+              return (
+                <div key={field.id} className={field.field_type === "long_text" ? "space-y-2 md:col-span-2" : "space-y-2"}>
+                  <Label htmlFor={field.field_key}>{field.label}{field.required || isConditionalRequired ? " *" : ""}</Label>
+                  {renderField(field)}
+                </div>
+              );
+            })}
           </div>
         )}
 
