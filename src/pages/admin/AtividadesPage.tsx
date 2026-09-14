@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { completeActivity } from "@/lib/activityCompletion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarDays, CheckCircle2, Clock3, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
- type ActivityRow = {
+type ActivityRow = {
   id: string;
-  lead_id: string;
+  lead_id: string | null;
   responsible_id: string;
   type: string;
   scheduled_at: string;
@@ -34,10 +35,7 @@ function startOfTomorrow() {
 }
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
 
 const AtividadesPage = () => {
@@ -56,16 +54,14 @@ const AtividadesPage = () => {
   });
 
   const complete = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("activities" as never)
-        .update({ status: "concluida", completed_at: new Date().toISOString() } as never)
-        .eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: completeActivity,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["activities-page"] });
       qc.invalidateQueries({ queryKey: ["pending-activities"] });
+      qc.invalidateQueries({ queryKey: ["agenda-today"] });
+      qc.invalidateQueries({ queryKey: ["lead-activities"] });
+      qc.invalidateQueries({ queryKey: ["productivity-activities"] });
+      qc.invalidateQueries({ queryKey: ["productivity-contact-log"] });
       toast.success("Atividade concluída.");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -98,15 +94,19 @@ const AtividadesPage = () => {
                   <Badge variant="secondary">{activity.type}</Badge>
                   <span className="text-sm font-medium">{formatDateTime(activity.scheduled_at)}</span>
                 </div>
-                <Link to={`/admin/lead/${activity.lead_id}`} className="font-semibold hover:text-primary">
-                  {activity.lead?.empresa || activity.lead?.nome || "Abrir lead"}
-                </Link>
+                {activity.lead_id ? (
+                  <Link to={`/admin/lead/${activity.lead_id}`} className="font-semibold hover:text-primary">
+                    {activity.lead?.empresa || activity.lead?.nome || "Abrir lead"}
+                  </Link>
+                ) : (
+                  <span className="font-semibold">Atividade</span>
+                )}
                 {activity.lead?.empresa && activity.lead?.nome && (
                   <p className="text-xs text-muted-foreground">Contato: {activity.lead.nome}</p>
                 )}
                 {activity.notes && <p className="text-sm text-muted-foreground">{activity.notes}</p>}
               </div>
-              <Button size="sm" onClick={() => complete.mutate(activity.id)} disabled={complete.isPending}>
+              <Button size="sm" onClick={() => complete.mutate(activity)} disabled={complete.isPending}>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Concluir
               </Button>
