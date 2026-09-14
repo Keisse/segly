@@ -8,6 +8,7 @@ import {
   Settings,
   Compass,
   UserCircle,
+  UserPlus,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -33,6 +34,7 @@ type Item = { title: string; url: string; icon: any; adminOnly?: boolean };
 
 const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+  { title: "Cadastrar Lead", url: "/admin/leads/novo", icon: UserPlus },
   { title: "Leads", url: "/admin/leads", icon: Users },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
