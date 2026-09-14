@@ -28,6 +28,7 @@ import AtividadesPage from "./pages/admin/AtividadesPage";
 import AgendaPage from "./pages/admin/AgendaPage";
 import AgendaItemPage from "./pages/admin/AgendaItemPage";
 import ProdutividadePage from "./pages/admin/ProdutividadePage";
+import StandbyPage from "./pages/admin/StandbyPage";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="agenda" element={<AgendaPage />} />
             <Route path="agenda/item/:id" element={<AgendaItemPage />} />
             <Route path="kanban" element={<KanbanPage />} />
+            <Route path="standby" element={<StandbyPage />} />
             <Route path="atividades" element={<AtividadesPage />} />
             <Route
               path="produtividade"
