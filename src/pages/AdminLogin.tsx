@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Lock, Mail, ArrowRight, Loader2 } from "lucide-react";
-import seglyLogoAsset from "@/assets/segly-logo.png.asset.json";
-const seglyLogo = seglyLogoAsset.url;
+
+const seglyLogo = "/favicon.svg";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -99,7 +99,7 @@ const AdminLogin = () => {
               className="w-full py-6 text-lg font-semibold group"
               disabled={isLoading}
             >
-            {isLoading ? (
+              {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
