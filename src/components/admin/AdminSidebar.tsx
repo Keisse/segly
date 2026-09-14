@@ -26,8 +26,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyRole } from "@/hooks/useMyRole";
 import { NossoPropositoDialog } from "./NossoPropositoDialog";
-import seglyLogoAsset from "@/assets/segly-logo.png.asset.json";
-const seglyLogo = seglyLogoAsset.url;
+
+const seglyLogo = "/favicon.svg";
 
 type Item = { title: string; url: string; icon: any; adminOnly?: boolean };
 
