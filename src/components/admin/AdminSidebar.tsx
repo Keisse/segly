@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   KanbanSquare,
-  BookOpen,
   ShieldCheck,
   LogOut,
   Users,
@@ -37,7 +36,6 @@ const mainItems: Item[] = [
   { title: "Leads", url: "/admin/leads", icon: Users },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
-  { title: "Base de conhecimento", url: "/admin/base-conhecimento", icon: BookOpen },
   { title: "Meu Perfil", url: "/admin/meu-perfil", icon: UserCircle },
 ];
 

@@ -44,7 +44,6 @@ import {
   Radar,
   ResponsiveContainer,
 } from "recharts";
-import { SalesIntelligenceSection } from "@/components/sales/SalesIntelligenceSection";
 
 const LeadDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -258,8 +257,6 @@ const LeadDetail = () => {
             </motion.div>
           </div>
         )}
-
-        <SalesIntelligenceSection lead={lead} />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
