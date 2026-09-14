@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useLead, useAddNote, useUpdateLeadStatus } from "@/hooks/useLeads";
 import { useAuth } from "@/hooks/useAuth";
+import { LeadActivitiesPanel } from "@/components/admin/LeadActivitiesPanel";
 import {
   statusLabels,
   statusColors,
@@ -190,6 +191,8 @@ const LeadDetail = () => {
             </a>
           </div>
         </motion.div>
+
+        <LeadActivitiesPanel leadId={lead.id} ownerId={(lead as { owner_id?: string | null }).owner_id ?? null} />
 
         {hasDiagnostic && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
