@@ -9,6 +9,7 @@ import {
   Compass,
   UserCircle,
   UserPlus,
+  CalendarCheck2,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -37,6 +38,7 @@ const mainItems: Item[] = [
   { title: "Cadastrar Lead", url: "/admin/leads/novo", icon: UserPlus },
   { title: "Leads", url: "/admin/leads", icon: Users },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
+  { title: "Atividades", url: "/admin/atividades", icon: CalendarCheck2 },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Meu Perfil", url: "/admin/meu-perfil", icon: UserCircle },
 ];
