@@ -1,7 +1,18 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CalendarPlus, CheckCircle2, Clock3, ListTodo, RefreshCcw, RotateCcw } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CalendarPlus,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  ListTodo,
+  RefreshCcw,
+  RotateCcw,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { completeActivity } from "@/lib/activityCompletion";
@@ -14,6 +25,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+
+type AgendaView = "todo" | "calendar";
 
 type AgendaItem = {
   id: string;
@@ -43,6 +56,12 @@ function todayBounds() {
   return { start, end };
 }
 
+function monthBounds(value: Date) {
+  const start = new Date(value.getFullYear(), value.getMonth(), 1);
+  const end = new Date(value.getFullYear(), value.getMonth() + 1, 1);
+  return { start, end };
+}
+
 function formatTime(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 }
@@ -51,9 +70,29 @@ function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
 
+function monthLabel(value: Date) {
+  const text = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(value);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function buildCalendarDays(month: Date) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const start = new Date(first);
+  start.setDate(first.getDate() - first.getDay());
+  const days: Date[] = [];
+  for (let i = 0; i < 42; i += 1) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + i);
+    days.push(day);
+  }
+  return days;
+}
+
 export default function AgendaPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [view, setView] = useState<AgendaView>("todo");
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(localDateString());
@@ -61,6 +100,8 @@ export default function AgendaPage() {
   const [notes, setNotes] = useState("");
 
   const { start, end } = useMemo(todayBounds, []);
+  const calendarRange = useMemo(() => monthBounds(calendarMonth), [calendarMonth]);
+  const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth]);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["agenda-today", user?.id, localDateString()],
@@ -79,14 +120,44 @@ export default function AgendaPage() {
     enabled: !!user,
   });
 
+  const { data: monthItems = [], isLoading: isCalendarLoading } = useQuery({
+    queryKey: ["agenda-calendar", user?.id, calendarRange.start.toISOString()],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("activities" as never)
+        .select("id, lead_id, responsible_id, title, type, kind, scheduled_at, notes, status, lead:leads(id,nome,empresa)")
+        .eq("responsible_id", user.id)
+        .neq("status", "cancelada")
+        .gte("scheduled_at", calendarRange.start.toISOString())
+        .lt("scheduled_at", calendarRange.end.toISOString())
+        .order("scheduled_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as AgendaItem[];
+    },
+    enabled: !!user && view === "calendar",
+  });
+
   const overdueItems = useMemo(() => items.filter((item) => new Date(item.scheduled_at) < start), [items, start]);
   const todayItems = useMemo(() => items.filter((item) => {
     const when = new Date(item.scheduled_at);
     return when >= start && when < end;
   }), [items, start, end]);
 
+  const itemsByDay = useMemo(() => {
+    const map = new Map<string, AgendaItem[]>();
+    monthItems.forEach((item) => {
+      const key = localDateString(new Date(item.scheduled_at));
+      const current = map.get(key) || [];
+      current.push(item);
+      map.set(key, current);
+    });
+    return map;
+  }, [monthItems]);
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["agenda-today"] });
+    qc.invalidateQueries({ queryKey: ["agenda-calendar"] });
     qc.invalidateQueries({ queryKey: ["activities-page"] });
     qc.invalidateQueries({ queryKey: ["pending-activities"] });
     qc.invalidateQueries({ queryKey: ["lead-activities"] });
@@ -165,23 +236,92 @@ export default function AgendaPage() {
     );
   };
 
+  const moveMonth = (direction: -1 | 1) => {
+    setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + direction, 1));
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <div><h1 className="text-2xl font-display font-bold">Agenda</h1><p className="text-sm text-muted-foreground">Tudo o que você precisa executar hoje, em ordem de horário.</p></div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold">Agenda</h1>
+          <p className="text-sm text-muted-foreground">Organize sua execução em formato de lista ou calendário.</p>
+        </div>
+        <div className="inline-flex rounded-lg border bg-muted/30 p-1 self-start">
+          <Button size="sm" variant={view === "todo" ? "default" : "ghost"} onClick={() => setView("todo")}>
+            <ListTodo className="h-4 w-4 mr-2" />Todo
+          </Button>
+          <Button size="sm" variant={view === "calendar" ? "default" : "ghost"} onClick={() => setView("calendar")}>
+            <CalendarDays className="h-4 w-4 mr-2" />Calendário
+          </Button>
+        </div>
+      </div>
 
       <Card className="border-dashed"><CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">Adicionar item à agenda</p><p className="text-sm text-muted-foreground">Crie uma tarefa livre. Ela ficará vinculada somente a você.</p></div><Button onClick={() => setOpen(true)}><CalendarPlus className="h-4 w-4 mr-2" />Adicionar item</Button></CardContent></Card>
 
-      {overdueItems.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-red-600"><AlertTriangle className="h-5 w-5" /><h2 className="font-semibold">Pendências vencidas</h2><span className="text-sm">({overdueItems.length})</span></div>
-          {overdueItems.map((item, index) => renderItem(item, index, true))}
-        </div>
-      )}
+      {view === "todo" ? (
+        <>
+          {overdueItems.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-red-600"><AlertTriangle className="h-5 w-5" /><h2 className="font-semibold">Pendências vencidas</h2><span className="text-sm">({overdueItems.length})</span></div>
+              {overdueItems.map((item, index) => renderItem(item, index, true))}
+            </div>
+          )}
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-2"><ListTodo className="h-5 w-5" /><h2 className="font-semibold">Atividades de hoje</h2><span className="text-sm text-muted-foreground">({todayItems.length})</span></div>
-        {isLoading ? <p className="text-sm text-muted-foreground">Carregando agenda...</p> : todayItems.length === 0 ? <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Sua agenda de hoje está livre.</CardContent></Card> : todayItems.map((item, index) => renderItem(item, index))}
-      </div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2"><ListTodo className="h-5 w-5" /><h2 className="font-semibold">Atividades de hoje</h2><span className="text-sm text-muted-foreground">({todayItems.length})</span></div>
+            {isLoading ? <p className="text-sm text-muted-foreground">Carregando agenda...</p> : todayItems.length === 0 ? <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Sua agenda de hoje está livre.</CardContent></Card> : todayItems.map((item, index) => renderItem(item, index))}
+          </div>
+        </>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between gap-3 border-b p-4">
+              <Button variant="outline" size="icon" onClick={() => moveMonth(-1)}><ChevronLeft className="h-4 w-4" /></Button>
+              <div className="text-center">
+                <p className="font-semibold">{monthLabel(calendarMonth)}</p>
+                <button className="text-xs text-primary hover:underline" onClick={() => setCalendarMonth(new Date())}>Voltar para hoje</button>
+              </div>
+              <Button variant="outline" size="icon" onClick={() => moveMonth(1)}><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+
+            <div className="grid grid-cols-7 border-b bg-muted/30 text-center text-xs font-medium text-muted-foreground">
+              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => <div key={day} className="p-2">{day}</div>)}
+            </div>
+
+            {isCalendarLoading ? (
+              <div className="p-10 text-center text-sm text-muted-foreground">Carregando calendário...</div>
+            ) : (
+              <div className="grid grid-cols-7">
+                {calendarDays.map((day) => {
+                  const key = localDateString(day);
+                  const dayItems = itemsByDay.get(key) || [];
+                  const isCurrentMonth = day.getMonth() === calendarMonth.getMonth();
+                  const isToday = key === localDateString();
+                  return (
+                    <div key={key} className={`min-h-[125px] border-b border-r p-2 ${isCurrentMonth ? "bg-background" : "bg-muted/15 text-muted-foreground"}`}>
+                      <div className="flex justify-end mb-1">
+                        <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full text-xs ${isToday ? "bg-primary text-primary-foreground font-semibold" : ""}`}>{day.getDate()}</span>
+                      </div>
+                      <div className="space-y-1">
+                        {dayItems.slice(0, 3).map((item) => {
+                          const href = item.lead_id ? `/admin/lead/${item.lead_id}` : `/admin/agenda/item/${item.id}`;
+                          return (
+                            <Link key={item.id} to={href} className={`block rounded border px-1.5 py-1 text-[11px] leading-tight hover:border-primary/60 ${item.status === "concluida" ? "opacity-60 line-through" : "bg-primary/5"}`} title={item.title || item.type}>
+                              <span className="font-medium">{formatTime(item.scheduled_at)}</span> {item.title || item.type}
+                            </Link>
+                          );
+                        })}
+                        {dayItems.length > 3 && <p className="text-[10px] text-muted-foreground px-1">+{dayItems.length - 3} itens</p>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
