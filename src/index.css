@@ -5,51 +5,106 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Dark premium SaaS - graphite base with teal accent */
-    --background: 226 22% 8%;          /* #0F1117 */
-    --foreground: 240 5% 96%;          /* #F4F4F5 */
+  :root,
+  .light {
+    --background: 210 20% 98%;
+    --foreground: 224 20% 14%;
 
-    --card: 224 15% 13%;               /* #1C1F26 */
-    --card-foreground: 240 5% 96%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 20% 14%;
 
-    --popover: 224 15% 13%;
-    --popover-foreground: 240 5% 96%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 20% 14%;
 
-    --primary: 159 69% 37%;            /* #1D9E75 teal */
-    --primary-foreground: 226 22% 8%;
+    --primary: 159 69% 37%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 10% 17%;          /* #272A30 */
-    --secondary-foreground: 240 5% 96%;
+    --secondary: 216 18% 94%;
+    --secondary-foreground: 224 20% 18%;
 
-    --muted: 222 10% 17%;
-    --muted-foreground: 240 5% 65%;    /* #A1A1AA */
+    --muted: 216 18% 94%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 158 37% 22%;             /* #234B3D */
-    --accent-foreground: 240 5% 96%;
+    --accent: 158 32% 90%;
+    --accent-foreground: 159 60% 24%;
 
-    --destructive: 0 84% 60%;          /* #EF4444 */
-    --destructive-foreground: 240 5% 96%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 222 9% 27%;              /* #3F434B */
-    --input: 222 10% 17%;
+    --border: 216 16% 86%;
+    --input: 216 16% 86%;
     --ring: 159 69% 37%;
 
     --radius: 0.75rem;
 
     --success: 159 69% 37%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 40 38% 9%;
+
+    --chart-1: 159 69% 37%;
+    --chart-2: 199 89% 48%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 258 90% 66%;
+    --chart-5: 330 81% 60%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(210 20% 98%) 0%, hsl(210 20% 96%) 50%, hsl(210 20% 98%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 20% 97%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(159 69% 32%) 0%, hsl(159 69% 42%) 100%);
+    --glow-primary: 0 0 24px hsl(159 69% 37% / 0.14);
+    --glow-success: 0 0 20px hsl(159 69% 37% / 0.16);
+    --glow-warning: 0 0 20px hsl(38 92% 50% / 0.16);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 224 20% 14%;
+    --sidebar-primary: 159 69% 37%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 18% 94%;
+    --sidebar-accent-foreground: 224 20% 18%;
+    --sidebar-border: 216 16% 88%;
+    --sidebar-ring: 159 69% 37%;
+  }
+
+  .dark {
+    --background: 226 22% 8%;
+    --foreground: 240 5% 96%;
+
+    --card: 224 15% 13%;
+    --card-foreground: 240 5% 96%;
+
+    --popover: 224 15% 13%;
+    --popover-foreground: 240 5% 96%;
+
+    --primary: 159 69% 37%;
+    --primary-foreground: 226 22% 8%;
+
+    --secondary: 222 10% 17%;
+    --secondary-foreground: 240 5% 96%;
+
+    --muted: 222 10% 17%;
+    --muted-foreground: 240 5% 65%;
+
+    --accent: 158 37% 22%;
+    --accent-foreground: 240 5% 96%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 240 5% 96%;
+
+    --border: 222 9% 27%;
+    --input: 222 10% 17%;
+    --ring: 159 69% 37%;
+
+    --success: 159 69% 37%;
     --success-foreground: 226 22% 8%;
-    --warning: 38 92% 50%;             /* #F59E0B */
-    --warning-foreground: 40 38% 9%;   /* #1F1A0E */
+    --warning: 38 92% 50%;
+    --warning-foreground: 40 38% 9%;
 
-    /* Chart colors */
-    --chart-1: 159 69% 37%;   /* teal   #1D9E75 */
-    --chart-2: 199 89% 48%;   /* cyan   #0EA5E9 */
-    --chart-3: 38 92% 50%;    /* amber  #F59E0B */
-    --chart-4: 258 90% 66%;   /* purple #8B5CF6 */
-    --chart-5: 330 81% 60%;   /* pink   #EC4899 */
+    --chart-1: 159 69% 37%;
+    --chart-2: 199 89% 48%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 258 90% 66%;
+    --chart-5: 330 81% 60%;
 
-    /* Gradients & glows */
     --gradient-hero: linear-gradient(135deg, hsl(226 22% 8%) 0%, hsl(224 15% 11%) 50%, hsl(226 22% 8%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(224 15% 14%) 0%, hsl(226 22% 9%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(159 69% 32%) 0%, hsl(159 69% 42%) 100%);
@@ -66,11 +121,6 @@
     --sidebar-border: 222 9% 22%;
     --sidebar-ring: 159 69% 37%;
   }
-
-  .dark {
-    --background: 226 22% 8%;
-    --foreground: 240 5% 96%;
-  }
 }
 
 @layer base {
@@ -84,6 +134,7 @@
     font-feature-settings: "ss01", "cv11";
     background: var(--gradient-hero);
     min-height: 100vh;
+    transition: background 180ms ease, color 180ms ease;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -96,7 +147,7 @@
 @layer components {
   .glass-card {
     @apply bg-card/80 backdrop-blur-xl border border-border/60 rounded-xl;
-    box-shadow: 0 1px 0 0 hsl(0 0% 100% / 0.03), 0 8px 24px -12px hsl(0 0% 0% / 0.5);
+    box-shadow: 0 1px 0 0 hsl(0 0% 100% / 0.03), 0 8px 24px -12px hsl(0 0% 0% / 0.35);
   }
 
   .rating-button {
