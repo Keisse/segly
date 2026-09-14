@@ -27,7 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMyRole } from "@/hooks/useMyRole";
 import { NossoPropositoDialog } from "./NossoPropositoDialog";
 
-const seglyLogo = "/favicon.svg";
+const seglyLogo = "/segly-logo.png";
 
 type Item = { title: string; url: string; icon: any; adminOnly?: boolean };
 
