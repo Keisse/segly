@@ -27,6 +27,7 @@ function transformLead(row: any): Lead {
     owner_id: row.owner_id || null,
     pipeline_id: row.pipeline_id || null,
     stage_id: row.stage_id || null,
+    product_id: row.product_id || null,
     custom_fields: (row.custom_fields && typeof row.custom_fields === "object" ? row.custom_fields : {}) as Record<string, unknown>,
   };
 }
