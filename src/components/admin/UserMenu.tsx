@@ -21,7 +21,6 @@ import {
 import { toast } from "sonner";
 import { PrincipioDoDiaDialog } from "@/components/admin/PrincipioDoDiaDialog";
 
-
 const APP_VERSION = "1.0.0";
 
 const roleLabels: Record<string, string> = {
@@ -37,7 +36,6 @@ export function UserMenu() {
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string>("");
   const [principleOpen, setPrincipleOpen] = useState(false);
-
 
   useEffect(() => {
     if (!user?.id) return;
@@ -123,7 +121,7 @@ export function UserMenu() {
           <div className="flex-1">
             <p className="font-medium leading-tight">Princípio do dia</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Abra seu biscoito da sorte de hoje.
+              Abra o princípio de hoje.
             </p>
           </div>
         </button>
@@ -160,4 +158,3 @@ export function UserMenu() {
     </Popover>
   );
 }
-
