@@ -14,6 +14,7 @@ import {
   PauseCircle,
   History,
   PackagePercent,
+  CircleDollarSign,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -45,6 +46,7 @@ const mainItems: Item[] = [
   { title: "Stand-by", url: "/admin/standby", icon: PauseCircle },
   { title: "Follow-up", url: "/admin/atividades", icon: CalendarCheck2 },
   { title: "Produtividade", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
+  { title: "Comissões", url: "/admin/comissoes", icon: CircleDollarSign, leaderOnly: true },
   { title: "Produtos e Comissões", url: "/admin/produtos", icon: PackagePercent, adminOnly: true },
   { title: "Auditoria", url: "/admin/auditoria", icon: History, leaderOnly: true },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
