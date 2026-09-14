@@ -33,9 +33,11 @@ export function AceleraAlerts() {
   }, []);
 
   const novoStage = stages.find((s) => s.nome.toLocaleLowerCase("pt-BR") === "novo");
+  const cotarStage = stages.find((s) => s.nome.toLocaleLowerCase("pt-BR") === "cotar");
+  const stageOrder = useMemo(() => new Map(stages.map((stage) => [stage.id, stage.ordem])), [stages]);
 
   const alerts = useMemo(() => {
-    if (!user?.id || !novoStage) return [];
+    if (!user?.id || !novoStage || !cotarStage) return [];
 
     return (leads as Array<{
       id: string;
@@ -43,22 +45,25 @@ export function AceleraAlerts() {
       empresa: string | null;
       owner_id: string | null;
       stage_id: string | null;
-      stage_entered_at?: string | null;
       created_at: string;
     }>)
-      .filter((lead) => lead.owner_id === user.id && lead.stage_id === novoStage.id)
+      .filter((lead) => lead.owner_id === user.id)
       .map((lead) => {
-        const hours = elapsedHours(lead.stage_entered_at || lead.created_at);
-        if (hours >= 48) {
+        const hours = elapsedHours(lead.created_at);
+        const currentOrder = lead.stage_id ? stageOrder.get(lead.stage_id) : undefined;
+        const hasNotReachedCotar = currentOrder == null || currentOrder < cotarStage.ordem;
+
+        if (hours >= 48 && hasNotReachedCotar) {
           return {
             lead,
             hours,
             level: "critical" as const,
-            title: "Lead novo há mais de 48h",
-            message: "Este lead ainda não avançou para Cotar.",
+            title: "Lead há mais de 48h sem chegar em Cotar",
+            message: "Este lead precisa avançar para a etapa Cotar.",
           };
         }
-        if (hours >= 24) {
+
+        if (hours >= 24 && lead.stage_id === novoStage.id) {
           return {
             lead,
             hours,
@@ -67,11 +72,12 @@ export function AceleraAlerts() {
             message: "Faça o primeiro contato e avance a jornada.",
           };
         }
+
         return null;
       })
       .filter(Boolean)
       .sort((a, b) => (b?.hours ?? 0) - (a?.hours ?? 0));
-  }, [leads, novoStage, user?.id]);
+  }, [leads, novoStage, cotarStage, stageOrder, user?.id]);
 
   const total = alerts.length;
   const critical = alerts.filter((a) => a?.level === "critical").length;
@@ -126,7 +132,7 @@ export function AceleraAlerts() {
                         <p className="text-sm font-semibold">{alert.title}</p>
                         <p className="text-sm truncate mt-0.5">{alert.lead.empresa || alert.lead.nome}</p>
                         <p className="text-xs text-muted-foreground mt-1">{alert.message}</p>
-                        <p className="text-[11px] text-muted-foreground mt-2">Há {formatAge(alert.hours)} na etapa Novo</p>
+                        <p className="text-[11px] text-muted-foreground mt-2">Há {formatAge(alert.hours)} desde a entrada do lead</p>
                       </div>
                     </div>
                   </Link>
