@@ -17,6 +17,7 @@ type AuditRow = {
 };
 
 type NamedRow = { id: string; nome?: string | null; display_name?: string | null };
+type LeadNote = { id?: string; data?: string; autor?: string; texto?: string };
 
 type Props = { leadId: string };
 
@@ -50,6 +51,68 @@ function valueText(value: unknown, field: string, stageMap: Map<string, string>,
   }
   if (typeof value === "object") return "Dados atualizados";
   return String(value);
+}
+
+function asNotes(value: unknown): LeadNote[] {
+  return Array.isArray(value) ? (value.filter((item) => item && typeof item === "object") as LeadNote[]) : [];
+}
+
+function noteKey(note: LeadNote, index: number) {
+  return note.id || `${note.data || ""}|${note.autor || ""}|${index}`;
+}
+
+function describeNoteChange(oldValue: unknown, newValue: unknown) {
+  const oldNotes = asNotes(oldValue);
+  const newNotes = asNotes(newValue);
+  const oldMap = new Map(oldNotes.map((note, index) => [noteKey(note, index), note]));
+  const newMap = new Map(newNotes.map((note, index) => [noteKey(note, index), note]));
+
+  const added = [...newMap.entries()].filter(([key]) => !oldMap.has(key)).map(([, note]) => note);
+  const removed = [...oldMap.entries()].filter(([key]) => !newMap.has(key)).map(([, note]) => note);
+  const edited = [...newMap.entries()]
+    .filter(([key, note]) => oldMap.has(key) && JSON.stringify(oldMap.get(key)) !== JSON.stringify(note))
+    .map(([key, note]) => ({ before: oldMap.get(key)!, after: note }));
+
+  if (added.length === 1 && removed.length === 0 && edited.length === 0) {
+    const note = added[0];
+    return {
+      title: "Nota adicionada",
+      detail: note.texto?.trim() || "Nova nota registrada",
+      meta: note.autor ? `Autor informado na nota: ${note.autor}` : null,
+    };
+  }
+
+  if (removed.length === 1 && added.length === 0 && edited.length === 0) {
+    const note = removed[0];
+    return {
+      title: "Nota removida",
+      detail: note.texto?.trim() || "Uma nota foi removida",
+      meta: note.autor ? `Autor informado na nota: ${note.autor}` : null,
+    };
+  }
+
+  if (edited.length === 1 && added.length === 0 && removed.length === 0) {
+    const change = edited[0];
+    return {
+      title: "Nota editada",
+      detail: `${change.before.texto?.trim() || "—"} → ${change.after.texto?.trim() || "—"}`,
+      meta: change.after.autor ? `Autor informado na nota: ${change.after.autor}` : null,
+    };
+  }
+
+  if (added.length > 0) {
+    return {
+      title: added.length === 1 ? "Nota adicionada" : `${added.length} notas adicionadas`,
+      detail: added.map((note) => note.texto?.trim()).filter(Boolean).join(" · ") || "Notas registradas",
+      meta: null,
+    };
+  }
+
+  return {
+    title: "Notas atualizadas",
+    detail: "Houve uma alteração no histórico de notas deste lead",
+    meta: null,
+  };
 }
 
 export function LeadAuditTimeline({ leadId }: Props) {
@@ -94,26 +157,28 @@ export function LeadAuditTimeline({ leadId }: Props) {
 
     if (event.entity_type === "activity") {
       const title = String(newData.title || oldData.title || newData.type || oldData.type || "Atividade");
-      if (event.action === "insert") return { icon: Activity, title: "Atividade criada", detail: title };
-      if (event.action === "delete") return { icon: Trash2, title: "Atividade removida", detail: title };
-      if (event.changed_fields.includes("status") && newData.status === "concluida") return { icon: CheckCircle2, title: "Atividade concluída", detail: title };
+      if (event.action === "insert") return { icon: Activity, title: "Atividade criada", detail: title, meta: null as string | null };
+      if (event.action === "delete") return { icon: Trash2, title: "Atividade removida", detail: title, meta: null as string | null };
+      if (event.changed_fields.includes("status") && newData.status === "concluida") return { icon: CheckCircle2, title: "Atividade concluída", detail: title, meta: null as string | null };
       if (event.changed_fields.includes("scheduled_at")) {
         return {
           icon: Activity,
           title: "Atividade reagendada",
           detail: `${valueText(oldData.scheduled_at, "scheduled_at", stageMap, profileMap)} → ${valueText(newData.scheduled_at, "scheduled_at", stageMap, profileMap)}`,
+          meta: null as string | null,
         };
       }
-      return { icon: Activity, title: "Atividade alterada", detail: title };
+      return { icon: Activity, title: "Atividade alterada", detail: title, meta: null as string | null };
     }
 
-    if (event.action === "insert") return { icon: History, title: "Lead criado", detail: "Registro criado no Segly" };
-    if (event.action === "delete") return { icon: Trash2, title: "Lead excluído", detail: "Registro removido" };
+    if (event.action === "insert") return { icon: History, title: "Lead criado", detail: "Registro criado no Segly", meta: null as string | null };
+    if (event.action === "delete") return { icon: Trash2, title: "Lead excluído", detail: "Registro removido", meta: null as string | null };
     if (event.changed_fields.includes("stage_id")) {
       return {
         icon: ArrowRight,
         title: "Etapa alterada",
         detail: `${valueText(oldData.stage_id, "stage_id", stageMap, profileMap)} → ${valueText(newData.stage_id, "stage_id", stageMap, profileMap)}`,
+        meta: null as string | null,
       };
     }
     if (event.changed_fields.includes("owner_id")) {
@@ -121,20 +186,26 @@ export function LeadAuditTimeline({ leadId }: Props) {
         icon: CircleUserRound,
         title: "Responsável alterado",
         detail: `${valueText(oldData.owner_id, "owner_id", stageMap, profileMap)} → ${valueText(newData.owner_id, "owner_id", stageMap, profileMap)}`,
+        meta: null as string | null,
       };
     }
-    if (event.changed_fields.includes("notas")) return { icon: MessageSquarePlus, title: "Notas atualizadas", detail: "Uma alteração foi registrada nas notas do lead" };
+    if (event.changed_fields.includes("notas")) {
+      const note = describeNoteChange(oldData.notas, newData.notas);
+      return { icon: MessageSquarePlus, ...note };
+    }
     if (event.changed_fields.includes("status")) {
       return {
         icon: FilePenLine,
         title: "Status alterado",
         detail: `${valueText(oldData.status, "status", stageMap, profileMap)} → ${valueText(newData.status, "status", stageMap, profileMap)}`,
+        meta: null as string | null,
       };
     }
     return {
       icon: FilePenLine,
       title: "Dados do lead atualizados",
       detail: event.changed_fields.map((field) => fieldLabels[field] || field).join(", "),
+      meta: null as string | null,
     };
   };
 
@@ -161,12 +232,13 @@ export function LeadAuditTimeline({ leadId }: Props) {
                   <div className="absolute left-[-2px] top-1 h-6 w-6 rounded-full border bg-background flex items-center justify-center"><Icon className="h-3.5 w-3.5 text-primary" /></div>
                   <div className="rounded-lg border border-border/70 p-3">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-semibold">{item.title}</p>
                           <Badge variant="outline" className="text-[10px]">{event.entity_type === "lead" ? "Lead" : "Atividade"}</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1 break-words">{item.detail}</p>
+                        <p className="text-sm text-muted-foreground mt-1 break-words whitespace-pre-wrap">{item.detail}</p>
+                        {item.meta && <p className="text-xs text-muted-foreground mt-1">{item.meta}</p>}
                       </div>
                       <div className="text-xs text-muted-foreground sm:text-right shrink-0">
                         <p>{event.actor?.display_name || "Sistema / origem externa"}</p>
