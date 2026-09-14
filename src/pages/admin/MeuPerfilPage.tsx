@@ -103,7 +103,6 @@ const MeuPerfilPage = () => {
     if (!currentPassword) return toast.error("Informe sua senha atual");
 
     setChangingPass(true);
-    // Re-authenticate to validate current password
     const { error: signInErr } = await supabase.auth.signInWithPassword({
       email: user.email!,
       password: currentPassword,
@@ -135,7 +134,6 @@ const MeuPerfilPage = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
-        {/* Avatar column */}
         <Card className="p-6 flex flex-col items-center text-center h-fit">
           <p className="text-sm font-medium mb-3">Foto do perfil</p>
           <div className="h-28 w-28 rounded-full bg-primary/15 flex items-center justify-center text-3xl font-semibold text-primary">
@@ -146,155 +144,54 @@ const MeuPerfilPage = () => {
           </p>
         </Card>
 
-        {/* Basic info */}
         <Card className="p-6 space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <User className="h-4 w-4 text-primary" />
             Informações Básicas
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Nome *</Label>
-              <Input value={profile.display_name || ""} onChange={(e) => set("display_name", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>E-mail</Label>
-              <Input value={user?.email || ""} disabled />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Número de telefone *</Label>
-              <Input value={profile.telefone || ""} onChange={(e) => set("telefone", e.target.value)} placeholder="(00) 00000-0000" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Data de nascimento</Label>
-              <Input type="date" value={profile.data_nascimento || ""} onChange={(e) => set("data_nascimento", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Gênero</Label>
-              <Select value={profile.genero || ""} onValueChange={(v) => set("genero", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="masculino">Masculino</SelectItem>
-                  <SelectItem value="feminino">Feminino</SelectItem>
-                  <SelectItem value="outro">Outro</SelectItem>
-                  <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Profissão</Label>
-              <Input value={profile.profissao || ""} onChange={(e) => set("profissao", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>CPF</Label>
-              <Input value={profile.cpf || ""} onChange={(e) => set("cpf", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>RG</Label>
-              <Input value={profile.rg || ""} onChange={(e) => set("rg", e.target.value)} />
-            </div>
+            <div className="space-y-1.5"><Label>Nome *</Label><Input value={profile.display_name || ""} onChange={(e) => set("display_name", e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>E-mail</Label><Input value={user?.email || ""} disabled /></div>
+            <div className="space-y-1.5"><Label>Número de telefone *</Label><Input value={profile.telefone || ""} onChange={(e) => set("telefone", e.target.value)} placeholder="(00) 00000-0000" /></div>
+            <div className="space-y-1.5"><Label>Data de nascimento</Label><Input type="date" value={profile.data_nascimento || ""} onChange={(e) => set("data_nascimento", e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Gênero</Label><Select value={profile.genero || ""} onValueChange={(v) => set("genero", v)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="masculino">Masculino</SelectItem><SelectItem value="feminino">Feminino</SelectItem><SelectItem value="outro">Outro</SelectItem><SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem></SelectContent></Select></div>
+            <div className="space-y-1.5"><Label>Profissão</Label><Input value={profile.profissao || ""} onChange={(e) => set("profissao", e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>CPF</Label><Input value={profile.cpf || ""} onChange={(e) => set("cpf", e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>RG</Label><Input value={profile.rg || ""} onChange={(e) => set("rg", e.target.value)} /></div>
           </div>
         </Card>
       </div>
 
-      {/* Address */}
       <Card className="p-6 space-y-4">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <MapPin className="h-4 w-4 text-primary" />
-          Endereço
-        </div>
+        <div className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-primary" />Endereço</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>CEP</Label>
-            <Input value={profile.cep || ""} onChange={(e) => set("cep", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Número</Label>
-            <Input value={profile.numero || ""} onChange={(e) => set("numero", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Rua</Label>
-            <Input value={profile.rua || ""} onChange={(e) => set("rua", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Complemento</Label>
-            <Input value={profile.complemento || ""} onChange={(e) => set("complemento", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Bairro</Label>
-            <Input value={profile.bairro || ""} onChange={(e) => set("bairro", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Cidade</Label>
-            <Input value={profile.cidade || ""} onChange={(e) => set("cidade", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Estado</Label>
-            <Input value={profile.estado || ""} onChange={(e) => set("estado", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>País</Label>
-            <Input value={profile.pais || ""} onChange={(e) => set("pais", e.target.value)} />
-          </div>
+          <div className="space-y-1.5"><Label>CEP</Label><Input value={profile.cep || ""} onChange={(e) => set("cep", e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Número</Label><Input value={profile.numero || ""} onChange={(e) => set("numero", e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Rua</Label><Input value={profile.rua || ""} onChange={(e) => set("rua", e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Complemento</Label><Input value={profile.complemento || ""} onChange={(e) => set("complemento", e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Bairro</Label><Input value={profile.bairro || ""} onChange={(e) => set("bairro", e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Cidade</Label><Input value={profile.cidade || ""} onChange={(e) => set("cidade", e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Estado</Label><Input value={profile.estado || ""} onChange={(e) => set("estado", e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>País</Label><Input value={profile.pais || ""} onChange={(e) => set("pais", e.target.value)} /></div>
         </div>
-        <div className="flex justify-end pt-2">
-          <Button onClick={save} disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Salvar alterações
-          </Button>
-        </div>
+        <div className="flex justify-end pt-2"><Button onClick={save} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar alterações</Button></div>
       </Card>
 
       <PrincipioSection />
 
-      {/* Password */}
-
       <Card className="p-6 space-y-4">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <KeyRound className="h-4 w-4 text-primary" />
-          Redefinir minha senha
-        </div>
+        <div className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="h-4 w-4 text-primary" />Redefinir minha senha</div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-1.5">
-            <Label>Senha atual</Label>
-            <Input
-              type={showPasswords ? "text" : "password"}
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Nova senha</Label>
-            <Input
-              type={showPasswords ? "text" : "password"}
-              placeholder="Mínimo 6 caracteres"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Confirmar nova senha</Label>
-            <Input
-              type={showPasswords ? "text" : "password"}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-          </div>
+          <div className="space-y-1.5"><Label>Senha atual</Label><Input type={showPasswords ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Nova senha</Label><Input type={showPasswords ? "text" : "password"} placeholder="Mínimo 6 caracteres" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Confirmar nova senha</Label><Input type={showPasswords ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
         </div>
         <div className="flex items-center justify-between pt-2">
-          <button
-            type="button"
-            onClick={() => setShowPasswords((s) => !s)}
-            className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground"
-          >
+          <button type="button" onClick={() => setShowPasswords((s) => !s)} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground">
             {showPasswords ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             {showPasswords ? "Ocultar senhas" : "Mostrar senhas"}
           </button>
-          <Button onClick={changePassword} disabled={changingPass}>
-            {changingPass && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            <KeyRound className="h-4 w-4 mr-2" />
-            Redefinir senha
-          </Button>
+          <Button onClick={changePassword} disabled={changingPass}>{changingPass && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}<KeyRound className="h-4 w-4 mr-2" />Redefinir senha</Button>
         </div>
       </Card>
     </div>
@@ -309,73 +206,29 @@ function PrincipioSection() {
 
   return (
     <Card className="p-6 space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <Sparkles className="h-4 w-4 text-primary" />
-        Princípio do Dia
-      </div>
-      <p className="text-xs text-muted-foreground -mt-2">
-        Uma frase curta e inspiradora sobre liderança, responsabilidade e propósito, no formato de um biscoito da sorte.
-      </p>
+      <div className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-primary" />Princípio do Dia</div>
+      <p className="text-xs text-muted-foreground -mt-2">Uma frase curta e inspiradora sobre liderança, responsabilidade e propósito.</p>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="flex items-center justify-between rounded-md border border-border p-3">
-          <div>
-            <p className="text-sm font-medium">Receber princípio diário</p>
-            <p className="text-xs text-muted-foreground">Recurso opcional e sem som.</p>
-          </div>
-          <Switch
-            checked={prefs.enabled}
-            disabled={isLoading}
-            onCheckedChange={(v) => update({ enabled: v })}
-          />
+          <div><p className="text-sm font-medium">Receber princípio diário</p><p className="text-xs text-muted-foreground">Recurso opcional e sem som.</p></div>
+          <Switch checked={prefs.enabled} disabled={isLoading} onCheckedChange={(v) => update({ enabled: v })} />
         </div>
-
-        <div className="space-y-1.5">
-          <Label>Quando exibir?</Label>
-          <Select
-            value={prefs.when}
-            onValueChange={(v) => update({ when: v as typeof prefs.when })}
-            disabled={!prefs.enabled}
-          >
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="first_access">No primeiro acesso do dia</SelectItem>
-              <SelectItem value="dashboard">Ao abrir o Dashboard</SelectItem>
-              <SelectItem value="on_demand">Somente quando eu solicitar</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <div className="space-y-1.5"><Label>Quando exibir?</Label><Select value={prefs.when} onValueChange={(v) => update({ when: v as typeof prefs.when })} disabled={!prefs.enabled}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="first_access">No primeiro acesso do dia</SelectItem><SelectItem value="dashboard">Ao abrir o Dashboard</SelectItem><SelectItem value="on_demand">Somente quando eu solicitar</SelectItem></SelectContent></Select></div>
       </div>
 
-      <div className="flex justify-start">
-        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-          <Sparkles className="h-4 w-4 mr-2" /> Abrir princípio do dia
-        </Button>
-      </div>
+      <div className="flex justify-start"><Button variant="outline" size="sm" onClick={() => setOpen(true)}><Sparkles className="h-4 w-4 mr-2" /> Abrir princípio do dia</Button></div>
 
       <div className="pt-2">
-        <p className="text-sm font-medium mb-2 flex items-center gap-2">
-          <BookmarkCheck className="h-4 w-4 text-primary" /> Princípios salvos
-        </p>
+        <p className="text-sm font-medium mb-2 flex items-center gap-2"><BookmarkCheck className="h-4 w-4 text-primary" /> Princípios salvos</p>
         {saved.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Você ainda não salvou nenhum princípio. Ao abrir o biscoito, use o botão Salvar.
-          </p>
+          <p className="text-xs text-muted-foreground">Você ainda não salvou nenhum princípio. Ao abrir o biscoito, use o botão Salvar.</p>
         ) : (
           <ul className="space-y-2">
             {saved.map((s) => (
-              <li
-                key={s.id}
-                className="flex items-start justify-between gap-3 rounded-md border border-border p-3 text-sm"
-              >
+              <li key={s.id} className="flex items-start justify-between gap-3 rounded-md border border-border p-3 text-sm">
                 <span className="italic text-foreground">“{s.principles.phrase}”</span>
-                <button
-                  onClick={() => unsave.mutateAsync({ historyId: s.id, saved: false })}
-                  className="text-muted-foreground hover:text-destructive transition"
-                  aria-label="Remover"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <button onClick={() => unsave.mutateAsync({ historyId: s.id, saved: false })} className="text-muted-foreground hover:text-destructive transition" aria-label="Remover"><Trash2 className="h-4 w-4" /></button>
               </li>
             ))}
           </ul>
@@ -388,4 +241,3 @@ function PrincipioSection() {
 }
 
 export default MeuPerfilPage;
-
