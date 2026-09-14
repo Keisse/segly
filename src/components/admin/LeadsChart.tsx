@@ -18,24 +18,27 @@ interface ChartData {
 
 interface LeadsChartProps {
   data: ChartData[];
+  title?: string;
+  description?: string;
 }
 
-const LeadsChart = ({ data }: LeadsChartProps) => {
+const LeadsChart = ({ data, title = "Leads por período", description }: LeadsChartProps) => {
   const formattedData = data.map((item) => ({
     ...item,
-    dateFormatted: format(new Date(item.date), "dd/MM", { locale: ptBR }),
+    dateFormatted: format(new Date(`${item.date}T12:00:00`), "dd/MM", { locale: ptBR }),
   }));
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
+      transition={{ delay: 0.1 }}
       className="glass-card p-6"
     >
-      <h3 className="text-lg font-semibold text-foreground mb-4">
-        Leads nos Últimos 30 Dias
-      </h3>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+      </div>
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={formattedData}>
@@ -46,6 +49,7 @@ const LeadsChart = ({ data }: LeadsChartProps) => {
               fontSize={12}
               tickLine={false}
               axisLine={false}
+              minTickGap={22}
             />
             <YAxis
               stroke="hsl(var(--muted-foreground))"
@@ -62,14 +66,14 @@ const LeadsChart = ({ data }: LeadsChartProps) => {
               }}
               labelStyle={{ color: "hsl(var(--foreground))" }}
               itemStyle={{ color: "hsl(var(--primary))" }}
-              formatter={(value: number) => [`${value} leads`, "Leads"]}
+              formatter={(value: number) => [`${value} lead${value === 1 ? "" : "s"}`, "Leads"]}
             />
             <Line
               type="monotone"
               dataKey="leads"
               stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              dot={false}
+              strokeWidth={3}
+              dot={data.length <= 14}
               activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
             />
           </LineChart>
