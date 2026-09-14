@@ -241,29 +241,27 @@ serve(async (req) => {
   try {
     const { type, lead } = await req.json() as { type: AnalysisType; lead: LeadContext };
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const systemPrompt = getSystemPrompt(type, lead);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [
+            { role: "user", parts: [{ text: "Gere a análise solicitada com base no contexto fornecido." }] },
+          ],
+          generationConfig: { maxOutputTokens: 2000, temperature: 0.7 },
+        }),
       },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: "Gere a análise solicitada com base no contexto fornecido." }
-        ],
-        max_tokens: 2000,
-        temperature: 0.7,
-      }),
-    });
+    );
 
     if (!response.ok) {
       if (response.status === 429) {
