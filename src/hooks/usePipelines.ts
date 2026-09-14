@@ -45,7 +45,6 @@ async function maybeCelebrate(leadId: string, stageId: string) {
     const uid = uRes.data.user?.id;
     if (!uid) return;
 
-    // Dedupe insert — unique PK on (lead_id, stage_id).
     const { data: inserted, error } = await supabase
       .from("lead_stage_celebrations" as never)
       .upsert({ lead_id: leadId, stage_id: stageId, celebrated_by: uid } as never, { onConflict: "lead_id,stage_id", ignoreDuplicates: true })
@@ -53,7 +52,6 @@ async function maybeCelebrate(leadId: string, stageId: string) {
     if (error) return;
     if (!inserted || (inserted as unknown[]).length === 0) return;
 
-    // Fire local for initiator (if allowed by their preference and audience)
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
     const isAdmin = (roles || []).some((r: { role: string }) => r.role === "admin");
     const audience = (s.celebrate_audience ?? "team") as CelebrateAudience;
@@ -61,7 +59,6 @@ async function maybeCelebrate(leadId: string, stageId: string) {
       fireConfetti(s.nome);
     }
 
-    // Broadcast to other users in the same org
     const { data: prof } = await supabase.from("profiles").select("organization_id").eq("id", uid).maybeSingle();
     const orgId = (prof as { organization_id?: string } | null)?.organization_id;
     if (!orgId) return;
@@ -82,7 +79,6 @@ async function maybeCelebrate(leadId: string, stageId: string) {
     // silent
   }
 }
-
 
 const DEFAULT_STAGES = [
   { nome: "Novo", cor: "#64748b", is_won: false, is_lost: false },
@@ -267,7 +263,7 @@ export function useLeadsByPipeline(pipelineId: string | null | undefined) {
       if (!pipelineId) return [];
       const { data, error } = await supabase
         .from("leads")
-        .select("id, nome, empresa, cargo, email, telefone, stage_id, owner_id, status, resultado_diagnostico, created_at, pipeline_id")
+        .select("id, nome, empresa, cargo, email, telefone, fonte, custom_fields, stage_id, owner_id, status, resultado_diagnostico, created_at, pipeline_id")
         .eq("pipeline_id", pipelineId)
         .order("created_at", { ascending: false });
       if (error) throw error;
