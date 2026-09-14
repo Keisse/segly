@@ -28,6 +28,7 @@ import AtividadesPage from "./pages/admin/AtividadesPage";
 import ProdutividadePage from "./pages/admin/ProdutividadePage";
 import StandbyPage from "./pages/admin/StandbyPage";
 import AuditoriaPage from "./pages/admin/AuditoriaPage";
+import ProdutosPage from "./pages/admin/ProdutosPage";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,14 @@ const App = () => (
             <Route path="leads/novo" element={<NovoLeadPage />} />
             <Route path="clientes" element={<ClientesPage />} />
             <Route path="meu-perfil" element={<MeuPerfilPage />} />
+            <Route
+              path="produtos"
+              element={
+                <AdminOnlyRoute>
+                  <ProdutosPage />
+                </AdminOnlyRoute>
+              }
+            />
             <Route
               path="administradores"
               element={
