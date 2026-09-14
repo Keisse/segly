@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Bell, Clock3, AlertTriangle, CalendarClock } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, Clock3, AlertTriangle, CalendarClock, RotateCcw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { usePipelines, usePipelineStages, useLeadsByPipeline } from "@/hooks/usePipelines";
 import { supabase } from "@/integrations/supabase/client";
+import { resumeStandbyLead } from "@/lib/activityQuickActions";
+import { toast } from "sonner";
 
 function elapsedHours(value?: string | null) {
   if (!value) return 0;
@@ -36,6 +39,7 @@ type ActivityAlertRow = {
 
 export function AceleraAlerts() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const { data: pipelines = [] } = usePipelines();
   const acelera = pipelines.find((p) => p.nome === "Pipeline Acelera") ?? null;
   const { data: stages = [] } = usePipelineStages(acelera?.id);
@@ -57,7 +61,7 @@ export function AceleraAlerts() {
         .select("id, lead_id, type, title, scheduled_at, lead:leads(id,nome,empresa)")
         .eq("responsible_id", user.id)
         .eq("status", "pendente")
-        .in("type", ["retorno_cliente", "retorno_standby"])
+        .in("type", ["retorno_cliente", "retorno_standby", "nova_abordagem"])
         .lte("scheduled_at", limit)
         .order("scheduled_at", { ascending: true });
       if (error) throw error;
@@ -65,6 +69,21 @@ export function AceleraAlerts() {
     },
     enabled: !!user?.id,
     refetchInterval: 60_000,
+  });
+
+  const resumeLead = useMutation({
+    mutationFn: async ({ leadId, activityId }: { leadId: string; activityId: string }) => {
+      await resumeStandbyLead(leadId, activityId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["acelera-due-alerts"] });
+      qc.invalidateQueries({ queryKey: ["pending-activities"] });
+      qc.invalidateQueries({ queryKey: ["activities-page"] });
+      qc.invalidateQueries({ queryKey: ["agenda-today"] });
+      qc.invalidateQueries({ queryKey: ["pipelines"] });
+      toast.success("Lead retomado e movido para Em Contato.");
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const novoStage = stages.find((s) => s.nome.toLocaleLowerCase("pt-BR") === "novo");
@@ -122,15 +141,29 @@ export function AceleraAlerts() {
     return dueActivities.map((activity) => {
       const isOverdue = new Date(activity.scheduled_at).getTime() < now;
       const standby = activity.type === "retorno_standby";
+      const lostFollowUp = activity.type === "nova_abordagem";
+      const resumable = standby || lostFollowUp;
       return {
         id: `activity-${activity.id}`,
+        activityId: activity.id,
         leadId: activity.lead_id,
         level: isOverdue ? ("critical" as const) : ("warning" as const),
-        title: standby ? "Stand-by próximo do contato" : "Retorno de cliente",
+        title: lostFollowUp
+          ? "Hora de retomar este lead perdido"
+          : standby
+          ? "Stand-by próximo do contato"
+          : "Retorno de cliente",
         subject: activity.lead?.empresa || activity.lead?.nome || activity.title || "Atividade",
-        message: isOverdue ? "Esta atividade está atrasada." : "Esta atividade acontece nas próximas 24 horas.",
+        message: lostFollowUp
+          ? isOverdue
+            ? "A data da nova abordagem já chegou e está atrasada."
+            : "A nova abordagem acontece nas próximas 24 horas."
+          : isOverdue
+          ? "Esta atividade está atrasada."
+          : "Esta atividade acontece nas próximas 24 horas.",
         meta: formatWhen(activity.scheduled_at),
         activity: true,
+        resumable,
       };
     });
   }, [dueActivities]);
@@ -158,7 +191,7 @@ export function AceleraAlerts() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[360px] p-0">
+      <PopoverContent align="end" className="w-[380px] p-0">
         <div className="p-4 border-b">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -169,7 +202,7 @@ export function AceleraAlerts() {
           </div>
         </div>
 
-        <div className="max-h-[420px] overflow-y-auto">
+        <div className="max-h-[460px] overflow-y-auto">
           {total === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
               Nenhum alerta pendente para você.
@@ -193,12 +226,25 @@ export function AceleraAlerts() {
                   </div>
                 );
 
-                return alert.leadId ? (
-                  <Link key={alert.id} to={`/admin/lead/${alert.leadId}`} className="block p-4 hover:bg-accent/60 transition-colors">
-                    {content}
-                  </Link>
-                ) : (
-                  <div key={alert.id} className="p-4">{content}</div>
+                const resumable = "resumable" in alert && alert.resumable && alert.leadId && "activityId" in alert;
+
+                return (
+                  <div key={alert.id} className="p-4 hover:bg-accent/40 transition-colors">
+                    {alert.leadId ? <Link to={`/admin/lead/${alert.leadId}`} className="block">{content}</Link> : content}
+                    {resumable && (
+                      <div className="mt-3 pl-11">
+                        <Button
+                          size="sm"
+                          variant={isCritical ? "default" : "outline"}
+                          disabled={resumeLead.isPending}
+                          onClick={() => resumeLead.mutate({ leadId: alert.leadId as string, activityId: alert.activityId as string })}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                          Retomar agora
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
