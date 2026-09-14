@@ -103,12 +103,12 @@ Deno.serve(async (req) => {
       const t = await aiRes.text();
       console.error("AI error:", aiRes.status, t);
       if (aiRes.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido" }), { status: 429, headers: corsHeaders });
-      if (aiRes.status === 402) return new Response(JSON.stringify({ error: "Créditos esgotados. Adicione créditos em Settings > Workspace > Usage." }), { status: 402, headers: corsHeaders });
+      if (aiRes.status === 402 || aiRes.status === 403) return new Response(JSON.stringify({ error: "Acesso à API de IA negado ou cota esgotada." }), { status: aiRes.status, headers: corsHeaders });
       throw new Error("Falha na IA");
     }
 
     const aiData = await aiRes.json();
-    const content = aiData.choices?.[0]?.message?.content;
+    const content = (aiData.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p.text || "").join("");
     const parsed = JSON.parse(content);
 
     const { data: inserted, error: insertErr } = await supabase
