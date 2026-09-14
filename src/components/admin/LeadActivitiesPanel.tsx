@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, CheckCircle2, Clock3, Loader2, Pencil, Plus, RefreshCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { completeActivity } from "@/lib/activityCompletion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -183,26 +184,21 @@ export function LeadActivitiesPanel({ leadId, ownerId }: Props) {
       qc.invalidateQueries({ queryKey: ["lead-activities", leadId] });
       qc.invalidateQueries({ queryKey: ["pending-activities"] });
       qc.invalidateQueries({ queryKey: ["activities-page"] });
-      qc.invalidateQueries({ queryKey: ["agenda"] });
+      qc.invalidateQueries({ queryKey: ["agenda-today"] });
       toast.success(editing ? "Atividade atualizada." : "Atividade criada.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const complete = useMutation({
-    mutationFn: async (activity: LeadActivity) => {
-      const now = new Date().toISOString();
-      const { error } = await supabase
-        .from("activities" as never)
-        .update({ status: "concluida", completed_at: now, updated_at: now } as never)
-        .eq("id", activity.id);
-      if (error) throw error;
-    },
+    mutationFn: completeActivity,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["lead-activities", leadId] });
       qc.invalidateQueries({ queryKey: ["pending-activities"] });
       qc.invalidateQueries({ queryKey: ["activities-page"] });
-      qc.invalidateQueries({ queryKey: ["agenda"] });
+      qc.invalidateQueries({ queryKey: ["agenda-today"] });
+      qc.invalidateQueries({ queryKey: ["productivity-activities"] });
+      qc.invalidateQueries({ queryKey: ["productivity-contact-log"] });
       toast.success("Atividade concluída.");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -224,7 +220,7 @@ export function LeadActivitiesPanel({ leadId, ownerId }: Props) {
       qc.invalidateQueries({ queryKey: ["lead-activities", leadId] });
       qc.invalidateQueries({ queryKey: ["pending-activities"] });
       qc.invalidateQueries({ queryKey: ["activities-page"] });
-      qc.invalidateQueries({ queryKey: ["agenda"] });
+      qc.invalidateQueries({ queryKey: ["agenda-today"] });
       toast.success("Atividade reagendada para amanhã.");
     },
     onError: (e: Error) => toast.error(e.message),
