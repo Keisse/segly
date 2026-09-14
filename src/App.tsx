@@ -23,6 +23,7 @@ import ClientesPage from "./pages/admin/ClientesPage";
 import MeuPerfilPage from "./pages/admin/MeuPerfilPage";
 import ConfiguracoesPage from "./pages/admin/ConfiguracoesPage";
 import NovoLeadPage from "./pages/admin/NovoLeadPage";
+import AtividadesPage from "./pages/admin/AtividadesPage";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="kanban" element={<KanbanPage />} />
+            <Route path="atividades" element={<AtividadesPage />} />
             <Route path="leads" element={<LeadsPage />} />
             <Route path="leads/novo" element={<NovoLeadPage />} />
             <Route path="clientes" element={<ClientesPage />} />
