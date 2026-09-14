@@ -18,6 +18,7 @@ type LeadForTransition = {
   email: string | null;
   telefone: string | null;
   fonte?: string | null;
+  owner_id?: string | null;
   custom_fields?: Record<string, unknown> | null;
 };
 
@@ -49,6 +50,13 @@ function directValue(lead: LeadForTransition, field: PipelineStageField): string
   return value == null ? "" : String(value);
 }
 
+function toScheduledAt(date: string, time?: string) {
+  if (!date) return null;
+  const safeTime = time && /^\d{2}:\d{2}$/.test(time) ? time : "09:00";
+  const local = new Date(`${date}T${safeTime}:00`);
+  return Number.isNaN(local.getTime()) ? null : local.toISOString();
+}
+
 export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stageName, onConfirm }: Props) {
   const { data: fields = [], isLoading } = usePipelineStageFields(stageId);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -73,6 +81,110 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
     if (field.field_type === "phone") next = formatPhone(value);
     if (field.field_key === "cnpj") next = cnpjMask(value);
     setValues((prev) => ({ ...prev, [field.field_key]: next }));
+  };
+
+  const upsertStageActivity = async () => {
+    if (!lead) return;
+
+    const config = (() => {
+      if (stageName === "Visita Agendada") {
+        return {
+          type: values.tipo_visita === "Reunião online" ? "reuniao_online" : "visita",
+          title: values.tipo_visita === "Reunião online" ? "Reunião online agendada" : "Visita agendada",
+          scheduledAt: toScheduledAt(values.data_visita, values.horario_visita),
+          notes: values.observacoes_agenda || values.local_visita || null,
+        };
+      }
+      if (stageName === "Estudo Apresentado") {
+        return {
+          type: "retorno_cliente",
+          title: "Retorno do cliente",
+          scheduledAt: toScheduledAt(values.data_retorno_cliente),
+          notes: values.posicionamento_cliente || null,
+        };
+      }
+      if (stageName === "Negociação" && values.data_retorno_negociacao) {
+        return {
+          type: "retorno_negociacao",
+          title: "Retorno de negociação",
+          scheduledAt: toScheduledAt(values.data_retorno_negociacao),
+          notes: values.status_negociacao || null,
+        };
+      }
+      if (stageName === "Stand-by") {
+        return {
+          type: "retorno_standby",
+          title: "Retomar lead em stand-by",
+          scheduledAt: toScheduledAt(values.data_novo_contato),
+          notes: values.motivo_standby || null,
+        };
+      }
+      if (stageName === "Perdido" && values.data_nova_abordagem) {
+        return {
+          type: "nova_abordagem",
+          title: "Nova abordagem ao lead",
+          scheduledAt: toScheduledAt(values.data_nova_abordagem),
+          notes: values.motivo_perda || null,
+        };
+      }
+      return null;
+    })();
+
+    if (!config?.scheduledAt) return;
+
+    const auth = await supabase.auth.getUser();
+    const currentUserId = auth.data.user?.id;
+    if (!currentUserId) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", currentUserId)
+      .maybeSingle();
+    const organizationId = (profile as { organization_id?: string | null } | null)?.organization_id;
+    if (!organizationId) return;
+
+    const responsibleId = lead.owner_id || currentUserId;
+    const { data: existing } = await supabase
+      .from("activities" as never)
+      .select("id")
+      .eq("lead_id", lead.id)
+      .eq("type", config.type)
+      .eq("status", "pendente")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if ((existing as { id?: string } | null)?.id) {
+      const { error } = await supabase
+        .from("activities" as never)
+        .update({
+          title: config.title,
+          scheduled_at: config.scheduledAt,
+          notes: config.notes,
+          responsible_id: responsibleId,
+          updated_at: new Date().toISOString(),
+        } as never)
+        .eq("id", (existing as { id: string }).id);
+      if (error) throw error;
+      return;
+    }
+
+    const { error } = await supabase
+      .from("activities" as never)
+      .insert({
+        organization_id: organizationId,
+        lead_id: lead.id,
+        responsible_id: responsibleId,
+        created_by: currentUserId,
+        type: config.type,
+        title: config.title,
+        kind: "lead",
+        scheduled_at: config.scheduledAt,
+        notes: config.notes,
+        status: "pendente",
+      } as never);
+    if (error) throw error;
   };
 
   const handleConfirm = async () => {
@@ -102,6 +214,7 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
         .eq("id", lead.id);
       if (error) throw error;
 
+      await upsertStageActivity();
       await onConfirm();
       onOpenChange(false);
     } catch (error) {
