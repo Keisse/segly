@@ -18,7 +18,7 @@ import { PrincipiosLibrarySection } from "@/components/admin/PrincipiosLibrarySe
 import { PipelineSettings } from "@/components/admin/PipelineSettings";
 import { CelebracoesSettings } from "@/components/admin/CelebracoesSettings";
 import { LeadFormBuilder } from "@/components/admin/LeadFormBuilder";
-
+import { ThemePreference } from "@/components/admin/ThemePreference";
 
 const TIMEZONES = [
   "America/Sao_Paulo",
@@ -58,18 +58,25 @@ const useOrganization = () =>
   useQuery({
     queryKey: ["organization"],
     queryFn: async () => {
+      const auth = await supabase.auth.getUser();
+      const uid = auth.data.user?.id;
+      if (!uid) throw new Error("Usuário não autenticado.");
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("organization_id")
-        .eq("id", (await supabase.auth.getUser()).data.user!.id)
+        .eq("id", uid)
         .maybeSingle();
+
       const orgId = (profile as { organization_id: string | null } | null)?.organization_id;
       if (!orgId) throw new Error("Organização não encontrada.");
+
       const [{ data: org }, { data: settings }, { data: members }] = await Promise.all([
         supabase.from("organizations" as never).select("*").eq("id", orgId).maybeSingle(),
         supabase.from("organization_settings" as never).select("*").eq("organization_id", orgId).maybeSingle(),
         supabase.from("profiles").select("id, display_name").eq("organization_id", orgId),
       ]);
+
       return {
         org: org as unknown as OrgRow,
         settings: (settings as unknown as SettingsRow) ?? {
@@ -85,7 +92,6 @@ const useOrganization = () =>
     },
   });
 
-
 const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) => {
   const qc = useQueryClient();
   const { data, isLoading } = useOrganization();
@@ -95,22 +101,19 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const initial = useRef<string>("");
+  const initial = useRef("");
 
   useEffect(() => {
-    if (data) {
-      setForm(data.org);
-      setSettings(data.settings);
-      setLogoPreview(data.org.logo_url);
-      initial.current = JSON.stringify({ org: data.org, settings: data.settings });
-    }
+    if (!data) return;
+    setForm(data.org);
+    setSettings(data.settings);
+    setLogoPreview(data.org.logo_url);
+    initial.current = JSON.stringify({ org: data.org, settings: data.settings });
   }, [data]);
 
   const dirty = useMemo(() => {
     if (!form || !settings) return false;
-    return (
-      JSON.stringify({ org: form, settings }) !== initial.current || !!pendingFile
-    );
+    return JSON.stringify({ org: form, settings }) !== initial.current || !!pendingFile;
   }, [form, settings, pendingFile]);
 
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
@@ -125,14 +128,8 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
   }
 
   const handleFile = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("O arquivo precisa ser uma imagem.");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Tamanho máximo do logo: 2MB.");
-      return;
-    }
+    if (!file.type.startsWith("image/")) return toast.error("O arquivo precisa ser uma imagem.");
+    if (file.size > 2 * 1024 * 1024) return toast.error("Tamanho máximo do logo: 2MB.");
     setPendingFile(file);
     setLogoPreview(URL.createObjectURL(file));
   };
@@ -141,20 +138,22 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
     setSaving(true);
     try {
       let logoUrl = form.logo_url;
+
       if (pendingFile) {
         const ext = pendingFile.name.split(".").pop() ?? "png";
         const path = `${form.id}/logo-${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("organization-logos")
           .upload(path, pendingFile, { upsert: true });
-        if (upErr) throw upErr;
+        if (uploadError) throw uploadError;
+
         const { data: signed } = await supabase.storage
           .from("organization-logos")
           .createSignedUrl(path, 60 * 60 * 24 * 365);
         logoUrl = signed?.signedUrl ?? path;
       }
 
-      const { error: orgErr } = await supabase
+      const { error: orgError } = await supabase
         .from("organizations" as never)
         .update({
           name: form.name,
@@ -166,9 +165,9 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
           logo_url: logoUrl,
         } as never)
         .eq("id", form.id);
-      if (orgErr) throw orgErr;
+      if (orgError) throw orgError;
 
-      const { error: setErr } = await supabase
+      const { error: settingsError } = await supabase
         .from("organization_settings" as never)
         .upsert({
           organization_id: form.id,
@@ -178,28 +177,28 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
           email_notifications: settings.email_notifications,
           inactive_lead_reminder_days: settings.inactive_lead_reminder_days,
         } as never);
-      if (setErr) throw setErr;
+      if (settingsError) throw settingsError;
 
-      await supabase.from("audit_log" as never).insert({
-        organization_id: form.id,
-        actor_id: (await supabase.auth.getUser()).data.user!.id,
-        action: "update_general_settings",
-        entity: "organization",
-        entity_id: form.id,
-        new_value: { org: form, settings } as never,
-      } as never);
+      const actor = (await supabase.auth.getUser()).data.user?.id;
+      if (actor) {
+        await supabase.from("audit_log" as never).insert({
+          organization_id: form.id,
+          actor_id: actor,
+          action: "update_general_settings",
+          entity: "organization",
+          entity_id: form.id,
+          new_value: { org: form, settings } as never,
+        } as never);
+      }
 
+      const nextForm = { ...form, logo_url: logoUrl };
       setPendingFile(null);
-      initial.current = JSON.stringify({
-        org: { ...form, logo_url: logoUrl },
-        settings,
-      });
-      setForm({ ...form, logo_url: logoUrl });
+      setForm(nextForm);
+      initial.current = JSON.stringify({ org: nextForm, settings });
       qc.invalidateQueries({ queryKey: ["organization"] });
       toast.success("Configurações salvas com sucesso.");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Erro ao salvar.";
-      toast.error(msg);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar.");
     } finally {
       setSaving(false);
     }
@@ -207,19 +206,15 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
 
   return (
     <div className="space-y-6">
-      {/* Dados da operação */}
       <Card>
         <CardHeader>
           <CardTitle>Dados da operação</CardTitle>
-          <CardDescription>
-            Informações básicas exibidas em relatórios, e-mails e documentos.
-          </CardDescription>
+          <CardDescription>Informações básicas exibidas em relatórios, e-mails e documentos.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2 flex items-center gap-4">
             <div className="w-20 h-20 rounded-lg border border-border bg-muted/30 flex items-center justify-center overflow-hidden">
               {logoPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
               ) : (
                 <ImageIcon className="w-8 h-8 text-muted-foreground" />
@@ -231,7 +226,7 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                onChange={(event) => event.target.files?.[0] && handleFile(event.target.files[0])}
               />
               <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
                 <Upload className="w-4 h-4 mr-2" /> Enviar logo
@@ -242,89 +237,59 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
 
           <div className="space-y-2">
             <Label htmlFor="org-name">Nome da corretora / empresa</Label>
-            <Input
-              id="org-name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
+            <Input id="org-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="org-email">E-mail principal</Label>
-            <Input
-              id="org-email"
-              type="email"
-              value={form.email ?? ""}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
+            <Input id="org-email" type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="org-phone">Telefone principal</Label>
-            <Input
-              id="org-phone"
-              value={form.phone ?? ""}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            />
+            <Input id="org-phone" type="tel" placeholder="(11) 99999-9999" value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-2 space-y-2">
               <Label htmlFor="org-city">Cidade</Label>
-              <Input
-                id="org-city"
-                value={form.city ?? ""}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
-              />
+              <Input id="org-city" value={form.city ?? ""} onChange={(e) => setForm({ ...form, city: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-state">UF</Label>
-              <Input
-                id="org-state"
-                maxLength={2}
-                value={form.state ?? ""}
-                onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })}
-              />
+              <Input id="org-state" maxLength={2} value={form.state ?? ""} onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })} />
             </div>
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="org-tz">Fuso horário</Label>
-            <Select
-              value={form.timezone}
-              onValueChange={(v) => setForm({ ...form, timezone: v })}
-            >
+            <Select value={form.timezone} onValueChange={(value) => setForm({ ...form, timezone: value })}>
               <SelectTrigger id="org-tz"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {TIMEZONES.map((tz) => (
-                  <SelectItem key={tz} value={tz}>{tz}</SelectItem>
-                ))}
+                {TIMEZONES.map((timezone) => <SelectItem key={timezone} value={timezone}>{timezone}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Preferências */}
       <Card>
         <CardHeader>
           <CardTitle>Preferências do sistema</CardTitle>
-          <CardDescription>
-            Comportamentos padrão aplicados a toda a operação.
-          </CardDescription>
+          <CardDescription>Comportamentos e aparência padrão do Segly.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <ThemePreference />
+
+          <Separator />
+
           <div className="space-y-2">
             <Label>Responsável padrão para leads sem atribuição</Label>
             <Select
               value={settings.default_lead_owner ?? "__none__"}
-              onValueChange={(v) =>
-                setSettings({ ...settings, default_lead_owner: v === "__none__" ? null : v })
-              }
+              onValueChange={(value) => setSettings({ ...settings, default_lead_owner: value === "__none__" ? null : value })}
             >
               <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">Nenhum</SelectItem>
-                {data?.members.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.display_name ?? m.id.slice(0, 8)}
-                  </SelectItem>
+                {data?.members.map((member) => (
+                  <SelectItem key={member.id} value={member.id}>{member.display_name ?? member.id.slice(0, 8)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -332,51 +297,35 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
 
           <Separator />
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">Histórico de alterações importantes</p>
-              <p className="text-xs text-muted-foreground">
-                Registra mudanças administrativas para auditoria.
-              </p>
+              <p className="text-xs text-muted-foreground">Registra mudanças administrativas para auditoria.</p>
             </div>
-            <Switch
-              checked={settings.track_change_history}
-              onCheckedChange={(v) => setSettings({ ...settings, track_change_history: v })}
-            />
+            <Switch checked={settings.track_change_history} onCheckedChange={(value) => setSettings({ ...settings, track_change_history: value })} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Notificações */}
       <Card>
         <CardHeader>
           <CardTitle>Notificações gerais</CardTitle>
-          <CardDescription>
-            Cada usuário poderá refinar suas próprias preferências em Meu Perfil.
-          </CardDescription>
+          <CardDescription>Cada usuário poderá refinar suas próprias preferências em Meu Perfil.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">Notificações dentro do sistema</p>
               <p className="text-xs text-muted-foreground">Alertas exibidos no painel.</p>
             </div>
-            <Switch
-              checked={settings.in_app_notifications}
-              onCheckedChange={(v) => setSettings({ ...settings, in_app_notifications: v })}
-            />
+            <Switch checked={settings.in_app_notifications} onCheckedChange={(value) => setSettings({ ...settings, in_app_notifications: value })} />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">Notificações por e-mail</p>
-              <p className="text-xs text-muted-foreground">
-                Resumos e avisos enviados para o e-mail cadastrado.
-              </p>
+              <p className="text-xs text-muted-foreground">Resumos e avisos enviados para o e-mail cadastrado.</p>
             </div>
-            <Switch
-              checked={settings.email_notifications}
-              onCheckedChange={(v) => setSettings({ ...settings, email_notifications: v })}
-            />
+            <Switch checked={settings.email_notifications} onCheckedChange={(value) => setSettings({ ...settings, email_notifications: value })} />
           </div>
           <Separator />
           <div className="space-y-2 max-w-xs">
@@ -387,12 +336,7 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
               min={1}
               max={365}
               value={settings.inactive_lead_reminder_days}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  inactive_lead_reminder_days: Number(e.target.value) || 1,
-                })
-              }
+              onChange={(e) => setSettings({ ...settings, inactive_lead_reminder_days: Number(e.target.value) || 1 })}
             />
           </div>
         </CardContent>
@@ -401,7 +345,6 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
       <PrincipiosLibrarySection />
 
       <div className="flex justify-end sticky bottom-4">
-
         <Button onClick={save} disabled={saving} className="shadow-lg">
           {saving ? (
             <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando…</>
@@ -414,21 +357,6 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
   );
 };
 
-const ComingSoon = ({ title, description }: { title: string; description: string }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>{title}</CardTitle>
-      <CardDescription>{description}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-sm text-muted-foreground">
-        Módulo em desenvolvimento — será liberado nas próximas versões, mantendo
-        a mesma identidade visual do Segly.
-      </p>
-    </CardContent>
-  </Card>
-);
-
 const ConfiguracoesPage = () => {
   const [dirty, setDirty] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -438,28 +366,25 @@ const ConfiguracoesPage = () => {
   const { confirmDiscard } = useUnsavedChanges(dirty);
 
   useEffect(() => {
-    const q = searchParams.get("tab");
-    const normalized = q === "automacoes" ? "formulario" : q;
+    const queryTab = searchParams.get("tab");
+    const normalized = queryTab === "automacoes" ? "formulario" : queryTab;
     if (normalized && normalized !== tab) setTab(normalized);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, tab]);
 
   const changeTab = (next: string) => {
     if (dirty && !confirmDiscard()) return;
     setDirty(false);
     setTab(next);
-    const p = new URLSearchParams(searchParams);
-    p.set("tab", next);
-    setSearchParams(p, { replace: true });
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", next);
+    setSearchParams(params, { replace: true });
   };
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold">Configurações</h1>
-        <p className="text-sm text-muted-foreground">
-          Gerencie as regras, preferências e integrações da operação.
-        </p>
+        <p className="text-sm text-muted-foreground">Gerencie as regras, preferências e integrações da operação.</p>
       </div>
 
       <Tabs value={tab} onValueChange={changeTab} className="w-full">
@@ -470,18 +395,10 @@ const ConfiguracoesPage = () => {
           <TabsTrigger value="formulario">Formulário Padrão</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="geral" className="mt-4">
-          <GeralTab onDirtyChange={setDirty} />
-        </TabsContent>
-        <TabsContent value="pipeline" className="mt-4">
-          <PipelineSettings />
-        </TabsContent>
-        <TabsContent value="celebracoes" className="mt-4">
-          <CelebracoesSettings />
-        </TabsContent>
-        <TabsContent value="formulario" className="mt-4">
-          <LeadFormBuilder />
-        </TabsContent>
+        <TabsContent value="geral" className="mt-4"><GeralTab onDirtyChange={setDirty} /></TabsContent>
+        <TabsContent value="pipeline" className="mt-4"><PipelineSettings /></TabsContent>
+        <TabsContent value="celebracoes" className="mt-4"><CelebracoesSettings /></TabsContent>
+        <TabsContent value="formulario" className="mt-4"><LeadFormBuilder /></TabsContent>
       </Tabs>
     </div>
   );
