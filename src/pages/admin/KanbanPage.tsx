@@ -20,6 +20,7 @@ type LeadRow = {
   telefone: string | null;
   fonte?: string | null;
   custom_fields?: Record<string, unknown> | null;
+  product_id?: string | null;
   stage_id: string | null;
   owner_id: string | null;
   created_at: string;
@@ -65,17 +66,8 @@ function activityState(date: string) {
   return "future" as const;
 }
 
-const activityDotClass = {
-  overdue: "bg-red-500",
-  today: "bg-amber-400",
-  future: "bg-emerald-500",
-};
-
-const activityLabel = {
-  overdue: "Atividade atrasada",
-  today: "Atividade para hoje",
-  future: "Atividade futura",
-};
+const activityDotClass = { overdue: "bg-red-500", today: "bg-amber-400", future: "bg-emerald-500" };
+const activityLabel = { overdue: "Atividade atrasada", today: "Atividade para hoje", future: "Atividade futura" };
 
 const KanbanPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -169,9 +161,7 @@ const KanbanPage = () => {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Pipelines</h1>
-          <p className="text-sm text-muted-foreground">
-            {isAcelera ? "Arraste os cards entre etapas. O formulário da nova etapa será aberto antes da movimentação." : "Arraste os cards entre etapas para movê-los."}
-          </p>
+          <p className="text-sm text-muted-foreground">{isAcelera ? "Arraste os cards entre etapas. O formulário da nova etapa será aberto antes da movimentação." : "Arraste os cards entre etapas para movê-los."}</p>
         </div>
         {isAcelera && (
           <div className="relative w-full xl:w-80">
@@ -183,13 +173,7 @@ const KanbanPage = () => {
 
       <PipelineTabs pipelines={pipelines} activeId={activePipelineId} onSelect={selectPipeline} />
 
-      {!activePipelineId ? (
-        <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p>
-      ) : loadingLeads ? (
-        <p className="text-sm text-muted-foreground">Carregando leads…</p>
-      ) : stages.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p>
-      ) : (
+      {!activePipelineId ? <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p> : loadingLeads ? <p className="text-sm text-muted-foreground">Carregando leads…</p> : stages.length === 0 ? <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p> : (
         <div className="grid gap-3 overflow-x-auto pb-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))` }}>
           {stages.map((col) => {
             const cards = grouped[col.id] ?? [];
@@ -197,11 +181,7 @@ const KanbanPage = () => {
             return (
               <div key={col.id} onDragOver={(e) => e.preventDefault()} onDrop={() => handleDrop(col.id)} className="bg-card/50 rounded-lg p-3 min-h-[400px] border border-border">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold inline-flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ background: col.cor ?? "#64748b" }} />
-                    {col.nome}
-                    {col.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}
-                  </h3>
+                  <h3 className="text-sm font-semibold inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: col.cor ?? "#64748b" }} />{col.nome}{col.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}</h3>
                   <Badge variant={overWip ? "destructive" : "secondary"} className="text-xs">{cards.length}{col.wip_limit != null ? `/${col.wip_limit}` : ""}</Badge>
                 </div>
                 <div className="space-y-2">
@@ -214,34 +194,13 @@ const KanbanPage = () => {
                     return (
                       <Card key={lead.id} draggable onDragStart={() => setDragId(lead.id)} className="p-3 cursor-move hover:border-primary/50 transition-colors space-y-2">
                         <Link to={`/admin/lead/${lead.id}`} className="block space-y-1.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold truncate uppercase">{lead.empresa || lead.nome}</p>
-                              <p className="text-xs text-muted-foreground truncate">{lead.nome}</p>
-                            </div>
-                            {activityStatus && <span title={activityLabel[activityStatus]} className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${activityDotClass[activityStatus]}`} />}
-                          </div>
-                          {amount && (
-                            <div className="flex items-center gap-1.5 text-xs font-medium text-foreground"><CircleDollarSign className="w-3.5 h-3.5" /><span>{amount}</span></div>
-                          )}
+                          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-sm font-semibold truncate uppercase">{lead.empresa || lead.nome}</p><p className="text-xs text-muted-foreground truncate">{lead.nome}</p></div>{activityStatus && <span title={activityLabel[activityStatus]} className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${activityDotClass[activityStatus]}`} />}</div>
+                          {amount && <div className="flex items-center gap-1.5 text-xs font-medium text-foreground"><CircleDollarSign className="w-3.5 h-3.5" /><span>{amount}</span></div>}
                         </Link>
-
                         <div className="pt-2 border-t border-border/50 space-y-1.5">
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                            <User className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{owner ? capitalizeWords(owner.display_name || owner.email || "Usuário") : "Sem responsável comercial"}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                            <Clock3 className="w-3 h-3 shrink-0" /><span>{stageAge(lead.stage_entered_at || lead.created_at)} nesta etapa</span>
-                          </div>
-                          {nextActivity ? (
-                            <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
-                              <CalendarClock className="w-3 h-3 shrink-0 mt-0.5" />
-                              <span className="line-clamp-2">{nextActivity.type} · {new Date(nextActivity.scheduled_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0" /><span>Sem próxima atividade</span></div>
-                          )}
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><User className="w-3 h-3 shrink-0" /><span className="truncate">{owner ? capitalizeWords(owner.display_name || owner.email || "Usuário") : "Sem responsável comercial"}</span></div>
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Clock3 className="w-3 h-3 shrink-0" /><span>{stageAge(lead.stage_entered_at || lead.created_at)} nesta etapa</span></div>
+                          {nextActivity ? <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0 mt-0.5" /><span className="line-clamp-2">{nextActivity.type} · {new Date(nextActivity.scheduled_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div> : <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0" /><span>Sem próxima atividade</span></div>}
                           {lead.email && <a href={`mailto:${lead.email}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></a>}
                           {wa && <a href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors"><MessageCircle className="w-3 h-3 shrink-0" /><span className="truncate">{lead.telefone}</span></a>}
                         </div>
