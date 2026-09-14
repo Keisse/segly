@@ -18,12 +18,16 @@ import OutboundCadastro from "./pages/OutboundCadastro";
 import ObrigadaPage from "./pages/ObrigadaPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminOnlyRoute from "./components/AdminOnlyRoute";
+import LeaderOnlyRoute from "./components/LeaderOnlyRoute";
 import LeadsPage from "./pages/admin/LeadsPage";
 import ClientesPage from "./pages/admin/ClientesPage";
 import MeuPerfilPage from "./pages/admin/MeuPerfilPage";
 import ConfiguracoesPage from "./pages/admin/ConfiguracoesPage";
 import NovoLeadPage from "./pages/admin/NovoLeadPage";
 import AtividadesPage from "./pages/admin/AtividadesPage";
+import AgendaPage from "./pages/admin/AgendaPage";
+import AgendaItemPage from "./pages/admin/AgendaItemPage";
+import ProdutividadePage from "./pages/admin/ProdutividadePage";
 
 const queryClient = new QueryClient();
 
@@ -53,8 +57,18 @@ const App = () => (
           >
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="agenda" element={<AgendaPage />} />
+            <Route path="agenda/item/:id" element={<AgendaItemPage />} />
             <Route path="kanban" element={<KanbanPage />} />
             <Route path="atividades" element={<AtividadesPage />} />
+            <Route
+              path="produtividade"
+              element={
+                <LeaderOnlyRoute>
+                  <ProdutividadePage />
+                </LeaderOnlyRoute>
+              }
+            />
             <Route path="leads" element={<LeadsPage />} />
             <Route path="leads/novo" element={<NovoLeadPage />} />
             <Route path="clientes" element={<ClientesPage />} />
