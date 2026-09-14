@@ -25,8 +25,6 @@ import MeuPerfilPage from "./pages/admin/MeuPerfilPage";
 import ConfiguracoesPage from "./pages/admin/ConfiguracoesPage";
 import NovoLeadPage from "./pages/admin/NovoLeadPage";
 import AtividadesPage from "./pages/admin/AtividadesPage";
-import AgendaPage from "./pages/admin/AgendaPage";
-import AgendaItemPage from "./pages/admin/AgendaItemPage";
 import ProdutividadePage from "./pages/admin/ProdutividadePage";
 import StandbyPage from "./pages/admin/StandbyPage";
 import AuditoriaPage from "./pages/admin/AuditoriaPage";
@@ -59,8 +57,8 @@ const App = () => (
           >
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="agenda" element={<AgendaPage />} />
-            <Route path="agenda/item/:id" element={<AgendaItemPage />} />
+            <Route path="agenda" element={<Navigate to="/admin/atividades" replace />} />
+            <Route path="agenda/item/:id" element={<Navigate to="/admin/atividades" replace />} />
             <Route path="kanban" element={<KanbanPage />} />
             <Route path="standby" element={<StandbyPage />} />
             <Route path="atividades" element={<AtividadesPage />} />
