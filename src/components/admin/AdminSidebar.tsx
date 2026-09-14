@@ -12,6 +12,7 @@ import {
   CalendarCheck2,
   CalendarDays,
   Gauge,
+  PauseCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -41,6 +42,7 @@ const mainItems: Item[] = [
   { title: "Cadastrar Lead", url: "/admin/leads/novo", icon: UserPlus },
   { title: "Leads", url: "/admin/leads", icon: Users },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
+  { title: "Stand-by", url: "/admin/standby", icon: PauseCircle },
   { title: "Atividades", url: "/admin/atividades", icon: CalendarCheck2 },
   { title: "Produtividade", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
@@ -101,10 +103,7 @@ export function AdminSidebar() {
         <div className="mt-auto p-2 space-y-1">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => setPropositoOpen(true)}
-                className="hover:bg-sidebar-accent/50"
-              >
+              <SidebarMenuButton onClick={() => setPropositoOpen(true)} className="hover:bg-sidebar-accent/50">
                 <Compass className="h-4 w-4" />
                 {!collapsed && <span>Nosso Propósito</span>}
               </SidebarMenuButton>
@@ -112,14 +111,7 @@ export function AdminSidebar() {
             {isAdmin && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/admin/administradores"
-                    className={({ isActive }) =>
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "hover:bg-sidebar-accent/50"
-                    }
-                  >
+                  <NavLink to="/admin/administradores" className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"}>
                     <ShieldCheck className="h-4 w-4" />
                     {!collapsed && <span>Usuários e Permissões</span>}
                   </NavLink>
@@ -129,14 +121,7 @@ export function AdminSidebar() {
             {isAdmin && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/admin/configuracoes"
-                    className={({ isActive }) =>
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "hover:bg-sidebar-accent/50"
-                    }
-                  >
+                  <NavLink to="/admin/configuracoes" className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"}>
                     <Settings className="h-4 w-4" />
                     {!collapsed && <span>Configurações</span>}
                   </NavLink>
