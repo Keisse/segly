@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { usePipelines, usePipelineStages, useLeadsByPipeline, useUpdateLeadStage } from "@/hooks/usePipelines";
 import { usePendingActivitiesForLeads } from "@/hooks/useActivities";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { PartyPopper, Mail, MessageCircle, User, Clock3, Search, CalendarClock, CircleDollarSign } from "lucide-react";
+import { PartyPopper, Mail, MessageCircle, User, Clock3, Search, CalendarClock, CircleDollarSign, FileText } from "lucide-react";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { capitalizeWords } from "@/lib/formatName";
 import { PipelineTabs } from "@/components/admin/PipelineTabs";
@@ -28,11 +30,29 @@ type LeadRow = {
   resultado_diagnostico: { percentage?: number } | null;
 };
 
+type ProposalRow = {
+  id: string;
+  lead_id: string;
+  status: "draft" | "sent" | "accepted" | "implementation" | "implemented" | "lost";
+  negotiated_value: number | string;
+  created_at: string;
+  products?: { name: string; insurer_name: string | null } | null;
+};
+
 type PendingMove = {
   lead: LeadRow;
   stageId: string;
   stageName: string;
 } | null;
+
+const proposalStatusLabel: Record<ProposalRow["status"], string> = {
+  draft: "Proposta em rascunho",
+  sent: "Proposta enviada",
+  accepted: "Proposta aceita",
+  implementation: "Em implantação",
+  implemented: "Proposta implantada",
+  lost: "Proposta perdida",
+};
 
 function normalize(value: unknown) {
   return String(value ?? "").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -94,7 +114,22 @@ const KanbanPage = () => {
   const { data: stages = [] } = usePipelineStages(activePipelineId);
   const { data: leadsRaw = [], isLoading: loadingLeads } = useLeadsByPipeline(activePipelineId);
   const leads = leadsRaw as unknown as LeadRow[];
-  const { data: activities = [] } = usePendingActivitiesForLeads(leads.map((l) => l.id));
+  const leadIds = useMemo(() => leads.map((l) => l.id), [leads]);
+  const { data: activities = [] } = usePendingActivitiesForLeads(leadIds);
+  const { data: proposals = [] } = useQuery({
+    queryKey: ["pipeline-proposals", activePipelineId, leadIds.join(",")],
+    queryFn: async () => {
+      if (!leadIds.length) return [];
+      const { data, error } = await supabase
+        .from("proposals" as never)
+        .select("id,lead_id,status,negotiated_value,created_at,products(name,insurer_name)")
+        .in("lead_id", leadIds)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as ProposalRow[];
+    },
+    enabled: leadIds.length > 0,
+  });
   const updateStage = useUpdateLeadStage();
   const [dragId, setDragId] = useState<string | null>(null);
   const [pendingMove, setPendingMove] = useState<PendingMove>(null);
@@ -114,6 +149,14 @@ const KanbanPage = () => {
     });
     return map;
   }, [activities]);
+
+  const latestProposalMap = useMemo(() => {
+    const map = new Map<string, ProposalRow>();
+    proposals.forEach((proposal) => {
+      if (!map.has(proposal.lead_id)) map.set(proposal.lead_id, proposal);
+    });
+    return map;
+  }, [proposals]);
 
   const filteredLeads = useMemo(() => {
     const q = normalize(search.trim());
@@ -190,12 +233,14 @@ const KanbanPage = () => {
                     const wa = lead.telefone ? lead.telefone.replace(/\D/g, "") : "";
                     const nextActivity = nextActivityMap.get(lead.id);
                     const activityStatus = nextActivity ? activityState(nextActivity.scheduled_at) : null;
-                    const amount = formatMoney(lead.custom_fields?.valor_apresentado ?? lead.custom_fields?.valor_fechado ?? lead.custom_fields?.valor_final_fechado);
+                    const proposal = latestProposalMap.get(lead.id);
+                    const amount = formatMoney(proposal?.negotiated_value ?? lead.custom_fields?.valor_apresentado ?? lead.custom_fields?.valor_fechado ?? lead.custom_fields?.valor_final_fechado);
                     return (
                       <Card key={lead.id} draggable onDragStart={() => setDragId(lead.id)} className="p-3 cursor-move hover:border-primary/50 transition-colors space-y-2">
                         <Link to={`/admin/lead/${lead.id}`} className="block space-y-1.5">
                           <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-sm font-semibold truncate uppercase">{lead.empresa || lead.nome}</p><p className="text-xs text-muted-foreground truncate">{lead.nome}</p></div>{activityStatus && <span title={activityLabel[activityStatus]} className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${activityDotClass[activityStatus]}`} />}</div>
                           {amount && <div className="flex items-center gap-1.5 text-xs font-medium text-foreground"><CircleDollarSign className="w-3.5 h-3.5" /><span>{amount}</span></div>}
+                          {proposal && <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" /><div className="min-w-0"><p className="font-medium text-foreground truncate">{proposal.products?.name || "Proposta comercial"}</p><p className="truncate">{proposalStatusLabel[proposal.status]}{proposal.products?.insurer_name ? ` · ${proposal.products.insurer_name}` : ""}</p></div></div>}
                         </Link>
                         <div className="pt-2 border-t border-border/50 space-y-1.5">
                           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><User className="w-3 h-3 shrink-0" /><span className="truncate">{owner ? capitalizeWords(owner.display_name || owner.email || "Usuário") : "Sem responsável comercial"}</span></div>
