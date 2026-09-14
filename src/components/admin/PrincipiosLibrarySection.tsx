@@ -158,7 +158,6 @@ export function PrincipiosLibrarySection() {
   const handleUpload = async (file: File) => {
     if (!orgId) return;
     const text = await file.text();
-    // Very simple CSV/TSV: first column = phrase, second (optional) = audience
     const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
     const rows = lines
       .filter((l, i) => !(i === 0 && /^frase|phrase/i.test(l)))
@@ -201,12 +200,9 @@ export function PrincipiosLibrarySection() {
           <Sparkles className="h-5 w-5 text-primary" />
           <CardTitle>Princípio do Dia</CardTitle>
         </div>
-        <CardDescription>
-          Gerencie a biblioteca de frases exibidas como um biscoito da sorte para os usuários.
-        </CardDescription>
+        <CardDescription>Gerencie a biblioteca de frases exibidas para os usuários.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Global toggles */}
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex items-center justify-between rounded-md border border-border p-3">
             <div>
@@ -236,7 +232,6 @@ export function PrincipiosLibrarySection() {
           </div>
         </div>
 
-        {/* Editorial guidelines */}
         <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-4">
           <p className="text-sm font-semibold text-amber-500 mb-2">Regras editoriais obrigatórias</p>
           <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
@@ -244,7 +239,6 @@ export function PrincipiosLibrarySection() {
           </ul>
         </div>
 
-        {/* Add new */}
         <div className="rounded-md border border-border p-4 space-y-3">
           <p className="text-sm font-medium">Adicionar novo princípio</p>
           <div className="grid gap-3 md:grid-cols-[1fr_180px_auto]">
@@ -296,7 +290,6 @@ export function PrincipiosLibrarySection() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="rounded-md border border-border overflow-hidden">
           <Table>
             <TableHeader>
@@ -309,38 +302,26 @@ export function PrincipiosLibrarySection() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-6">
-                  <Loader2 className="w-4 h-4 animate-spin inline" />
-                </TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="text-center py-6"><Loader2 className="w-4 h-4 animate-spin inline" /></TableCell></TableRow>
               ) : principles.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-6">
-                  Nenhum princípio cadastrado.
-                </TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-6">Nenhum princípio cadastrado.</TableCell></TableRow>
               ) : principles.map((p) => {
                 const isEditing = editing?.id === p.id;
                 return (
                   <TableRow key={p.id}>
                     <TableCell>
                       {isEditing ? (
-                        <Input
-                          value={editing!.phrase}
-                          onChange={(e) => setEditing({ ...editing!, phrase: e.target.value })}
-                        />
+                        <Input value={editing!.phrase} onChange={(e) => setEditing({ ...editing!, phrase: e.target.value })} />
                       ) : (
                         <span className="text-sm italic">"{p.phrase}"</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {isEditing ? (
-                        <Select
-                          value={editing!.audience}
-                          onValueChange={(v) => setEditing({ ...editing!, audience: v as Audience })}
-                        >
+                        <Select value={editing!.audience} onValueChange={(v) => setEditing({ ...editing!, audience: v as Audience })}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {(Object.keys(AUDIENCE_LABEL) as Audience[]).map((a) => (
-                              <SelectItem key={a} value={a}>{AUDIENCE_LABEL[a]}</SelectItem>
-                            ))}
+                            {(Object.keys(AUDIENCE_LABEL) as Audience[]).map((a) => <SelectItem key={a} value={a}>{AUDIENCE_LABEL[a]}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       ) : (
@@ -349,47 +330,26 @@ export function PrincipiosLibrarySection() {
                     </TableCell>
                     <TableCell>
                       {isEditing ? (
-                        <Select
-                          value={editing!.status}
-                          onValueChange={(v) => setEditing({ ...editing!, status: v as Status })}
-                        >
+                        <Select value={editing!.status} onValueChange={(v) => setEditing({ ...editing!, status: v as Status })}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
-                              <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
-                            ))}
+                            {(Object.keys(STATUS_LABEL) as Status[]).map((s) => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Badge variant={p.status === "published" ? "default" : "secondary"}>
-                          {STATUS_LABEL[p.status]}
-                        </Badge>
+                        <Badge variant={p.status === "published" ? "default" : "secondary"}>{STATUS_LABEL[p.status]}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
                       {isEditing ? (
                         <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => update.mutate(editing!)}>
-                            <Save className="w-4 h-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => setEditing(null)}>
-                            <X className="w-4 h-4" />
-                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => update.mutate(editing!)}><Save className="w-4 h-4" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => setEditing(null)}><X className="w-4 h-4" /></Button>
                         </div>
                       ) : (
                         <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => setEditing(p)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => {
-                              if (confirm("Excluir este princípio?")) remove.mutate(p.id);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => setEditing(p)}><Pencil className="w-4 h-4" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir este princípio?")) remove.mutate(p.id); }}><Trash2 className="w-4 h-4" /></Button>
                         </div>
                       )}
                     </TableCell>
