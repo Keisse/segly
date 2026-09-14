@@ -75,7 +75,7 @@ const AdministradoresPage = () => {
     },
   });
 
-  const leaders = (admins || []).filter((a) => a.role === "admin" || a.role === "lider");
+  const leaders = (admins || []).filter((a) => a.role === "lider");
 
   const slots: Slot[] = useMemo(() => {
     const list = admins || [];
@@ -104,6 +104,10 @@ const AdministradoresPage = () => {
       toast.error("Preencha e-mail e senha");
       return;
     }
+    if (createRole === "user" && !liderId) {
+      toast.error("Selecione o líder responsável pelo novo liderado.");
+      return;
+    }
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("manage-admins", {
@@ -113,7 +117,7 @@ const AdministradoresPage = () => {
           password,
           role: createRole,
           displayName: displayName || null,
-          liderId: createRole === "user" ? (liderId || null) : null,
+          liderId: createRole === "user" ? liderId : null,
         },
       });
       if (error) throw error;
@@ -139,6 +143,10 @@ const AdministradoresPage = () => {
 
   const handleSaveEdit = async () => {
     if (!editUser) return;
+    if (editRole === "user" && !editLiderId) {
+      toast.error("Selecione o líder responsável por este liderado.");
+      return;
+    }
     setSavingEdit(true);
     try {
       const { data, error } = await supabase.functions.invoke("manage-admins", {
@@ -148,7 +156,7 @@ const AdministradoresPage = () => {
           email: editEmail,
           displayName: editName || null,
           role: editRole,
-          liderId: editRole === "user" ? (editLiderId || null) : null,
+          liderId: editRole === "user" ? editLiderId : null,
         },
       });
       if (error) throw error;
@@ -286,7 +294,6 @@ const AdministradoresPage = () => {
         </Button>
       </div>
 
-      {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
@@ -308,7 +315,7 @@ const AdministradoresPage = () => {
             </div>
             <div className="space-y-1">
               <Label>Papel</Label>
-              <Select value={createRole} onValueChange={(v) => setCreateRole(v as Role)}>
+              <Select value={createRole} onValueChange={(v) => { setCreateRole(v as Role); if (v !== "user") setLiderId(""); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Usuário</SelectItem>
@@ -317,23 +324,28 @@ const AdministradoresPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            {createRole === "user" && leaders.length > 0 && (
+            {createRole === "user" && (
               <div className="space-y-1">
-                <Label>Líder responsável</Label>
-                <Select value={liderId} onValueChange={setLiderId}>
-                  <SelectTrigger><SelectValue placeholder="Selecione um líder" /></SelectTrigger>
-                  <SelectContent>
-                    {leaders.map((l) => (
-                      <SelectItem key={l.id} value={l.id}>{l.display_name || l.email}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Líder responsável *</Label>
+                {leaders.length > 0 ? (
+                  <Select value={liderId} onValueChange={setLiderId}>
+                    <SelectTrigger><SelectValue placeholder="Selecione quem lidera este usuário" /></SelectTrigger>
+                    <SelectContent>
+                      {leaders.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>{l.display_name || l.email}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm text-destructive">Cadastre um usuário com papel Líder antes de adicionar um liderado.</p>
+                )}
+                <p className="text-xs text-muted-foreground">Todo liderado precisa estar vinculado a um líder.</p>
               </div>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={submitting}>
+            <Button onClick={handleCreate} disabled={submitting || (createRole === "user" && leaders.length === 0)}>
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Cadastrar
             </Button>
@@ -341,7 +353,6 @@ const AdministradoresPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit dialog */}
       <Dialog open={!!editUser} onOpenChange={(o) => !o && setEditUser(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -359,7 +370,7 @@ const AdministradoresPage = () => {
             </div>
             <div className="space-y-1">
               <Label>Papel</Label>
-              <Select value={editRole} onValueChange={(v) => setEditRole(v as Role)}>
+              <Select value={editRole} onValueChange={(v) => { setEditRole(v as Role); if (v !== "user") setEditLiderId(""); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Usuário</SelectItem>
@@ -370,9 +381,9 @@ const AdministradoresPage = () => {
             </div>
             {editRole === "user" && (
               <div className="space-y-1">
-                <Label>Líder responsável</Label>
+                <Label>Líder responsável *</Label>
                 <Select value={editLiderId} onValueChange={setEditLiderId}>
-                  <SelectTrigger><SelectValue placeholder="Selecione um líder" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecione quem lidera este usuário" /></SelectTrigger>
                   <SelectContent>
                     {leaders.filter((l) => l.id !== editUser?.id).map((l) => (
                       <SelectItem key={l.id} value={l.id}>{l.display_name || l.email}</SelectItem>
