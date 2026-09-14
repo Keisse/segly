@@ -20,6 +20,7 @@ export interface Lead {
   owner_id: string | null;
   pipeline_id: string | null;
   stage_id: string | null;
+  product_id: string | null;
   custom_fields: Record<string, unknown>;
 }
 
