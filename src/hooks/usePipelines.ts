@@ -55,25 +55,17 @@ async function maybeCelebrate(leadId: string, stageId: string) {
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
     const isAdmin = (roles || []).some((r: { role: string }) => r.role === "admin");
     const audience = (s.celebrate_audience ?? "team") as CelebrateAudience;
-    if (audience === "team" || isAdmin) {
-      fireConfetti(s.nome);
-    }
+    if (audience === "team" || isAdmin) fireConfetti(s.nome);
 
     const { data: prof } = await supabase.from("profiles").select("organization_id").eq("id", uid).maybeSingle();
     const orgId = (prof as { organization_id?: string } | null)?.organization_id;
     if (!orgId) return;
     const ch = supabase.channel(`celebrations:${orgId}`);
     await new Promise<void>((resolve) => {
-      ch.subscribe((status) => {
-        if (status === "SUBSCRIBED") resolve();
-      });
+      ch.subscribe((status) => { if (status === "SUBSCRIBED") resolve(); });
       setTimeout(() => resolve(), 1500);
     });
-    await ch.send({
-      type: "broadcast",
-      event: "celebrate",
-      payload: { audience, stage_name: s.nome, actor_id: uid },
-    });
+    await ch.send({ type: "broadcast", event: "celebrate", payload: { audience, stage_name: s.nome, actor_id: uid } });
     setTimeout(() => supabase.removeChannel(ch), 500);
   } catch {
     // silent
@@ -108,11 +100,7 @@ export function usePipelineStages(pipelineId: string | null | undefined) {
     queryKey: ["pipeline-stages", pipelineId],
     queryFn: async () => {
       if (!pipelineId) return [];
-      const { data, error } = await supabase
-        .from("pipeline_stages" as never)
-        .select("*")
-        .eq("pipeline_id", pipelineId)
-        .order("ordem");
+      const { data, error } = await supabase.from("pipeline_stages" as never).select("*").eq("pipeline_id", pipelineId).order("ordem");
       if (error) throw error;
       return (data as unknown as PipelineStage[]) ?? [];
     },
@@ -130,17 +118,7 @@ export function useCreatePipeline() {
       if (!orgId) throw new Error("Organização não encontrada");
       const { data: existing } = await supabase.from("pipelines" as never).select("id, ordem").eq("organization_id", orgId).order("ordem", { ascending: false }).limit(1);
       const nextOrder = ((existing as { ordem: number }[] | null)?.[0]?.ordem ?? -1) + 1;
-      const { data: p, error } = await supabase
-        .from("pipelines" as never)
-        .insert({
-          organization_id: orgId,
-          nome: input.nome,
-          descricao: input.descricao ?? null,
-          cor: input.cor ?? "#1D9E75",
-          ordem: nextOrder,
-        } as never)
-        .select()
-        .single();
+      const { data: p, error } = await supabase.from("pipelines" as never).insert({ organization_id: orgId, nome: input.nome, descricao: input.descricao ?? null, cor: input.cor ?? "#1D9E75", ordem: nextOrder } as never).select().single();
       if (error) throw error;
       const created = p as unknown as Pipeline;
       if (input.withDefaultStages) {
@@ -150,27 +128,14 @@ export function useCreatePipeline() {
       }
       return created;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pipelines"] });
-      toast.success("Pipeline criado!");
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["pipelines"] }); toast.success("Pipeline criado!"); },
     onError: (e: Error) => toast.error(e.message || "Erro ao criar pipeline"),
   });
 }
 
 export function useUpdatePipeline() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Pipeline> }) => {
-      const { error } = await supabase.from("pipelines" as never).update(patch as never).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pipelines"] });
-      toast.success("Pipeline atualizado.");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  return useMutation({ mutationFn: async ({ id, patch }: { id: string; patch: Partial<Pipeline> }) => { const { error } = await supabase.from("pipelines" as never).update(patch as never).eq("id", id); if (error) throw error; }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["pipelines"] }); toast.success("Pipeline atualizado."); }, onError: (e: Error) => toast.error(e.message) });
 }
 
 export function useDeletePipeline() {
@@ -186,58 +151,24 @@ export function useDeletePipeline() {
       const { error } = await supabase.from("pipelines" as never).delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pipelines"] });
-      qc.invalidateQueries({ queryKey: ["leads"] });
-      toast.success("Pipeline excluído.");
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["pipelines"] }); qc.invalidateQueries({ queryKey: ["leads"] }); toast.success("Pipeline excluído."); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
 
 export function useUpsertStage() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (stage: Partial<PipelineStage> & { pipeline_id: string }) => {
-      if (stage.id) {
-        const { error } = await supabase.from("pipeline_stages" as never).update(stage as never).eq("id", stage.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("pipeline_stages" as never).insert(stage as never);
-        if (error) throw error;
-      }
-    },
-    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ["pipeline-stages", v.pipeline_id] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
+  return useMutation({ mutationFn: async (stage: Partial<PipelineStage> & { pipeline_id: string }) => { if (stage.id) { const { error } = await supabase.from("pipeline_stages" as never).update(stage as never).eq("id", stage.id); if (error) throw error; } else { const { error } = await supabase.from("pipeline_stages" as never).insert(stage as never); if (error) throw error; } }, onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ["pipeline-stages", v.pipeline_id] }), onError: (e: Error) => toast.error(e.message) });
 }
 
 export function useDeleteStage() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id }: { id: string; pipelineId: string }) => {
-      const { error } = await supabase.from("pipeline_stages" as never).delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ["pipeline-stages", v.pipelineId] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
+  return useMutation({ mutationFn: async ({ id }: { id: string; pipelineId: string }) => { const { error } = await supabase.from("pipeline_stages" as never).delete().eq("id", id); if (error) throw error; }, onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ["pipeline-stages", v.pipelineId] }), onError: (e: Error) => toast.error(e.message) });
 }
 
 export function useReorderStages() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ pipelineId, stages }: { pipelineId: string; stages: PipelineStage[] }) => {
-      for (let i = 0; i < stages.length; i++) {
-        const s = stages[i];
-        if (s.ordem !== i) {
-          await supabase.from("pipeline_stages" as never).update({ ordem: i } as never).eq("id", s.id);
-        }
-      }
-      return pipelineId;
-    },
-    onSuccess: (pipelineId) => qc.invalidateQueries({ queryKey: ["pipeline-stages", pipelineId] }),
-  });
+  return useMutation({ mutationFn: async ({ pipelineId, stages }: { pipelineId: string; stages: PipelineStage[] }) => { for (let i = 0; i < stages.length; i++) { const s = stages[i]; if (s.ordem !== i) await supabase.from("pipeline_stages" as never).update({ ordem: i } as never).eq("id", s.id); } return pipelineId; }, onSuccess: (pipelineId) => qc.invalidateQueries({ queryKey: ["pipeline-stages", pipelineId] }) });
 }
 
 export function useUpdateLeadStage() {
@@ -248,10 +179,7 @@ export function useUpdateLeadStage() {
       if (error) throw error;
       await maybeCelebrate(leadId, stageId);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
-      qc.invalidateQueries({ queryKey: ["leads"] });
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["leads-by-pipeline"] }); qc.invalidateQueries({ queryKey: ["leads"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
@@ -263,7 +191,7 @@ export function useLeadsByPipeline(pipelineId: string | null | undefined) {
       if (!pipelineId) return [];
       const { data, error } = await supabase
         .from("leads")
-        .select("id, nome, empresa, cargo, email, telefone, fonte, custom_fields, stage_id, owner_id, status, resultado_diagnostico, created_at, pipeline_id")
+        .select("id, nome, empresa, cargo, email, telefone, fonte, custom_fields, stage_id, owner_id, status, resultado_diagnostico, created_at, stage_entered_at, pipeline_id")
         .eq("pipeline_id", pipelineId)
         .order("created_at", { ascending: false });
       if (error) throw error;
