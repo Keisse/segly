@@ -86,7 +86,7 @@ export function usePipelines(opts?: { includeArchived?: boolean }) {
   return useQuery({
     queryKey: ["pipelines", opts?.includeArchived ?? false],
     queryFn: async () => {
-      let q = supabase.from("pipelines" as never).select("*").order("ordem");
+      let q = supabase.from("pipelines" as never).select("*").order("is_default", { ascending: false }).order("ordem");
       if (!opts?.includeArchived) q = q.eq("arquivado", false);
       const { data, error } = await q;
       if (error) throw error;
@@ -142,6 +142,16 @@ export function useDeletePipeline() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, moveLeadsTo }: { id: string; moveLeadsTo?: string | null }) => {
+      const { data: pipeline, error: pipelineError } = await supabase
+        .from("pipelines" as never)
+        .select("id, is_default")
+        .eq("id", id)
+        .maybeSingle();
+      if (pipelineError) throw pipelineError;
+      if ((pipeline as { is_default?: boolean } | null)?.is_default) {
+        throw new Error("O pipeline padrão não pode ser excluído. Defina outro pipeline como padrão antes de excluir este.");
+      }
+
       if (moveLeadsTo) {
         const { data: firstStage } = await supabase.from("pipeline_stages" as never).select("id").eq("pipeline_id", moveLeadsTo).order("ordem").limit(1).maybeSingle();
         const stageId = (firstStage as { id: string } | null)?.id ?? null;
