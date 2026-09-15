@@ -144,8 +144,8 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                 <div className="min-w-0"><p className="mb-1.5 text-xs text-muted-foreground">Etapa</p><StagePicker leadId={lead.id} pipelineId={lead.pipeline_id} stageId={lead.stage_id} /></div>
               </div>
 
-              <div className="flex items-center justify-between gap-3 pt-1">
-                <Badge variant="outline" className="max-w-[70%] truncate">{lead.campaign_name || "Sem campanha"}</Badge>
+              <div className="flex items-center justify-end gap-3 pt-1">
+                {lead.campaign_name && <Badge variant="outline" className="max-w-[70%] truncate">{lead.campaign_name}</Badge>}
                 <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4 mr-1.5" />Excluir</Button></AlertDialogTrigger>
                   <AlertDialogContent className="bg-card border-border"><AlertDialogHeader><AlertDialogTitle>Excluir Lead</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o lead <strong>{capitalizeWords(lead.nome)}</strong>? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => deleteLead.mutate(lead.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                 </AlertDialog>
