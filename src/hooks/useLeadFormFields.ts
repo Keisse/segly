@@ -110,14 +110,23 @@ export function useReorderLeadFormFields() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (fields: LeadFormField[]) => {
-      for (let i = 0; i < fields.length; i++) {
-        if (fields[i].ordem !== i) {
-          const { error } = await supabase.from("lead_form_fields").update({ ordem: i } as never).eq("id", fields[i].id);
+      const results = await Promise.all(
+        fields.map(async (field, index) => {
+          const { error } = await supabase
+            .from("lead_form_fields")
+            .update({ ordem: index } as never)
+            .eq("id", field.id)
+            .eq("form_id", field.form_id);
           if (error) throw error;
-        }
-      }
+          return { id: field.id, ordem: index };
+        }),
+      );
+      return results;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lead-form-fields"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lead-form-fields"] });
+      toast.success("Ordem das perguntas atualizada.");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
