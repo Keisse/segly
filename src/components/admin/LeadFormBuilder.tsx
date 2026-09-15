@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragEndEvent,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -96,12 +97,24 @@ function FieldRow({ field, onEdit, onToggle, onDelete }: {
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: field.id });
   const protectedField = CORE_KEYS.has(field.field_key) || field.is_system;
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.55 : 1,
+    zIndex: isDragging ? 20 : undefined,
+  };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card">
-      <button type="button" className="cursor-grab active:cursor-grabbing text-muted-foreground" {...attributes} {...listeners}>
-        <GripVertical className="w-4 h-4" />
+    <div ref={setNodeRef} style={style} className={`flex items-center gap-3 p-3 rounded-lg border bg-card ${isDragging ? "border-primary shadow-lg" : "border-border/60"}`}>
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground touch-none select-none p-2 -m-2"
+        aria-label={`Arrastar ${field.label}`}
+        title="Arraste para alterar a ordem"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-5 h-5" />
       </button>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -137,6 +150,7 @@ export function LeadFormBuilder() {
     [forms, selectedFormId],
   );
   const { data: fields = [], isLoading: loadingFields } = useLeadFormFields({ formId: selectedForm?.id ?? null });
+  const [orderedFields, setOrderedFields] = useState<LeadFormField[]>([]);
   const createForm = useCreateLeadForm();
   const updateForm = useUpdateLeadForm();
   const deleteForm = useDeleteLeadForm();
@@ -150,16 +164,30 @@ export function LeadFormBuilder() {
   const [editing, setEditing] = useState<EditingField | null>(null);
   const [confirmDeleteField, setConfirmDeleteField] = useState<LeadFormField | null>(null);
   const [confirmDeleteForm, setConfirmDeleteForm] = useState<LeadForm | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 140, tolerance: 8 } }),
+  );
+
+  useEffect(() => {
+    setOrderedFields(fields);
+  }, [fields]);
 
   if (!isAdmin) return <div className="p-6 rounded-lg border border-border/60 bg-card text-center text-muted-foreground">Somente administradores podem editar os Formulários Padrão.</div>;
 
   const handleDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const oldIdx = fields.findIndex((f) => f.id === active.id);
-    const newIdx = fields.findIndex((f) => f.id === over.id);
-    reorder.mutate(arrayMove(fields, oldIdx, newIdx));
+    if (!over || active.id === over.id || reorder.isPending) return;
+    const oldIdx = orderedFields.findIndex((f) => f.id === active.id);
+    const newIdx = orderedFields.findIndex((f) => f.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+
+    const next = arrayMove(orderedFields, oldIdx, newIdx).map((field, index) => ({ ...field, ordem: index }));
+    setOrderedFields(next);
+    reorder.mutate(next, {
+      onError: () => setOrderedFields(fields),
+    });
   };
 
   const startNewField = () => {
@@ -177,7 +205,7 @@ export function LeadFormBuilder() {
       options: [],
       _optionsText: "",
       is_system: false,
-      ordem: fields.length,
+      ordem: orderedFields.length,
     });
   };
 
@@ -203,7 +231,7 @@ export function LeadFormBuilder() {
       help_text: editing.help_text || null,
       default_value: editing.default_value || null,
       options,
-      ordem: editing.ordem ?? fields.length,
+      ordem: editing.ordem ?? orderedFields.length,
     }, { onSuccess: () => setEditing(null) });
   };
 
@@ -253,7 +281,7 @@ export function LeadFormBuilder() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h3 className="font-semibold">{selectedForm.name}</h3>
-              <p className="text-xs text-muted-foreground">Os 5 campos principais são obrigatórios em todo formulário e não podem ser removidos.</p>
+              <p className="text-xs text-muted-foreground">Os 5 campos principais são obrigatórios em todo formulário e não podem ser removidos. Arraste pelo ícone à esquerda para mudar a ordem.</p>
             </div>
             <div className="flex gap-2 flex-wrap">
               {!selectedForm.is_default && <Button variant="outline" size="sm" onClick={() => updateForm.mutate({ id: selectedForm.id, patch: { is_default: true, active: true } })}><Star className="w-4 h-4 mr-1.5" />Marcar como padrão</Button>}
@@ -265,9 +293,9 @@ export function LeadFormBuilder() {
 
           {loadingFields ? <p className="text-sm text-muted-foreground">Carregando campos…</p> : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {fields.map((field) => <FieldRow key={field.id} field={field} onEdit={() => setEditing({ ...field, _optionsText: (field.options || []).join("\n") })} onToggle={(active) => upsert.mutate({ id: field.id, active })} onDelete={() => setConfirmDeleteField(field)} />)}
+              <SortableContext items={orderedFields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+                <div className={`space-y-2 ${reorder.isPending ? "opacity-80" : ""}`}>
+                  {orderedFields.map((field) => <FieldRow key={field.id} field={field} onEdit={() => setEditing({ ...field, _optionsText: (field.options || []).join("\n") })} onToggle={(active) => upsert.mutate({ id: field.id, active })} onDelete={() => setConfirmDeleteField(field)} />)}
                 </div>
               </SortableContext>
             </DndContext>
