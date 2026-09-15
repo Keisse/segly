@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/hooks/useAuth";
 import { useMyRole } from "@/hooks/useMyRole";
 
-type Pipeline = { id: string; nome: string; cor: string | null };
+type Pipeline = { id: string; nome: string; cor: string | null; is_default?: boolean };
 
 interface Props {
   pipelines: Pipeline[];
@@ -22,35 +22,40 @@ export function PipelineTabs({ pipelines, activeId, onSelect }: Props) {
   const isAdmin = role === "admin";
   const [openIds, setOpenIds] = useState<string[]>([]);
   const [popOpen, setPopOpen] = useState(false);
+  const defaultPipeline = useMemo(() => pipelines.find((p) => p.is_default) ?? null, [pipelines]);
 
-  // Load persisted tabs; default to all pipelines
+  // Load persisted tabs, but always restore the organization's default pipeline.
   useEffect(() => {
     if (!user) return;
     const raw = localStorage.getItem(storageKey(user.id));
     if (raw) {
       try {
         const arr = JSON.parse(raw) as string[];
-        setOpenIds(arr.filter((id) => pipelines.some((p) => p.id === id)));
+        const valid = arr.filter((id) => pipelines.some((p) => p.id === id));
+        if (defaultPipeline && !valid.includes(defaultPipeline.id)) valid.push(defaultPipeline.id);
+        setOpenIds(valid.length ? valid : pipelines.map((p) => p.id));
         return;
       } catch {
         // ignore
       }
     }
     setOpenIds(pipelines.map((p) => p.id));
-  }, [user, pipelines]);
+  }, [user, pipelines, defaultPipeline]);
 
-  // Persist
   useEffect(() => {
     if (!user) return;
     localStorage.setItem(storageKey(user.id), JSON.stringify(openIds));
   }, [user, openIds]);
 
-  // Ensure active pipeline is always visible as a tab
+  // Active and default pipelines must always stay visible as tabs.
   useEffect(() => {
-    if (activeId && !openIds.includes(activeId) && pipelines.some((p) => p.id === activeId)) {
-      setOpenIds((prev) => [...prev, activeId]);
-    }
-  }, [activeId, openIds, pipelines]);
+    setOpenIds((prev) => {
+      const next = prev.filter((id) => pipelines.some((p) => p.id === id));
+      if (defaultPipeline && !next.includes(defaultPipeline.id)) next.push(defaultPipeline.id);
+      if (activeId && pipelines.some((p) => p.id === activeId) && !next.includes(activeId)) next.push(activeId);
+      return next.length === prev.length && next.every((id, index) => id === prev[index]) ? prev : next;
+    });
+  }, [activeId, pipelines, defaultPipeline]);
 
   const openTabs = useMemo(
     () => openIds.map((id) => pipelines.find((p) => p.id === id)).filter(Boolean) as Pipeline[],
@@ -69,6 +74,7 @@ export function PipelineTabs({ pipelines, activeId, onSelect }: Props) {
 
   const closeTab = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (id === defaultPipeline?.id) return;
     const remaining = openIds.filter((x) => x !== id);
     setOpenIds(remaining);
     if (id === activeId && remaining.length > 0) onSelect(remaining[0]);
@@ -78,6 +84,7 @@ export function PipelineTabs({ pipelines, activeId, onSelect }: Props) {
     <div className="flex items-center gap-1 border-b border-border overflow-x-auto">
       {openTabs.map((p) => {
         const active = p.id === activeId;
+        const isDefault = p.id === defaultPipeline?.id;
         return (
           <button
             key={p.id}
@@ -93,7 +100,7 @@ export function PipelineTabs({ pipelines, activeId, onSelect }: Props) {
               style={{ background: p.cor ?? "#1D9E75" }}
             />
             {p.nome}
-            {openTabs.length > 1 && (
+            {openTabs.length > 1 && !isDefault && (
               <span
                 role="button"
                 onClick={(e) => closeTab(e, p.id)}
