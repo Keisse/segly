@@ -27,7 +27,14 @@ type ProductRow = {
   notes: string | null;
 };
 
-type InsurerRow = { id: string; organization_id: string; name: string; active: boolean; notes: string | null };
+type InsurerRow = {
+  id: string;
+  organization_id: string;
+  name: string;
+  active: boolean;
+  notes: string | null;
+  deleted_at: string | null;
+};
 
 const categories = ["Saúde", "Odonto", "Vida", "Viagem", "Consórcio", "Auto", "Imobiliário", "Outro"];
 const contractTypes = ["Adesão", "PME", "Individual", "Familiar", "Empresarial", "Outro"];
@@ -38,10 +45,26 @@ export default function ProdutosPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [insurerOpen, setInsurerOpen] = useState(false);
+  const [insurerActionOpen, setInsurerActionOpen] = useState(false);
+  const [selectedInsurer, setSelectedInsurer] = useState<InsurerRow | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [insurerName, setInsurerName] = useState("");
   const [insurerNotes, setInsurerNotes] = useState("");
+
+  const invalidateInsurerData = () => {
+    qc.invalidateQueries({ queryKey: ["insurers-admin"] });
+    qc.invalidateQueries({ queryKey: ["products-admin"] });
+    qc.invalidateQueries({ queryKey: ["active-products-for-sale"] });
+    qc.invalidateQueries({ queryKey: ["proposal-products"] });
+  };
+
+  const closeInsurerAction = () => {
+    setInsurerActionOpen(false);
+    setSelectedInsurer(null);
+    setDeleteConfirmation("");
+  };
 
   const { data: profile } = useQuery({
     queryKey: ["products-my-org", user?.id],
@@ -50,7 +73,8 @@ export default function ProdutosPage() {
       const { data, error } = await supabase.from("profiles").select("organization_id").eq("id", user.id).single();
       if (error) throw error;
       return data as { organization_id: string };
-    }, enabled: !!user,
+    },
+    enabled: !!user,
   });
 
   const { data: products = [], isLoading } = useQuery({
@@ -65,7 +89,12 @@ export default function ProdutosPage() {
   const { data: insurers = [] } = useQuery({
     queryKey: ["insurers-admin"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("insurers" as never).select("id,organization_id,name,active,notes").order("active", { ascending: false }).order("name");
+      const { data, error } = await supabase
+        .from("insurers" as never)
+        .select("id,organization_id,name,active,notes,deleted_at")
+        .is("deleted_at", null)
+        .order("active", { ascending: false })
+        .order("name");
       if (error) throw error;
       return (data ?? []) as unknown as InsurerRow[];
     },
@@ -114,25 +143,59 @@ export default function ProdutosPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const toggleInsurer = useMutation({
+  const pauseInsurer = useMutation({
     mutationFn: async (insurer: InsurerRow) => {
-      const { error } = await supabase.from("insurers" as never).update({ active: !insurer.active, updated_at: new Date().toISOString() } as never).eq("id", insurer.id);
+      const { error } = await supabase.from("insurers" as never).update({ active: false, updated_at: new Date().toISOString() } as never).eq("id", insurer.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["insurers-admin"] }),
+    onSuccess: () => { invalidateInsurerData(); closeInsurerAction(); toast.success("Operadora pausada. Os produtos vinculados também foram pausados."); },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  const reactivateInsurer = useMutation({
+    mutationFn: async (insurer: InsurerRow) => {
+      const { error } = await supabase.from("insurers" as never).update({ active: true, updated_at: new Date().toISOString() } as never).eq("id", insurer.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { invalidateInsurerData(); toast.success("Operadora reativada. Reative os produtos desejados separadamente."); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const deleteInsurer = useMutation({
+    mutationFn: async (insurer: InsurerRow) => {
+      if (!user) throw new Error("Usuário não encontrado.");
+      if (deleteConfirmation !== "Excluir") throw new Error("Digite Excluir para confirmar.");
+      const now = new Date().toISOString();
+      const { error } = await supabase.from("insurers" as never).update({ active: false, deleted_at: now, deleted_by: user.id, updated_at: now } as never).eq("id", insurer.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { invalidateInsurerData(); closeInsurerAction(); toast.success("Operadora excluída. O histórico foi preservado."); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const openInsurerAction = (insurer: InsurerRow) => {
+    if (!insurer.active) {
+      reactivateInsurer.mutate(insurer);
+      return;
+    }
+    setSelectedInsurer(insurer);
+    setDeleteConfirmation("");
+    setInsurerActionOpen(true);
+  };
 
   const toggle = useMutation({
     mutationFn: async (product: ProductRow) => {
       const { error } = await supabase.from("products" as never).update({ active: !product.active, updated_at: new Date().toISOString() } as never).eq("id", product.id);
       if (error) throw error;
-    }, onSuccess: () => qc.invalidateQueries({ queryKey: ["products-admin"] }), onError: (error: Error) => toast.error(error.message),
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products-admin"] }),
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const remove = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("products" as never).delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["products-admin"] }); toast.success("Produto excluído."); }, onError: (error: Error) => toast.error(error.message),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["products-admin"] }); toast.success("Produto excluído."); },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   return (
@@ -148,9 +211,20 @@ export default function ProdutosPage() {
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Regra padrão</p><p className="text-sm font-semibold mt-1">Corretor: 50% da comissão da administradora</p></CardContent></Card>
       </div>
 
-      <Card><CardHeader><CardTitle className="text-base">Seguradoras / operadoras</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">
-        {insurers.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma operadora cadastrada.</p> : insurers.map((insurer) => <div key={insurer.id} className="flex items-center gap-2 rounded-lg border px-3 py-2"><span className="text-sm font-medium">{insurer.name}</span><Badge variant={insurer.active ? "secondary" : "outline"}>{insurer.active ? "Ativa" : "Inativa"}</Badge><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleInsurer.mutate(insurer)}><Power className="h-3.5 w-3.5" /></Button></div>)}
-      </CardContent></Card>
+      <Card>
+        <CardHeader><CardTitle className="text-base">Seguradoras / operadoras</CardTitle></CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          {insurers.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma operadora cadastrada.</p> : insurers.map((insurer) => (
+            <div key={insurer.id} className="flex items-center gap-2 rounded-lg border px-3 py-2">
+              <span className="text-sm font-medium">{insurer.name}</span>
+              <Badge variant={insurer.active ? "secondary" : "outline"}>{insurer.active ? "Ativa" : "Inativa"}</Badge>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title={insurer.active ? "Pausar ou excluir" : "Reativar operadora"} onClick={() => openInsurerAction(insurer)} disabled={reactivateInsurer.isPending}>
+                <Power className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card><CardHeader><CardTitle className="text-base">Produtos</CardTitle></CardHeader><CardContent className="space-y-3">
         {isLoading ? <p className="text-sm text-muted-foreground">Carregando produtos...</p> : products.length === 0 ? <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum produto cadastrado ainda.</div> : products.map((product) => (
@@ -163,6 +237,27 @@ export default function ProdutosPage() {
           </div>
         ))}
       </CardContent></Card>
+
+      <Dialog open={insurerActionOpen} onOpenChange={(next) => { if (!next) closeInsurerAction(); else setInsurerActionOpen(true); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>O que deseja fazer com {selectedInsurer?.name}?</DialogTitle>
+            <DialogDescription>Escolha entre pausar temporariamente ou excluir a operadora dos novos cadastros.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-xl border p-4 space-y-3">
+              <div><p className="font-semibold">Pausar operadora</p><p className="text-sm text-muted-foreground mt-1">Ela ficará inativa e poderá ser reativada depois. Produtos vinculados também serão pausados.</p></div>
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => selectedInsurer && pauseInsurer.mutate(selectedInsurer)} disabled={pauseInsurer.isPending || deleteInsurer.isPending}><Power className="h-4 w-4 mr-2" />Pausar operadora</Button>
+            </div>
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-3">
+              <div><p className="font-semibold text-destructive">Excluir operadora</p><p className="text-sm text-muted-foreground mt-1">Ela será removida dos novos cadastros. Produtos vinculados serão pausados, mas propostas, vendas, comissões e auditoria permanecerão preservadas.</p></div>
+              <div className="space-y-1.5"><Label>Para confirmar, digite <strong>Excluir</strong></Label><Input value={deleteConfirmation} onChange={(e) => setDeleteConfirmation(e.target.value)} placeholder="Excluir" autoComplete="off" /></div>
+              <Button variant="destructive" className="w-full sm:w-auto" onClick={() => selectedInsurer && deleteInsurer.mutate(selectedInsurer)} disabled={deleteConfirmation !== "Excluir" || deleteInsurer.isPending || pauseInsurer.isPending}><Trash2 className="h-4 w-4 mr-2" />Excluir operadora</Button>
+            </div>
+          </div>
+          <DialogFooter><Button variant="ghost" onClick={closeInsurerAction}>Cancelar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={insurerOpen} onOpenChange={setInsurerOpen}><DialogContent><DialogHeader><DialogTitle>Cadastrar seguradora / operadora</DialogTitle><DialogDescription>Depois do cadastro, ela poderá ser vinculada aos produtos.</DialogDescription></DialogHeader><div className="space-y-4"><div className="space-y-1.5"><Label>Nome *</Label><Input value={insurerName} onChange={(e) => setInsurerName(e.target.value)} placeholder="Ex.: Unimed" /></div><div className="space-y-1.5"><Label>Observações</Label><Textarea value={insurerNotes} onChange={(e) => setInsurerNotes(e.target.value)} /></div></div><DialogFooter><Button variant="outline" onClick={() => setInsurerOpen(false)}>Cancelar</Button><Button onClick={() => saveInsurer.mutate()} disabled={saveInsurer.isPending}>Cadastrar</Button></DialogFooter></DialogContent></Dialog>
 
