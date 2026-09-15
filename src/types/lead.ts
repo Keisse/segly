@@ -5,7 +5,6 @@ export interface Lead {
   telefone: string;
   email: string;
   empresa: string;
-  cnpj: string | null;
   porte_empresa: string;
   departamento: string;
   cargo: string;
