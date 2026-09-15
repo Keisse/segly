@@ -28,7 +28,7 @@ const LeadsPage = () => {
         <div>
           <h1 className="text-2xl font-display font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">
-            Lista centralizada com busca, filtros e ordenação. O acesso respeita seu papel.
+            Lista centralizada com busca, ordenação, responsável e etapa do pipeline. O acesso respeita seu papel.
           </p>
         </div>
         <Button onClick={() => navigate("/admin/leads/novo")}>
