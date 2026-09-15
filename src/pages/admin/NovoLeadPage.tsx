@@ -91,14 +91,14 @@ const NovoLeadPage = () => {
       if (!p?.organization_id) throw new Error("Organização não configurada.");
 
       const customFields = {
-        cnpj: form.cnpj, responsavel_proprietario: form.proprietario, plano_saude_operadora: form.planoSaudeOperadora,
+        responsavel_proprietario: form.proprietario, plano_saude_operadora: form.planoSaudeOperadora,
         acomodacao: form.acomodacao, coparticipacao: form.coparticipacao, plano_odontologico: form.planoOdontologico,
         tipo_plano: form.tipoPlano, quantidade_pessoas: form.quantidadePessoas || null,
         datas_nascimento: form.datasNascimento, comentarios: form.comentarios || null,
       };
 
       const { data: inserted, error } = await supabase.from("leads").insert({
-        nome: form.responsavel.trim(), telefone: form.telefone.trim(), email: form.email.trim(), empresa: form.empresa.trim(),
+        nome: form.responsavel.trim(), telefone: form.telefone.trim(), email: form.email.trim(), empresa: form.empresa.trim(), cnpj: form.cnpj.trim(),
         porte_empresa: "", departamento: "", cargo: "", custom_fields: customFields,
         organization_id: p.organization_id, owner_id: user.id, fonte: "manual",
       } as never).select("id, historico").single();
