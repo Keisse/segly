@@ -6,14 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, User, MapPin, KeyRound, Eye, EyeOff, Sparkles, BookmarkCheck, Trash2 } from "lucide-react";
 import { usePrinciplePrefs, useSavedPrinciples, useSavePrinciple } from "@/hooks/usePrinciple";
 import { PrincipioDoDiaDialog } from "@/components/admin/PrincipioDoDiaDialog";
-
 
 type Profile = {
   display_name: string | null;
@@ -44,7 +41,6 @@ const MeuPerfilPage = () => {
   const [profile, setProfile] = useState<Profile>(empty);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -53,40 +49,24 @@ const MeuPerfilPage = () => {
 
   const initials = useMemo(() => {
     const source = profile.display_name || user?.email || "";
-    return source
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((s) => s[0]?.toUpperCase())
-      .join("") || "?";
+    return source.split(/\s+/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("") || "?";
   }, [profile.display_name, user?.email]);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("profiles" as any)
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
+      const { data } = await supabase.from("profiles" as any).select("*").eq("id", user.id).maybeSingle();
       if (data) setProfile({ ...empty, ...(data as any) });
       setLoading(false);
     })();
   }, [user]);
 
-  const set = <K extends keyof Profile>(k: K, v: Profile[K]) =>
-    setProfile((p) => ({ ...p, [k]: v }));
+  const set = <K extends keyof Profile>(k: K, v: Profile[K]) => setProfile((p) => ({ ...p, [k]: v }));
 
   const save = async () => {
     if (!user) return;
-    if (!profile.display_name?.trim()) {
-      toast.error("Nome é obrigatório");
-      return;
-    }
-    if (!profile.telefone?.trim()) {
-      toast.error("Número de telefone é obrigatório");
-      return;
-    }
+    if (!profile.display_name?.trim()) return toast.error("Nome é obrigatório");
+    if (!profile.telefone?.trim()) return toast.error("Número de telefone é obrigatório");
     setSaving(true);
     const payload: any = { id: user.id, ...profile };
     if (!payload.data_nascimento) payload.data_nascimento = null;
@@ -101,16 +81,9 @@ const MeuPerfilPage = () => {
     if (newPassword.length < 6) return toast.error("A nova senha precisa ter no mínimo 6 caracteres");
     if (newPassword !== confirmPassword) return toast.error("As senhas não coincidem");
     if (!currentPassword) return toast.error("Informe sua senha atual");
-
     setChangingPass(true);
-    const { error: signInErr } = await supabase.auth.signInWithPassword({
-      email: user.email!,
-      password: currentPassword,
-    });
-    if (signInErr) {
-      setChangingPass(false);
-      return toast.error("Senha atual incorreta");
-    }
+    const { error: signInErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: currentPassword });
+    if (signInErr) { setChangingPass(false); return toast.error("Senha atual incorreta"); }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setChangingPass(false);
     if (error) return toast.error(error.message);
@@ -118,37 +91,20 @@ const MeuPerfilPage = () => {
     toast.success("Senha redefinida com sucesso");
   };
 
-  if (loading) {
-    return (
-      <div className="p-10 flex justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (loading) return <div className="p-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Meu Perfil</h1>
-        <p className="text-sm text-muted-foreground">Gerencie seus dados pessoais, endereço e senha.</p>
-      </div>
+      <div><h1 className="text-2xl font-display font-bold">Meu Perfil</h1><p className="text-sm text-muted-foreground">Gerencie seus dados pessoais, endereço e senha.</p></div>
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
         <Card className="p-6 flex flex-col items-center text-center h-fit">
-          <p className="text-sm font-medium mb-3">Foto do perfil</p>
-          <div className="h-28 w-28 rounded-full bg-primary/15 flex items-center justify-center text-3xl font-semibold text-primary">
-            {initials}
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            Suas iniciais são geradas automaticamente a partir do nome completo.
-          </p>
+          <div className="h-28 w-28 rounded-full bg-primary/15 flex items-center justify-center text-3xl font-semibold text-primary">{initials}</div>
+          <p className="text-xs text-muted-foreground mt-3">Suas iniciais são geradas automaticamente a partir do nome completo.</p>
         </Card>
 
         <Card className="p-6 space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <User className="h-4 w-4 text-primary" />
-            Informações Básicas
-          </div>
+          <div className="flex items-center gap-2 text-sm font-semibold"><User className="h-4 w-4 text-primary" />Informações Básicas</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5"><Label>Nome *</Label><Input value={profile.display_name || ""} onChange={(e) => set("display_name", e.target.value)} /></div>
             <div className="space-y-1.5"><Label>E-mail</Label><Input value={user?.email || ""} disabled /></div>
@@ -187,10 +143,7 @@ const MeuPerfilPage = () => {
           <div className="space-y-1.5"><Label>Confirmar nova senha</Label><Input type={showPasswords ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
         </div>
         <div className="flex items-center justify-between pt-2">
-          <button type="button" onClick={() => setShowPasswords((s) => !s)} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground">
-            {showPasswords ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            {showPasswords ? "Ocultar senhas" : "Mostrar senhas"}
-          </button>
+          <button type="button" onClick={() => setShowPasswords((s) => !s)} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground">{showPasswords ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}{showPasswords ? "Ocultar senhas" : "Mostrar senhas"}</button>
           <Button onClick={changePassword} disabled={changingPass}>{changingPass && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}<KeyRound className="h-4 w-4 mr-2" />Redefinir senha</Button>
         </div>
       </Card>
@@ -208,33 +161,15 @@ function PrincipioSection() {
     <Card className="p-6 space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-primary" />Princípio do Dia</div>
       <p className="text-xs text-muted-foreground -mt-2">Uma frase curta e inspiradora sobre liderança, responsabilidade e propósito.</p>
-
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="flex items-center justify-between rounded-md border border-border p-3">
-          <div><p className="text-sm font-medium">Receber princípio diário</p><p className="text-xs text-muted-foreground">Recurso opcional e sem som.</p></div>
-          <Switch checked={prefs.enabled} disabled={isLoading} onCheckedChange={(v) => update({ enabled: v })} />
-        </div>
+        <div className="flex items-center justify-between rounded-md border border-border p-3"><div><p className="text-sm font-medium">Receber princípio diário</p><p className="text-xs text-muted-foreground">Recurso opcional e sem som.</p></div><Switch checked={prefs.enabled} disabled={isLoading} onCheckedChange={(v) => update({ enabled: v })} /></div>
         <div className="space-y-1.5"><Label>Quando exibir?</Label><Select value={prefs.when} onValueChange={(v) => update({ when: v as typeof prefs.when })} disabled={!prefs.enabled}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="first_access">No primeiro acesso do dia</SelectItem><SelectItem value="dashboard">Ao abrir o Dashboard</SelectItem><SelectItem value="on_demand">Somente quando eu solicitar</SelectItem></SelectContent></Select></div>
       </div>
-
-      <div className="flex justify-start"><Button variant="outline" size="sm" onClick={() => setOpen(true)}><Sparkles className="h-4 w-4 mr-2" /> Abrir princípio do dia</Button></div>
-
+      <div className="flex justify-start"><Button variant="outline" size="sm" onClick={() => setOpen(true)}><Sparkles className="h-4 w-4 mr-2" />Abrir princípio do dia</Button></div>
       <div className="pt-2">
-        <p className="text-sm font-medium mb-2 flex items-center gap-2"><BookmarkCheck className="h-4 w-4 text-primary" /> Princípios salvos</p>
-        {saved.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Você ainda não salvou nenhum princípio. Ao abrir o biscoito, use o botão Salvar.</p>
-        ) : (
-          <ul className="space-y-2">
-            {saved.map((s) => (
-              <li key={s.id} className="flex items-start justify-between gap-3 rounded-md border border-border p-3 text-sm">
-                <span className="italic text-foreground">“{s.principles.phrase}”</span>
-                <button onClick={() => unsave.mutateAsync({ historyId: s.id, saved: false })} className="text-muted-foreground hover:text-destructive transition" aria-label="Remover"><Trash2 className="h-4 w-4" /></button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <p className="text-sm font-medium mb-2 flex items-center gap-2"><BookmarkCheck className="h-4 w-4 text-primary" />Princípios salvos</p>
+        {saved.length === 0 ? <p className="text-xs text-muted-foreground">Você ainda não salvou nenhum princípio. Ao abrir o biscoito, use o botão Salvar.</p> : <ul className="space-y-2">{saved.map((s) => <li key={s.id} className="flex items-start justify-between gap-3 rounded-md border border-border p-3 text-sm"><span className="italic text-foreground">“{s.principles.phrase}”</span><button onClick={() => unsave.mutateAsync({ historyId: s.id, saved: false })} className="text-muted-foreground hover:text-destructive transition" aria-label="Remover"><Trash2 className="h-4 w-4" /></button></li>)}</ul>}
       </div>
-
       <PrincipioDoDiaDialog open={open} onOpenChange={setOpen} />
     </Card>
   );
