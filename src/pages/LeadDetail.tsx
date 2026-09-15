@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Mail, Phone, Building2, Briefcase, Users, Calendar, MessageSquare, Plus, Loader2, Pencil, Check, X } from "lucide-react";
@@ -14,11 +16,15 @@ import { LeadEditDialog } from "@/components/admin/LeadEditDialog";
 import { LeadProposalsPanel } from "@/components/admin/LeadProposalsPanel";
 import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors, type LeadStatus } from "@/types/lead";
 import { capitalizeWords } from "@/lib/formatName";
+import { formatPhone } from "@/lib/phone";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
 
 const seglyLogo = "/segly-logo.png";
+
 const customLabels: Record<string, string> = {
   cnpj: "CNPJ",
   responsavel_proprietario: "Responsável é proprietário?",
@@ -32,9 +38,53 @@ const customLabels: Record<string, string> = {
   comentarios: "Comentários",
 };
 
+type InfoField = {
+  key: string;
+  label: string;
+  source: "direct" | "custom";
+  sourceKey: string;
+  long?: boolean;
+  format?: "phone" | "document";
+};
+
+const infoFields: InfoField[] = [
+  { key: "empresa", label: "Nome da Empresa ou Pessoa Física", source: "direct", sourceKey: "empresa" },
+  { key: "cnpj", label: "CNPJ ou CPF", source: "custom", sourceKey: "cnpj", format: "document" },
+  { key: "nome", label: "Nome do responsável", source: "direct", sourceKey: "nome" },
+  { key: "telefone", label: "Telefone do responsável", source: "direct", sourceKey: "telefone", format: "phone" },
+  { key: "responsavel_proprietario", label: "O responsável é o proprietário?", source: "custom", sourceKey: "responsavel_proprietario" },
+  { key: "email", label: "E-mail", source: "direct", sourceKey: "email" },
+  { key: "plano_saude_operadora", label: "Tem plano de Saúde? Qual operadora?", source: "custom", sourceKey: "plano_saude_operadora" },
+  { key: "acomodacao", label: "Acomodação", source: "custom", sourceKey: "acomodacao" },
+  { key: "coparticipacao", label: "Tem coparticipação?", source: "custom", sourceKey: "coparticipacao" },
+  { key: "plano_odontologico", label: "Tem plano odontológico?", source: "custom", sourceKey: "plano_odontologico" },
+  { key: "tipo_plano", label: "Plano familiar ou empresarial?", source: "custom", sourceKey: "tipo_plano" },
+  { key: "quantidade_pessoas", label: "Quantas pessoas?", source: "custom", sourceKey: "quantidade_pessoas" },
+  { key: "datas_nascimento", label: "Data de nascimento de todos", source: "custom", sourceKey: "datas_nascimento", long: true },
+  { key: "comentarios", label: "Comentários", source: "custom", sourceKey: "comentarios", long: true },
+];
+
+const registrationCustomKeys = new Set(infoFields.filter((field) => field.source === "custom").map((field) => field.sourceKey));
+
+const formatCpfCnpj = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 11) {
+    return digits
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1-$2");
+  }
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+};
+
 const LeadDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data: role } = useMyRole();
   const { data: lead, isLoading } = useLead(id || "");
@@ -45,6 +95,9 @@ const LeadDetail = () => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
   const [editOpen, setEditOpen] = useState(false);
+  const [editingInfoKey, setEditingInfoKey] = useState<string | null>(null);
+  const [editingInfoValue, setEditingInfoValue] = useState("");
+  const [savingInfoKey, setSavingInfoKey] = useState<string | null>(null);
   const canViewAudit = role === "admin" || role === "lider";
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -56,6 +109,70 @@ const LeadDetail = () => {
   const pillarScores = lead.resultado_diagnostico?.pillarScores || [];
   const radarData = pillarScores.map((p) => ({ subject: p.pillarName, value: p.percentage }));
   const customEntries = Object.entries(lead.custom_fields || {}).filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "");
+  const stageEntries = customEntries.filter(([key]) => !registrationCustomKeys.has(key));
+
+  const getInfoValue = (field: InfoField) => {
+    if (field.source === "custom") return String(lead.custom_fields?.[field.sourceKey] ?? "");
+    return String((lead as unknown as Record<string, unknown>)[field.sourceKey] ?? "");
+  };
+
+  const startInfoEdit = (field: InfoField) => {
+    setEditingInfoKey(field.key);
+    setEditingInfoValue(getInfoValue(field));
+  };
+
+  const cancelInfoEdit = () => {
+    setEditingInfoKey(null);
+    setEditingInfoValue("");
+  };
+
+  const saveInfoField = async (field: InfoField) => {
+    setSavingInfoKey(field.key);
+    try {
+      let value = editingInfoValue.trim();
+      if (field.format === "phone") value = formatPhone(value);
+      if (field.format === "document") value = formatCpfCnpj(value);
+
+      if (field.source === "direct") {
+        const { error } = await supabase
+          .from("leads")
+          .update({ [field.sourceKey]: value } as never)
+          .eq("id", lead.id);
+        if (error) throw error;
+      } else {
+        const { data: currentLead, error: fetchError } = await supabase
+          .from("leads")
+          .select("custom_fields")
+          .eq("id", lead.id)
+          .single();
+        if (fetchError) throw fetchError;
+        const currentCustom = currentLead?.custom_fields && typeof currentLead.custom_fields === "object"
+          ? currentLead.custom_fields as Record<string, unknown>
+          : {};
+        const nextCustom = { ...currentCustom, [field.sourceKey]: value === "" ? null : value };
+        const { error } = await supabase
+          .from("leads")
+          .update({ custom_fields: nextCustom } as never)
+          .eq("id", lead.id);
+        if (error) throw error;
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["lead", lead.id] }),
+        queryClient.invalidateQueries({ queryKey: ["leads"] }),
+        queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-v2-leads"] }),
+        queryClient.invalidateQueries({ queryKey: ["lead-audit-timeline", lead.id] }),
+        queryClient.invalidateQueries({ queryKey: ["audit-events"] }),
+      ]);
+      toast.success(`${field.label} atualizado.`);
+      cancelInfoEdit();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a informação.");
+    } finally {
+      setSavingInfoKey(null);
+    }
+  };
 
   const handleAddNote = () => {
     if (!newNote.trim()) return;
@@ -101,9 +218,9 @@ const LeadDetail = () => {
 
         <LeadProposalsPanel leadId={lead.id} ownerId={lead.owner_id ?? null} currentProductId={lead.product_id ?? null} customFields={lead.custom_fields} />
 
-        {customEntries.length > 0 && <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
-          <div className="flex items-center justify-between gap-3 mb-4"><div><h2 className="text-lg font-semibold text-foreground">Dados do cadastro</h2><p className="text-sm text-muted-foreground">Respostas persistidas do formulário e das etapas deste lead.</p></div><Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="h-3.5 w-3.5 mr-1.5" />Editar</Button></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{customEntries.map(([key, value]) => <div key={key} className={key === "comentarios" || key === "datas_nascimento" ? "bg-secondary/30 rounded-lg p-4 md:col-span-2" : "bg-secondary/30 rounded-lg p-4"}><p className="text-xs text-muted-foreground mb-1">{customLabels[key] || key.replace(/_/g, " ")}</p><p className="text-sm text-foreground whitespace-pre-wrap">{String(value)}</p></div>)}</div>
+        {stageEntries.length > 0 && <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
+          <div className="mb-4"><h2 className="text-lg font-semibold text-foreground">Dados das etapas</h2><p className="text-sm text-muted-foreground">Informações registradas durante a evolução deste lead no pipeline.</p></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{stageEntries.map(([key, value]) => <div key={key} className="bg-secondary/30 rounded-lg p-4"><p className="text-xs text-muted-foreground mb-1">{customLabels[key] || key.replace(/_/g, " ")}</p><p className="text-sm text-foreground whitespace-pre-wrap">{String(value)}</p></div>)}</div>
         </motion.div>}
 
         <LeadActivitiesPanel leadId={lead.id} ownerId={lead.owner_id ?? null} />
@@ -120,7 +237,56 @@ const LeadDetail = () => {
           <div className="space-y-3">{lead.notas.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">Nenhuma nota ainda</p> : [...lead.notas].reverse().map((nota) => { const isEditing = editingNoteId === nota.id; return <div key={nota.id} className="bg-secondary/30 rounded-lg p-3 space-y-2"><div className="flex items-center justify-between gap-3 text-xs text-muted-foreground"><div className="flex flex-wrap items-center gap-2"><span>{nota.autor}</span><span>•</span><span>{format(new Date(nota.data), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span></div>{!isEditing && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingNoteId(nota.id); setEditingNoteText(nota.texto); }} aria-label="Editar nota"><Pencil className="h-3.5 w-3.5" /></Button>}</div>{isEditing ? <div className="space-y-2"><Textarea value={editingNoteText} onChange={(e) => setEditingNoteText(e.target.value)} rows={3} autoFocus /><div className="flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => { setEditingNoteId(null); setEditingNoteText(""); }} disabled={updateNote.isPending}><X className="h-3.5 w-3.5 mr-1" />Cancelar</Button><Button size="sm" onClick={() => saveEditNote(nota.id)} disabled={!editingNoteText.trim() || updateNote.isPending}>{updateNote.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1" />}Salvar</Button></div></div> : <p className="text-sm text-foreground whitespace-pre-wrap">{nota.texto}</p>}</div>; })}</div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card p-6"><h2 className="text-lg font-semibold text-foreground mb-4">Informações da Empresa</h2><div className="grid grid-cols-1 md:grid-cols-3 gap-4"><div className="bg-secondary/30 rounded-lg p-4"><p className="text-xs text-muted-foreground mb-1">Empresa</p><p className="text-foreground font-medium">{lead.empresa}</p></div><div className="bg-secondary/30 rounded-lg p-4"><p className="text-xs text-muted-foreground mb-1">Porte</p><p className="text-foreground font-medium">{lead.porte_empresa}</p></div><div className="bg-secondary/30 rounded-lg p-4"><p className="text-xs text-muted-foreground mb-1">Departamento</p><p className="text-foreground font-medium">{lead.departamento}</p></div></div></motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card p-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-foreground">Informações</h2>
+            <p className="text-sm text-muted-foreground">Todos os campos do cadastro. Use o lápis para completar ou corrigir cada informação.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {infoFields.map((field) => {
+              const value = getInfoValue(field);
+              const editing = editingInfoKey === field.key;
+              const saving = savingInfoKey === field.key;
+              return (
+                <div key={field.key} className={`bg-secondary/30 rounded-lg p-4 ${field.long ? "md:col-span-2" : ""}`}>
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <p className="text-xs text-muted-foreground">{field.label}</p>
+                    {!editing && <Button variant="ghost" size="icon" className="h-7 w-7 -mt-1 -mr-1 shrink-0" onClick={() => startInfoEdit(field)} title={`Editar ${field.label}`} aria-label={`Editar ${field.label}`}><Pencil className="h-3.5 w-3.5" /></Button>}
+                  </div>
+                  {editing ? (
+                    <div className="space-y-2">
+                      {field.long ? (
+                        <Textarea value={editingInfoValue} onChange={(e) => setEditingInfoValue(e.target.value)} rows={3} autoFocus disabled={saving} />
+                      ) : (
+                        <Input
+                          value={editingInfoValue}
+                          onChange={(e) => {
+                            let next = e.target.value;
+                            if (field.format === "phone") next = formatPhone(next);
+                            if (field.format === "document") next = formatCpfCnpj(next);
+                            setEditingInfoValue(next);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveInfoField(field);
+                            if (e.key === "Escape") cancelInfoEdit();
+                          }}
+                          autoFocus
+                          disabled={saving}
+                        />
+                      )}
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={cancelInfoEdit} disabled={saving} title="Cancelar"><X className="h-4 w-4" /></Button>
+                        <Button size="icon" className="h-8 w-8" onClick={() => saveInfoField(field)} disabled={saving} title="Salvar">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className={value ? "text-sm text-foreground font-medium whitespace-pre-wrap" : "text-sm text-muted-foreground italic"}>{value || "Não informado"}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
       </div>
       <LeadEditDialog lead={lead} open={editOpen} onOpenChange={setEditOpen} />
     </div>
