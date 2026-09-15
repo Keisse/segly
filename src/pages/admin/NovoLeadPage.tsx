@@ -1,114 +1,138 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Copy, ExternalLink, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
-import { toast } from "sonner";
+import { DynamicLeadFormFields, type LeadFormValues } from "@/components/leads/DynamicLeadFormFields";
+import { useLeadForms } from "@/hooks/useLeadForms";
+import { useLeadFormFields } from "@/hooks/useLeadFormFields";
 import { supabase } from "@/integrations/supabase/client";
-import { formatPhone } from "@/lib/phone";
+import { toast } from "sonner";
 
-const formatCpfCnpj = (value: string) => {
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-  if (digits.length <= 11) {
-    return digits
-      .replace(/^(\d{3})(\d)/, "$1.$2")
-      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/\.(\d{3})(\d)/, ".$1-$2");
-  }
-  return digits
-    .replace(/^(\d{2})(\d)/, "$1.$2")
-    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/\.(\d{3})(\d)/, ".$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2");
-};
-
-type FormState = {
-  empresa: string;
-  cnpj: string;
-  responsavel: string;
-  telefone: string;
-  proprietario: string;
-  email: string;
-  planoSaudeOperadora: string;
-  acomodacao: string;
-  coparticipacao: string;
-  planoOdontologico: string;
-  tipoPlano: string;
-  quantidadePessoas: string;
-  datasNascimento: string;
-  comentarios: string;
-};
-
-const initialForm: FormState = {
-  empresa: "", cnpj: "", responsavel: "", telefone: "", proprietario: "", email: "",
-  planoSaudeOperadora: "", acomodacao: "", coparticipacao: "", planoOdontologico: "",
-  tipoPlano: "", quantidadePessoas: "", datasNascimento: "", comentarios: "",
-};
+const CORE_KEYS = new Set(["empresa", "cnpj", "nome", "telefone", "email"]);
 
 const NovoLeadPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<FormState>(initialForm);
+  const { data: forms = [], isLoading: loadingForms } = useLeadForms();
+  const defaultForm = useMemo(() => forms.find((form) => form.is_default && form.active) || null, [forms]);
+  const { data: fields = [], isLoading: loadingFields } = useLeadFormFields({ formId: defaultForm?.id ?? null, onlyActive: true });
+  const [values, setValues] = useState<LeadFormValues>({});
   const [saving, setSaving] = useState(false);
 
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((prev) => ({ ...prev, [key]: value }));
+  const publicUrl = defaultForm ? `${window.location.origin}/formulario/${defaultForm.id}` : "";
 
   const validate = () => {
-    const required: Array<[keyof FormState, string]> = [
-      ["cnpj", "CNPJ ou CPF"], ["responsavel", "Nome do responsável"], ["telefone", "Telefone do responsável"],
-      ["proprietario", "O responsável pela empresa é o proprietário?"], ["email", "E-mail"],
-      ["planoSaudeOperadora", "Tem plano de Saúde? Qual operadora?"], ["acomodacao", "Acomodação"],
-      ["coparticipacao", "Tem coparticipação?"], ["planoOdontologico", "Tem plano odontológico?"],
-      ["tipoPlano", "Plano familiar ou empresarial?"], ["datasNascimento", "Data de nascimento de todos"],
-    ];
-    for (const [key, label] of required) {
-      if (!String(form[key] ?? "").trim()) { toast.error(`Preencha: ${label}`); return false; }
+    for (const field of fields) {
+      if (!field.required) continue;
+      const value = values[field.field_key] ?? field.default_value ?? "";
+      const empty = Array.isArray(value) ? value.length === 0 : String(value).trim() === "";
+      if (empty) {
+        toast.error(`Preencha: ${field.label}`);
+        return false;
+      }
     }
-    const phoneDigits = form.telefone.replace(/\D/g, "");
-    if (phoneDigits.length < 10 || phoneDigits.length > 13) { toast.error("Informe um telefone válido com DDD."); return false; }
-    const documentDigits = form.cnpj.replace(/\D/g, "");
-    if (documentDigits.length !== 11 && documentDigits.length !== 14) { toast.error("Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos."); return false; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) { toast.error("Informe um e-mail válido."); return false; }
+
+    const email = String(values.email ?? "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Informe um e-mail válido.");
+      return false;
+    }
+
+    const phoneDigits = String(values.telefone ?? "").replace(/\D/g, "");
+    if (phoneDigits.length < 10 || phoneDigits.length > 13) {
+      toast.error("Informe um telefone válido com DDD.");
+      return false;
+    }
+
+    const documentDigits = String(values.cnpj ?? "").replace(/\D/g, "");
+    if (documentDigits.length !== 11 && documentDigits.length !== 14) {
+      toast.error("Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos.");
+      return false;
+    }
+
     return true;
+  };
+
+  const copyPublicLink = async () => {
+    if (!publicUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success("Link público copiado.");
+    } catch {
+      toast.error("Não foi possível copiar o link automaticamente.");
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validate()) return;
+    if (!defaultForm || !validate()) return;
     setSaving(true);
+
     try {
       const userRes = await supabase.auth.getUser();
       const user = userRes.data.user;
       if (!user) throw new Error("Usuário não autenticado.");
-      const { data: profile, error: profileError } = await supabase.from("profiles").select("organization_id, display_name").eq("id", user.id).maybeSingle();
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("organization_id, display_name")
+        .eq("id", user.id)
+        .maybeSingle();
       if (profileError) throw profileError;
       const p = profile as { organization_id: string | null; display_name: string | null } | null;
       if (!p?.organization_id) throw new Error("Organização não configurada.");
 
-      const customFields = {
-        responsavel_proprietario: form.proprietario, plano_saude_operadora: form.planoSaudeOperadora,
-        acomodacao: form.acomodacao, coparticipacao: form.coparticipacao, plano_odontologico: form.planoOdontologico,
-        tipo_plano: form.tipoPlano, quantidade_pessoas: form.quantidadePessoas || null,
-        datas_nascimento: form.datasNascimento, comentarios: form.comentarios || null,
+      const directPatch: Record<string, unknown> = {
+        nome: String(values.nome ?? "").trim(),
+        telefone: String(values.telefone ?? "").trim(),
+        email: String(values.email ?? "").trim().toLowerCase(),
+        empresa: String(values.empresa ?? "").trim(),
+        cnpj: String(values.cnpj ?? "").trim(),
       };
+      const customFields: Record<string, unknown> = {};
 
-      const { data: inserted, error } = await supabase.from("leads").insert({
-        nome: form.responsavel.trim(), telefone: form.telefone.trim(), email: form.email.trim(), empresa: form.empresa.trim(), cnpj: form.cnpj.trim(),
-        porte_empresa: "", departamento: "", cargo: "", custom_fields: customFields,
-        organization_id: p.organization_id, owner_id: user.id, fonte: "manual",
-      } as never).select("id, historico").single();
+      fields.forEach((field) => {
+        const value = values[field.field_key] ?? field.default_value ?? null;
+        if (CORE_KEYS.has(field.field_key)) return;
+        if (field.maps_to && ["porte_empresa", "departamento", "cargo"].includes(field.maps_to)) {
+          directPatch[field.maps_to] = value == null ? "" : String(value);
+        } else if (value !== null && value !== undefined && (Array.isArray(value) ? value.length > 0 : String(value).trim() !== "")) {
+          customFields[field.field_key] = value;
+        }
+      });
+
+      const { data: inserted, error } = await supabase
+        .from("leads")
+        .insert({
+          ...directPatch,
+          porte_empresa: String(directPatch.porte_empresa ?? ""),
+          departamento: String(directPatch.departamento ?? ""),
+          cargo: String(directPatch.cargo ?? ""),
+          custom_fields: customFields,
+          lead_form_id: defaultForm.id,
+          organization_id: p.organization_id,
+          owner_id: user.id,
+          fonte: "manual",
+        } as never)
+        .select("id, historico")
+        .single();
       if (error) throw error;
 
       const row = inserted as { id: string; historico?: unknown[] };
       const actor = p.display_name || user.email || "usuário";
       const history = Array.isArray(row.historico) ? row.historico : [];
-      const entry = { tipo: "manual", descricao: `Lead cadastrado manualmente por ${actor}`, data: new Date().toISOString(), autor: actor };
-      const { error: historyError } = await supabase.from("leads").update({ historico: [...history, entry] } as never).eq("id", row.id);
+      const entry = {
+        tipo: "manual",
+        descricao: `Lead cadastrado manualmente por ${actor} usando o formulário ${defaultForm.name}`,
+        data: new Date().toISOString(),
+        autor: actor,
+      };
+      const { error: historyError } = await supabase
+        .from("leads")
+        .update({ historico: [...history, entry] } as never)
+        .eq("id", row.id);
       if (historyError) throw historyError;
 
       await Promise.all([
@@ -117,40 +141,55 @@ const NovoLeadPage = () => {
         queryClient.invalidateQueries({ queryKey: ["dashboard-v2-leads"] }),
         queryClient.invalidateQueries({ queryKey: ["audit-events"] }),
       ]);
+
       toast.success("Lead cadastrado com sucesso!");
       navigate(`/admin/lead/${row.id}`);
     } catch (error) {
       console.error("Erro ao cadastrar lead:", error);
       toast.error(error instanceof Error ? error.message : "Erro ao cadastrar lead.");
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loadingForms || loadingFields) {
+    return <div className="p-8 flex items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>;
+  }
+
+  if (!defaultForm) {
+    return (
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center gap-3"><Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button><h1 className="text-2xl font-display font-bold">Cadastrar Lead</h1></div>
+        <Card><CardContent className="py-8 text-center"><p className="text-muted-foreground">Nenhum formulário padrão ativo foi configurado.</p><Button className="mt-4" onClick={() => navigate("/admin/configuracoes?tab=formulario")}>Configurar formulário</Button></CardContent></Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-3"><Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button><div><h1 className="text-2xl font-display font-bold">Cadastrar Lead</h1><p className="text-sm text-muted-foreground">Dados para elaboração do estudo.</p></div></div>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
+          <div><h1 className="text-2xl font-display font-bold">Cadastrar Lead</h1><p className="text-sm text-muted-foreground">Formulário padrão: {defaultForm.name}</p></div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={copyPublicLink}><Copy className="h-4 w-4 mr-2" />Copiar link público</Button>
+          <Button variant="outline" onClick={() => window.open(publicUrl, "_blank", "noopener,noreferrer")}><ExternalLink className="h-4 w-4" /></Button>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit}>
-        <Card><CardHeader><CardTitle>Dados para elaboração do estudo</CardTitle><CardDescription>Os campos marcados com * são obrigatórios.</CardDescription></CardHeader>
+        <Card>
+          <CardHeader>
+            <CardTitle>{defaultForm.name}</CardTitle>
+            <CardDescription>{defaultForm.description || "Os campos marcados com * são obrigatórios."}</CardDescription>
+          </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-2"><Label htmlFor="empresa">Nome da Empresa ou Pessoa Física</Label><Input id="empresa" value={form.empresa} onChange={(e) => set("empresa", e.target.value)} /></div>
-              <div className="space-y-2"><Label htmlFor="cnpj">CNPJ ou CPF *</Label><Input id="cnpj" value={form.cnpj} onChange={(e) => set("cnpj", formatCpfCnpj(e.target.value))} placeholder="CPF ou CNPJ" inputMode="numeric" /></div>
-              <div className="space-y-2"><Label htmlFor="responsavel">Nome do responsável *</Label><Input id="responsavel" value={form.responsavel} onChange={(e) => set("responsavel", e.target.value)} /></div>
-              <div className="space-y-2"><Label htmlFor="telefone-responsavel">Telefone do responsável *</Label><Input id="telefone-responsavel" type="tel" value={form.telefone} onChange={(e) => set("telefone", formatPhone(e.target.value))} placeholder="(11) 99999-9999" /></div>
+            <DynamicLeadFormFields fields={fields} values={values} onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))} disabled={saving} />
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => navigate("/admin/leads")}>Cancelar</Button>
+              <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}Cadastrar Lead</Button>
             </div>
-            <div className="space-y-3"><Label>O responsável pela empresa é o proprietário? *</Label><RadioGroup value={form.proprietario} onValueChange={(v) => set("proprietario", v)} className="flex gap-6"><div className="flex items-center gap-2"><RadioGroupItem value="Sim" id="proprietario-sim" /><Label htmlFor="proprietario-sim">Sim</Label></div><div className="flex items-center gap-2"><RadioGroupItem value="Não" id="proprietario-nao" /><Label htmlFor="proprietario-nao">Não</Label></div></RadioGroup></div>
-            <div className="grid gap-5 md:grid-cols-2"><div className="space-y-2"><Label htmlFor="email">E-mail *</Label><Input id="email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></div><div className="space-y-2"><Label htmlFor="plano-saude">Tem plano de Saúde? Qual operadora? *</Label><Input id="plano-saude" value={form.planoSaudeOperadora} onChange={(e) => set("planoSaudeOperadora", e.target.value)} /></div></div>
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-3"><Label>Acomodação *</Label><RadioGroup value={form.acomodacao} onValueChange={(v) => set("acomodacao", v)} className="flex flex-wrap gap-6"><div className="flex items-center gap-2"><RadioGroupItem value="Enfermaria" id="acomodacao-enfermaria" /><Label htmlFor="acomodacao-enfermaria">Enfermaria</Label></div><div className="flex items-center gap-2"><RadioGroupItem value="Apartamento" id="acomodacao-apartamento" /><Label htmlFor="acomodacao-apartamento">Apartamento</Label></div></RadioGroup></div>
-              <div className="space-y-3"><Label>Tem coparticipação? *</Label><RadioGroup value={form.coparticipacao} onValueChange={(v) => set("coparticipacao", v)} className="flex flex-wrap gap-6"><div className="flex items-center gap-2"><RadioGroupItem value="Sim" id="coparticipacao-sim" /><Label htmlFor="coparticipacao-sim">Sim</Label></div><div className="flex items-center gap-2"><RadioGroupItem value="Não" id="coparticipacao-nao" /><Label htmlFor="coparticipacao-nao">Não</Label></div></RadioGroup></div>
-            </div>
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-2"><Label htmlFor="odontologico">Tem plano odontológico? *</Label><Input id="odontologico" value={form.planoOdontologico} onChange={(e) => set("planoOdontologico", e.target.value)} /></div>
-              <div className="space-y-2"><Label htmlFor="tipo-plano">Plano familiar ou empresarial? *</Label><Input id="tipo-plano" value={form.tipoPlano} onChange={(e) => set("tipoPlano", e.target.value)} /></div>
-              <div className="space-y-2"><Label htmlFor="quantidade">Quantas Pessoas?</Label><Input id="quantidade" type="number" min={1} value={form.quantidadePessoas} onChange={(e) => set("quantidadePessoas", e.target.value)} /></div>
-              <div className="space-y-2"><Label htmlFor="nascimentos">Data de nascimento de todos *</Label><Input id="nascimentos" value={form.datasNascimento} onChange={(e) => set("datasNascimento", e.target.value)} placeholder="Ex.: 10/02/1985, 22/07/1990" /></div>
-            </div>
-            <div className="space-y-2"><Label htmlFor="comentarios">Comentários</Label><Textarea id="comentarios" rows={4} value={form.comentarios} onChange={(e) => set("comentarios", e.target.value)} /></div>
-            <div className="flex justify-end gap-3 pt-2"><Button type="button" variant="outline" onClick={() => navigate("/admin/leads")}>Cancelar</Button><Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}Cadastrar Lead</Button></div>
           </CardContent>
         </Card>
       </form>
