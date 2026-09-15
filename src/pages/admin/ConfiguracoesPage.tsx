@@ -392,7 +392,7 @@ const ConfiguracoesPage = () => {
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="celebracoes">Celebrações</TabsTrigger>
-          <TabsTrigger value="formulario">Formulário Padrão</TabsTrigger>
+          <TabsTrigger value="formulario">Construtor de Formulário</TabsTrigger>
         </TabsList>
 
         <TabsContent value="geral" className="mt-4"><GeralTab onDirtyChange={setDirty} /></TabsContent>
