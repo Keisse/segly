@@ -178,8 +178,17 @@ export function useUpdateLeadStage() {
       const { error } = await supabase.from("leads").update({ stage_id: stageId, pipeline_id: pipelineId } as never).eq("id", leadId);
       if (error) throw error;
       await maybeCelebrate(leadId, stageId);
+      return leadId;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["leads-by-pipeline"] }); qc.invalidateQueries({ queryKey: ["leads"] }); },
+    onSuccess: (leadId) => {
+      qc.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["lead", leadId] });
+      qc.invalidateQueries({ queryKey: ["dashboard-v2-leads"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-v2-clients"] });
+      qc.invalidateQueries({ queryKey: ["clientes"] });
+      qc.invalidateQueries({ queryKey: ["audit-events"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
