@@ -17,6 +17,7 @@ export type LeadFormFieldType =
 export type LeadFormField = {
   id: string;
   organization_id: string;
+  form_id: string;
   field_key: string;
   label: string;
   type: LeadFormFieldType;
@@ -40,23 +41,25 @@ function normalize(row: Record<string, unknown>): LeadFormField {
   };
 }
 
-export function useLeadFormFields(opts?: { onlyActive?: boolean }) {
+export function useLeadFormFields(opts?: { onlyActive?: boolean; formId?: string | null }) {
   return useQuery({
-    queryKey: ["lead-form-fields", opts?.onlyActive ?? false],
+    queryKey: ["lead-form-fields", opts?.formId ?? null, opts?.onlyActive ?? false],
     queryFn: async () => {
       let q = supabase.from("lead_form_fields").select("*").order("ordem");
+      if (opts?.formId) q = q.eq("form_id", opts.formId);
       if (opts?.onlyActive) q = q.eq("active", true);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []).map((r) => normalize(r as Record<string, unknown>));
     },
+    enabled: opts?.formId === undefined || !!opts.formId,
   });
 }
 
 export function useUpsertLeadFormField() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (field: Partial<LeadFormField> & { organization_id?: string }) => {
+    mutationFn: async (field: Partial<LeadFormField> & { organization_id?: string; form_id?: string }) => {
       if (field.id) {
         const { error } = await supabase
           .from("lead_form_fields")
@@ -65,12 +68,14 @@ export function useUpsertLeadFormField() {
         if (error) throw error;
         return;
       }
-      // insert
+      if (!field.form_id) throw new Error("Selecione um formulário antes de adicionar campos.");
       const uRes = await supabase.auth.getUser();
+      const uid = uRes.data.user?.id;
+      if (!uid) throw new Error("Usuário não autenticado.");
       const { data: prof } = await supabase
         .from("profiles")
         .select("organization_id")
-        .eq("id", uRes.data.user!.id)
+        .eq("id", uid)
         .maybeSingle();
       const orgId = (prof as { organization_id: string | null } | null)?.organization_id;
       if (!orgId) throw new Error("Organização não encontrada");
@@ -107,25 +112,12 @@ export function useReorderLeadFormFields() {
     mutationFn: async (fields: LeadFormField[]) => {
       for (let i = 0; i < fields.length; i++) {
         if (fields[i].ordem !== i) {
-          await supabase.from("lead_form_fields").update({ ordem: i } as never).eq("id", fields[i].id);
+          const { error } = await supabase.from("lead_form_fields").update({ ordem: i } as never).eq("id", fields[i].id);
+          if (error) throw error;
         }
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lead-form-fields"] }),
-  });
-}
-
-export function useRestoreDefaultLeadForm() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc("restore_default_lead_form");
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["lead-form-fields"] });
-      toast.success("Formulário padrão restaurado.");
-    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
