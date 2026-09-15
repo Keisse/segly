@@ -16,6 +16,7 @@ import ActionPlanPage from "./pages/ActionPlanPage";
 import TrackingTemplatePage from "./pages/TrackingTemplatePage";
 import OutboundCadastro from "./pages/OutboundCadastro";
 import ObrigadaPage from "./pages/ObrigadaPage";
+import PublicLeadFormPage from "./pages/PublicLeadFormPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminOnlyRoute from "./components/AdminOnlyRoute";
 import LeaderOnlyRoute from "./components/LeaderOnlyRoute";
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/acompanhamento" element={<TrackingTemplatePage />} />
           <Route path="/mail" element={<OutboundCadastro />} />
           <Route path="/obrigada" element={<ObrigadaPage />} />
+          <Route path="/formulario/:formId" element={<PublicLeadFormPage />} />
           <Route path="/admin-login" element={<AdminLogin />} />
 
           <Route
