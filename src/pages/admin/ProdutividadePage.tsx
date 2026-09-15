@@ -217,7 +217,7 @@ export default function ProdutividadePage() {
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-[1500px] mx-auto min-w-0">
       <div>
-        <h1 className="text-2xl font-display font-bold">Produtividade</h1>
+        <h1 className="text-2xl font-display font-bold">Desempenho</h1>
         <p className="text-sm text-muted-foreground">Visão gerencial de execução, carteira e remuneração. Apenas líderes e administradores têm acesso.</p>
       </div>
 
