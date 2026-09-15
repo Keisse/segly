@@ -40,16 +40,16 @@ type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leader
 
 const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
-  { title: "Cadastrar Lead", url: "/admin/leads/novo", icon: UserPlus },
-  { title: "Leads", url: "/admin/leads", icon: Users },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
-  { title: "Stand-by", url: "/admin/standby", icon: PauseCircle },
-  { title: "Follow-up", url: "/admin/atividades", icon: CalendarCheck2 },
-  { title: "Produtividade", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
-  { title: "Comissões", url: "/admin/comissoes", icon: CircleDollarSign, leaderOnly: true },
-  { title: "Produtos e Comissões", url: "/admin/produtos", icon: Package, adminOnly: true },
-  { title: "Auditoria", url: "/admin/auditoria", icon: History, leaderOnly: true },
+  { title: "Leads", url: "/admin/leads", icon: Users },
+  { title: "Cadastrar Leads", url: "/admin/leads/novo", icon: UserPlus },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
+  { title: "Standby", url: "/admin/standby", icon: PauseCircle },
+  { title: "Agenda", url: "/admin/atividades", icon: CalendarCheck2 },
+  { title: "Auditoria", url: "/admin/auditoria", icon: History, leaderOnly: true },
+  { title: "Produtos", url: "/admin/produtos", icon: Package, adminOnly: true },
+  { title: "Comissões", url: "/admin/comissoes", icon: CircleDollarSign, leaderOnly: true },
+  { title: "Produtividade", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Meu Perfil", url: "/admin/meu-perfil", icon: UserCircle },
 ];
 
