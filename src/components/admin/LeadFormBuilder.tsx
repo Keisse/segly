@@ -174,7 +174,7 @@ export function LeadFormBuilder() {
     setOrderedFields(fields);
   }, [fields]);
 
-  if (!isAdmin) return <div className="p-6 rounded-lg border border-border/60 bg-card text-center text-muted-foreground">Somente administradores podem editar os Formulários Padrão.</div>;
+  if (!isAdmin) return <div className="p-6 rounded-lg border border-border/60 bg-card text-center text-muted-foreground">Somente administradores podem editar o Construtor de Formulário.</div>;
 
   const handleDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
@@ -251,7 +251,7 @@ export function LeadFormBuilder() {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="text-lg font-display font-semibold">Formulários Padrão</h2>
+          <h2 className="text-lg font-display font-semibold">Construtor de Formulário</h2>
           <p className="text-sm text-muted-foreground">Crie formulários de cadastro e escolha qual deles aparece em Cadastrar Lead.</p>
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4 mr-1.5" />Novo formulário</Button>
