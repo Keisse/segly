@@ -32,6 +32,26 @@ function transformLead(row: any): Lead {
   };
 }
 
+function normalize(value: string) {
+  return value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+type StageForStatus = { id: string; nome: string; ordem: number; is_won: boolean; is_lost: boolean };
+
+function stageForStatus(stages: StageForStatus[], status: LeadStatus) {
+  const ordered = [...stages].sort((a, b) => a.ordem - b.ordem);
+  if (status === "convertido") return ordered.find((s) => s.is_won) || null;
+  if (status === "perdido") return ordered.find((s) => s.is_lost) || null;
+  const terms: Record<Exclude<LeadStatus, "convertido" | "perdido">, string[]> = {
+    novo: ["novo"],
+    contatado: ["contato", "contatad"],
+    em_negociacao: ["negocia"],
+    em_analise: ["cotar", "qualific", "estudo", "analise", "proposta"],
+  };
+  const wanted = terms[status as Exclude<LeadStatus, "convertido" | "perdido">] || [];
+  return ordered.find((s) => !s.is_won && !s.is_lost && wanted.some((term) => normalize(s.nome).includes(term))) || null;
+}
+
 interface InsertLead {
   nome: string;
   telefone: string;
@@ -44,14 +64,7 @@ interface InsertLead {
   fonte?: string;
 }
 
-export function useLeads(filters?: {
-  status?: LeadStatus;
-  startDate?: Date;
-  endDate?: Date;
-  porte?: string;
-  departamento?: string;
-  cargo?: string;
-}) {
+export function useLeads(filters?: { status?: LeadStatus; startDate?: Date; endDate?: Date; porte?: string; departamento?: string; cargo?: string }) {
   return useQuery({
     queryKey: ["leads", filters],
     queryFn: async () => {
@@ -82,22 +95,21 @@ export function useLead(id: string) {
 }
 
 export function useInsertLead() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (lead: InsertLead) => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/submit-lead`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(lead),
-      });
+      const response = await fetch(`${supabaseUrl}/functions/v1/submit-lead`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(lead) });
       const result = await response.json();
-      if (!response.ok) {
-        const errorMessage = result.details?.join(", ") || result.error || "Erro ao salvar lead";
-        throw new Error(errorMessage);
-      }
+      if (!response.ok) throw new Error(result.details?.join(", ") || result.error || "Erro ao salvar lead");
       return transformLead(result.lead);
     },
-    onSuccess: () => toast.success("Diagnóstico salvo com sucesso!"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-v2-leads"] });
+      toast.success("Diagnóstico salvo com sucesso!");
+    },
     onError: (error: Error) => toast.error(error.message || "Erro ao salvar diagnóstico. Tente novamente."),
   });
 }
@@ -106,16 +118,40 @@ export function useUpdateLeadStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: LeadStatus }) => {
-      const { data, error } = await supabase.from("leads").update({ status }).eq("id", id).select().single();
+      const { data: leadRow, error: leadError } = await supabase.from("leads").select("pipeline_id,stage_id,status").eq("id", id).single();
+      if (leadError) throw leadError;
+      const lead = leadRow as { pipeline_id: string | null; stage_id: string | null; status: LeadStatus };
+      if (!lead.pipeline_id) throw new Error("Este lead não possui pipeline definido.");
+      if (lead.status === status) {
+        const { data, error } = await supabase.from("leads").select("*").eq("id", id).single();
+        if (error) throw error;
+        return transformLead(data);
+      }
+
+      const { data: stagesData, error: stagesError } = await supabase
+        .from("pipeline_stages" as never)
+        .select("id,nome,ordem,is_won,is_lost")
+        .eq("pipeline_id", lead.pipeline_id)
+        .order("ordem");
+      if (stagesError) throw stagesError;
+      const target = stageForStatus((stagesData ?? []) as unknown as StageForStatus[], status);
+      if (!target) throw new Error("Não existe uma etapa compatível com este status no pipeline atual.");
+
+      const { data, error } = await supabase.from("leads").update({ stage_id: target.id, pipeline_id: lead.pipeline_id } as never).eq("id", id).select().single();
       if (error) throw error;
       return transformLead(data);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       queryClient.invalidateQueries({ queryKey: ["lead", data.id] });
-      toast.success("Status atualizado!");
+      queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-v2-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-v2-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["audit-events"] });
+      toast.success("Status e etapa atualizados!");
     },
-    onError: () => toast.error("Erro ao atualizar status."),
+    onError: (error: Error) => toast.error(error.message || "Erro ao atualizar status."),
   });
 }
 
@@ -127,12 +163,7 @@ export function useAddNote() {
       if (fetchError) throw fetchError;
       const currentNotas = (lead?.notas as unknown as Nota[]) || [];
       const newNota: Nota = { ...nota, id: crypto.randomUUID() };
-      const { data, error } = await supabase
-        .from("leads")
-        .update({ notas: [...currentNotas, newNota] as unknown as Json })
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await supabase.from("leads").update({ notas: [...currentNotas, newNota] as unknown as Json }).eq("id", id).select().single();
       if (error) throw error;
       return transformLead(data);
     },
@@ -229,7 +260,13 @@ export function useUpdateLeadResponsavel() {
       if (error) throw error;
       return transformLead(data);
     },
-    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ["leads"] }); queryClient.invalidateQueries({ queryKey: ["lead", data.id] }); queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] }); toast.success("Responsável atualizado!"); },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-v2-leads"] });
+      toast.success("Responsável atualizado!");
+    },
     onError: () => toast.error("Erro ao atualizar responsável."),
   });
 }
@@ -242,7 +279,15 @@ export function useUpdateLeadOwner() {
       if (error) throw error;
       return transformLead(data);
     },
-    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ["leads"] }); queryClient.invalidateQueries({ queryKey: ["lead", data.id] }); queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] }); queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] }); toast.success("Responsável atribuído!"); },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-v2-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      toast.success("Responsável atribuído!");
+    },
     onError: (error: Error) => toast.error(error.message || "Erro ao atribuir responsável."),
   });
 }
@@ -250,8 +295,20 @@ export function useUpdateLeadOwner() {
 export function useDeleteLead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("leads").delete().eq("id", id); if (error) throw error; return id; },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["leads"] }); queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] }); toast.success("Lead excluído com sucesso!"); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("leads").delete().eq("id", id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-v2-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-v2-clients"] });
+      toast.success("Lead excluído com sucesso!");
+    },
     onError: () => toast.error("Erro ao excluir lead."),
   });
 }
