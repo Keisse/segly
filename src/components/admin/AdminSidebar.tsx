@@ -48,8 +48,8 @@ const mainItems: Item[] = [
   { title: "Agenda", url: "/admin/atividades", icon: CalendarCheck2 },
   { title: "Auditoria", url: "/admin/auditoria", icon: History, leaderOnly: true },
   { title: "Produtos", url: "/admin/produtos", icon: Package, adminOnly: true },
+  { title: "Desempenho", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Comissões", url: "/admin/comissoes", icon: CircleDollarSign, leaderOnly: true },
-  { title: "Produtividade", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Meu Perfil", url: "/admin/meu-perfil", icon: UserCircle },
 ];
 
