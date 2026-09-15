@@ -26,6 +26,7 @@ import ConfiguracoesPage from "./pages/admin/ConfiguracoesPage";
 import NovoLeadPage from "./pages/admin/NovoLeadPage";
 import AtividadesPage from "./pages/admin/AtividadesPage";
 import ProdutividadePage from "./pages/admin/ProdutividadePage";
+import ComissoesPage from "./pages/admin/ComissoesPage";
 import StandbyPage from "./pages/admin/StandbyPage";
 import AuditoriaPage from "./pages/admin/AuditoriaPage";
 import ProdutosPage from "./pages/admin/ProdutosPage";
@@ -68,6 +69,14 @@ const App = () => (
               element={
                 <LeaderOnlyRoute>
                   <ProdutividadePage />
+                </LeaderOnlyRoute>
+              }
+            />
+            <Route
+              path="comissoes"
+              element={
+                <LeaderOnlyRoute>
+                  <ComissoesPage />
                 </LeaderOnlyRoute>
               }
             />
