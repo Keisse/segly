@@ -35,7 +35,7 @@ import { useMyRole } from "@/hooks/useMyRole";
 import { NossoPropositoDialog } from "./NossoPropositoDialog";
 
 const seglyLogoDark = "/segly-logo.png";
-const seglyLogoLight = "/segly-logo-light.png";
+const seglyLogoLight = "/segly-logo-light.svg";
 
 type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leaderOnly?: boolean };
 
