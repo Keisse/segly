@@ -3,11 +3,11 @@ import {
   KanbanSquare,
   ShieldCheck,
   LogOut,
-  Users,
+  Heart,
   Handshake,
   Settings,
   UserCircle,
-  UserPlus,
+  Plus,
   CalendarCheck2,
   Gauge,
   PauseCircle,
@@ -34,13 +34,29 @@ import { useMyRole } from "@/hooks/useMyRole";
 const seglyLogoDark = "/segly-logo.png";
 const seglyLogoLight = "/segly-logo-light.svg";
 
+type IconProps = { className?: string };
+
+const StackedHearts = ({ className }: IconProps) => (
+  <span className={`relative inline-block ${className ?? ""}`} aria-hidden="true">
+    <Heart className="absolute left-0 top-0 h-[11px] w-[11px]" />
+    <Heart className="absolute bottom-0 right-0 h-[11px] w-[11px]" />
+  </span>
+);
+
+const HeartPlus = ({ className }: IconProps) => (
+  <span className={`relative inline-block ${className ?? ""}`} aria-hidden="true">
+    <Heart className="absolute left-0 top-[2px] h-[12px] w-[12px]" />
+    <Plus className="absolute -right-[1px] -top-[1px] h-[9px] w-[9px]" strokeWidth={2.4} />
+  </span>
+);
+
 type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leaderOnly?: boolean };
 
 const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
-  { title: "Vidas", url: "/admin/leads", icon: Users },
-  { title: "+Vidas", url: "/admin/leads/novo", icon: UserPlus },
+  { title: "Vidas", url: "/admin/leads", icon: StackedHearts },
+  { title: "Cadastrar vidas", url: "/admin/leads/novo", icon: HeartPlus },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Standby", url: "/admin/standby", icon: PauseCircle },
   { title: "Agenda", url: "/admin/atividades", icon: CalendarCheck2 },
