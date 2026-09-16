@@ -184,8 +184,10 @@ export function useReorderStages() {
 export function useUpdateLeadStage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ leadId, stageId, pipelineId }: { leadId: string; stageId: string; pipelineId: string }) => {
-      const { error } = await supabase.from("leads").update({ stage_id: stageId, pipeline_id: pipelineId } as never).eq("id", leadId);
+    mutationFn: async ({ leadId, stageId, pipelineId, kanbanOrder }: { leadId: string; stageId: string; pipelineId: string; kanbanOrder?: number }) => {
+      const patch: Record<string, unknown> = { stage_id: stageId, pipeline_id: pipelineId };
+      if (typeof kanbanOrder === "number") patch.kanban_order = kanbanOrder;
+      const { error } = await supabase.from("leads").update(patch as never).eq("id", leadId);
       if (error) throw error;
       await maybeCelebrate(leadId, stageId);
       return leadId;
@@ -203,6 +205,19 @@ export function useUpdateLeadStage() {
   });
 }
 
+export function useUpdateLeadKanbanOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ leadId, kanbanOrder }: { leadId: string; kanbanOrder: number }) => {
+      const { error } = await supabase.from("leads").update({ kanban_order: kanbanOrder } as never).eq("id", leadId);
+      if (error) throw error;
+      return leadId;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["leads-by-pipeline"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useLeadsByPipeline(pipelineId: string | null | undefined) {
   return useQuery({
     queryKey: ["leads-by-pipeline", pipelineId],
@@ -210,8 +225,9 @@ export function useLeadsByPipeline(pipelineId: string | null | undefined) {
       if (!pipelineId) return [];
       const { data, error } = await supabase
         .from("leads")
-        .select("id, nome, empresa, cargo, email, telefone, fonte, custom_fields, stage_id, owner_id, status, resultado_diagnostico, created_at, stage_entered_at, pipeline_id, product_id")
+        .select("id, nome, empresa, cargo, email, telefone, fonte, custom_fields, stage_id, owner_id, status, resultado_diagnostico, created_at, stage_entered_at, pipeline_id, product_id, kanban_order")
         .eq("pipeline_id", pipelineId)
+        .order("kanban_order", { ascending: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
