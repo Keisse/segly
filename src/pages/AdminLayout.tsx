@@ -12,17 +12,17 @@ const AdminLayout = () => {
   useCelebrationListener();
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full min-w-0 overflow-hidden">
         <AdminSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center justify-between border-b border-border bg-background/50 backdrop-blur px-2">
-            <SidebarTrigger className="ml-2" />
-            <div className="pr-3 flex items-center gap-1">
+        <div className="flex-1 min-w-0 flex flex-col">
+          <header className="h-14 shrink-0 flex items-center justify-between border-b border-border bg-background/50 backdrop-blur px-2 sm:px-3">
+            <SidebarTrigger className="ml-0 sm:ml-1" />
+            <div className="min-w-0 pr-1 sm:pr-2 flex items-center gap-1">
               <AceleraAlerts />
               <UserMenu />
             </div>
           </header>
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
             <Outlet />
           </main>
         </div>
