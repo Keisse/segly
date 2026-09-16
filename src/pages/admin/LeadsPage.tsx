@@ -26,13 +26,13 @@ const LeadsPage = () => {
     <div className="p-6 space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-display font-bold">Leads</h1>
+          <h1 className="text-2xl font-display font-bold">Vidas</h1>
           <p className="text-sm text-muted-foreground">
             Lista centralizada com busca, ordenação, responsável e etapa do pipeline. O acesso respeita seu papel.
           </p>
         </div>
         <Button onClick={() => navigate("/admin/leads/novo")}>
-          <Plus className="w-4 h-4 mr-1.5" /> Novo Lead
+          <Plus className="w-4 h-4 mr-1.5" /> +Vidas
         </Button>
       </div>
       <div className="relative max-w-md">
