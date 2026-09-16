@@ -1,15 +1,19 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { UserMenu } from "@/components/admin/UserMenu";
 import { AceleraAlerts } from "@/components/admin/AceleraAlerts";
 import { PrincipioAutoOpener } from "@/components/admin/PrincipioAutoOpener";
+import { NextPaymentBanner } from "@/components/admin/NextPaymentBanner";
 import { useLeadRealtime } from "@/hooks/useLeadRealtime";
 import { useCelebrationListener } from "@/hooks/useCelebrationListener";
 
 const AdminLayout = () => {
   useLeadRealtime();
   useCelebrationListener();
+  const location = useLocation();
+  const showNextPayment = location.pathname === "/admin/produtividade";
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full min-w-0 overflow-hidden">
@@ -23,6 +27,7 @@ const AdminLayout = () => {
             </div>
           </header>
           <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
+            {showNextPayment && <NextPaymentBanner />}
             <Outlet />
           </main>
         </div>
