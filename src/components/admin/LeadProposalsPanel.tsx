@@ -248,7 +248,7 @@ export function LeadProposalsPanel({ leadId, ownerId, currentProductId, customFi
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading ? <p className="text-sm text-muted-foreground">Carregando propostas...</p> : proposals.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhuma proposta cadastrada para este lead.</div>
+          <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhuma proposta cadastrada para esta vida.</div>
         ) : proposals.map((proposal) => {
           const Icon = statusMeta[proposal.status].icon;
           const financialStatus = boletoStatus(proposal.boleto_due_date, activeProposal?.id === proposal.id && leadBoletoPaid);
