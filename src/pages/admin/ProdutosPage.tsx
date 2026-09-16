@@ -201,7 +201,7 @@ export default function ProdutosPage() {
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6 min-w-0">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><h1 className="text-2xl font-display font-bold">Produtos e Comissões</h1><p className="text-sm text-muted-foreground">Cadastre operadoras, produtos e as regras percentuais usadas nas vendas.</p></div>
+        <div><h1 className="text-2xl font-display font-bold">Produtos e percentuais</h1><p className="text-sm text-muted-foreground">Cadastre operadoras, produtos e as regras percentuais usadas nas vendas.</p></div>
         <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setInsurerOpen(true)}><Building2 className="h-4 w-4 mr-2" />Cadastrar operadora</Button><Button onClick={resetAndOpen}><Plus className="h-4 w-4 mr-2" />Cadastrar produto</Button></div>
       </div>
 
