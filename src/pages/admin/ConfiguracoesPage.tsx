@@ -327,7 +327,7 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
           <Separator />
 
           <div className="space-y-2">
-            <Label>Responsável padrão para leads sem atribuição</Label>
+            <Label>Responsável padrão para vidas sem atribuição</Label>
             <Select
               value={settings.default_lead_owner ?? "__none__"}
               disabled={savingOwner}
@@ -380,7 +380,7 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
           </div>
           <Separator />
           <div className="space-y-2 max-w-xs">
-            <Label htmlFor="inactive-days">Lembrete de leads sem interação (dias)</Label>
+            <Label htmlFor="inactive-days">Lembrete de vidas sem interação (dias)</Label>
             <Input
               id="inactive-days"
               type="number"
