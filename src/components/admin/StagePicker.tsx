@@ -145,7 +145,7 @@ export function StagePicker({ leadId, pipelineId, stageId, className }: Props) {
           <Textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Por que este lead foi perdido?"
+            placeholder="Por que esta vida foi perdida?"
             rows={4}
           />
           <DialogFooter>
