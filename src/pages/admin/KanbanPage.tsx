@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -8,14 +8,29 @@ import {
   PointerSensor,
   TouchSensor,
   closestCenter,
-  useDraggable,
+  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { usePipelines, usePipelineStages, useLeadsByPipeline, useUpdateLeadStage } from "@/hooks/usePipelines";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  usePipelines,
+  usePipelineStages,
+  useLeadsByPipeline,
+  useUpdateLeadKanbanOrder,
+  useUpdateLeadStage,
+} from "@/hooks/usePipelines";
 import { usePendingActivitiesForLeads } from "@/hooks/useActivities";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -40,6 +55,7 @@ type LeadRow = {
   owner_id: string | null;
   created_at: string;
   stage_entered_at?: string | null;
+  kanban_order: number;
   resultado_diagnostico: { percentage?: number } | null;
 };
 
@@ -54,6 +70,11 @@ type ProposalRow = {
 
 type OwnerInfo = { display_name: string | null; email: string | null };
 type ActivityInfo = { type: string; scheduled_at: string };
+type BoardState = Record<string, string[]>;
+
+const STAGE_PREFIX = "stage:";
+const stageDropId = (stageId: string) => `${STAGE_PREFIX}${stageId}`;
+const fromStageDropId = (id: string) => id.startsWith(STAGE_PREFIX) ? id.slice(STAGE_PREFIX.length) : null;
 
 const proposalStatusLabel: Record<ProposalRow["status"], string> = {
   draft: "Proposta em rascunho",
@@ -96,22 +117,44 @@ function activityState(date: string) {
   return "future" as const;
 }
 
+function cloneBoard(board: BoardState): BoardState {
+  return Object.fromEntries(Object.entries(board).map(([key, ids]) => [key, [...ids]]));
+}
+
+function buildBoard(stages: { id: string }[], leads: LeadRow[]): BoardState {
+  const board: BoardState = {};
+  stages.forEach((stage) => { board[stage.id] = []; });
+  [...leads]
+    .sort((a, b) => (b.kanban_order ?? 0) - (a.kanban_order ?? 0))
+    .forEach((lead) => {
+      if (lead.stage_id && board[lead.stage_id]) board[lead.stage_id].push(lead.id);
+    });
+  return board;
+}
+
+function findContainer(board: BoardState, itemId: string) {
+  return Object.keys(board).find((stageId) => board[stageId]?.includes(itemId)) ?? null;
+}
+
+function arraysEqual(a: string[] = [], b: string[] = []) {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function calculateOrder(finalIds: string[], activeId: string, leadMap: Map<string, LeadRow>) {
+  const index = finalIds.indexOf(activeId);
+  const above = index > 0 ? leadMap.get(finalIds[index - 1])?.kanban_order : undefined;
+  const below = index >= 0 && index < finalIds.length - 1 ? leadMap.get(finalIds[index + 1])?.kanban_order : undefined;
+
+  if (typeof above !== "number" && typeof below !== "number") return Date.now();
+  if (typeof above !== "number") return (below ?? Date.now()) + 1000;
+  if (typeof below !== "number") return above - 1000;
+  return (above + below) / 2;
+}
+
 const activityDotClass = { overdue: "bg-red-500", today: "bg-amber-400", future: "bg-emerald-500" };
 const activityLabel = { overdue: "Atividade atrasada", today: "Atividade para hoje", future: "Atividade futura" };
 
-function LeadCardVisual({
-  lead,
-  owner,
-  nextActivity,
-  proposal,
-  overlay = false,
-}: {
-  lead: LeadRow;
-  owner?: OwnerInfo;
-  nextActivity?: ActivityInfo;
-  proposal?: ProposalRow;
-  overlay?: boolean;
-}) {
+function LeadCardVisual({ lead, owner, nextActivity, proposal, overlay = false }: { lead: LeadRow; owner?: OwnerInfo; nextActivity?: ActivityInfo; proposal?: ProposalRow; overlay?: boolean }) {
   const wa = lead.telefone ? lead.telefone.replace(/\D/g, "") : "";
   const activityStatus = nextActivity ? activityState(nextActivity.scheduled_at) : null;
   const amount = formatMoney(proposal?.negotiated_value ?? lead.custom_fields?.valor_apresentado ?? lead.custom_fields?.valor_fechado ?? lead.custom_fields?.valor_final_fechado);
@@ -144,26 +187,15 @@ function LeadCardVisual({
   );
 }
 
-function DraggableLeadCard({
-  lead,
-  owner,
-  nextActivity,
-  proposal,
-}: {
-  lead: LeadRow;
-  owner?: OwnerInfo;
-  nextActivity?: ActivityInfo;
-  proposal?: ProposalRow;
-}) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: lead.id });
-
+function SortableLeadCard({ lead, owner, nextActivity, proposal }: { lead: LeadRow; owner?: OwnerInfo; nextActivity?: ActivityInfo; proposal?: ProposalRow }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lead.id });
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`cursor-grab active:cursor-grabbing transition-[opacity,transform] duration-150 ${isDragging ? "opacity-25 scale-[0.98]" : "opacity-100 scale-100"}`}
-      style={{ touchAction: "manipulation" }}
+      className={`cursor-grab active:cursor-grabbing ${isDragging ? "opacity-20" : "opacity-100"}`}
+      style={{ transform: CSS.Transform.toString(transform), transition, touchAction: "manipulation" }}
     >
       <LeadCardVisual lead={lead} owner={owner} nextActivity={nextActivity} proposal={proposal} />
     </div>
@@ -171,15 +203,8 @@ function DraggableLeadCard({
 }
 
 function DroppableStageColumn({ id, children }: { id: string; children: ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`bg-card/50 rounded-lg p-3 min-h-[400px] border transition-all duration-150 ${isOver ? "border-primary ring-2 ring-primary/20 bg-primary/[0.04] scale-[1.005]" : "border-border"}`}
-    >
-      {children}
-    </div>
-  );
+  const { setNodeRef, isOver } = useDroppable({ id: stageDropId(id) });
+  return <div ref={setNodeRef} className={`bg-card/50 rounded-lg p-3 min-h-[400px] border transition-all duration-150 ${isOver ? "border-primary ring-2 ring-primary/20 bg-primary/[0.04]" : "border-border"}`}>{children}</div>;
 }
 
 const KanbanPage = () => {
@@ -187,20 +212,25 @@ const KanbanPage = () => {
   const { data: pipelines = [] } = usePipelines();
   const [search, setSearch] = useState("");
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const [optimisticStages, setOptimisticStages] = useState<Record<string, string>>({});
+  const [board, setBoard] = useState<BoardState>({});
+  const dragStartBoard = useRef<BoardState>({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 160, tolerance: 8 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  const collisionDetection: CollisionDetection = (args) => {
+    const pointer = pointerWithin(args);
+    return pointer.length ? pointer : closestCenter(args);
+  };
 
   const activePipelineId = useMemo(() => {
     const fromUrl = searchParams.get("pipeline");
     if (fromUrl && pipelines.some((p) => p.id === fromUrl)) return fromUrl;
     return pipelines[0]?.id ?? null;
   }, [pipelines, searchParams]);
-
   const activePipeline = useMemo(() => pipelines.find((p) => p.id === activePipelineId) ?? null, [pipelines, activePipelineId]);
   const isAcelera = activePipeline?.nome === "Pipeline Acelera";
 
@@ -215,29 +245,31 @@ const KanbanPage = () => {
   const { data: stages = [] } = usePipelineStages(activePipelineId);
   const { data: leadsRaw = [], isLoading: loadingLeads } = useLeadsByPipeline(activePipelineId);
   const leads = leadsRaw as unknown as LeadRow[];
-  const leadIds = useMemo(() => leads.map((l) => l.id), [leads]);
+  const leadMap = useMemo(() => new Map(leads.map((lead) => [lead.id, lead])), [leads]);
+  const leadIds = useMemo(() => leads.map((lead) => lead.id), [leads]);
   const { data: activities = [] } = usePendingActivitiesForLeads(leadIds);
   const { data: proposals = [] } = useQuery({
     queryKey: ["pipeline-proposals", activePipelineId, leadIds.join(",")],
     queryFn: async () => {
       if (!leadIds.length) return [];
-      const { data, error } = await supabase
-        .from("proposals" as never)
-        .select("id,lead_id,status,negotiated_value,created_at,products(name,insurer_name)")
-        .in("lead_id", leadIds)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("proposals" as never).select("id,lead_id,status,negotiated_value,created_at,products(name,insurer_name)").in("lead_id", leadIds).order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as ProposalRow[];
     },
     enabled: leadIds.length > 0,
   });
   const updateStage = useUpdateLeadStage();
+  const updateOrder = useUpdateLeadKanbanOrder();
+
+  useEffect(() => {
+    if (!activeDragId) setBoard(buildBoard(stages, leads));
+  }, [stages, leads, activeDragId]);
 
   const { data: members = [] } = useOrgMembers();
   const ownerMap = useMemo(() => {
-    const m = new Map<string, OwnerInfo>();
-    members.forEach((u) => m.set(u.id, { display_name: u.display_name, email: u.email }));
-    return m;
+    const map = new Map<string, OwnerInfo>();
+    members.forEach((member) => map.set(member.id, { display_name: member.display_name, email: member.email }));
+    return map;
   }, [members]);
 
   const nextActivityMap = useMemo(() => {
@@ -251,73 +283,91 @@ const KanbanPage = () => {
 
   const latestProposalMap = useMemo(() => {
     const map = new Map<string, ProposalRow>();
-    proposals.forEach((proposal) => {
-      if (!map.has(proposal.lead_id)) map.set(proposal.lead_id, proposal);
-    });
+    proposals.forEach((proposal) => { if (!map.has(proposal.lead_id)) map.set(proposal.lead_id, proposal); });
     return map;
   }, [proposals]);
 
-  useEffect(() => {
-    setOptimisticStages((current) => {
-      let changed = false;
-      const next = { ...current };
-      Object.entries(current).forEach(([leadId, stageId]) => {
-        const lead = leads.find((item) => item.id === leadId);
-        if (!lead || lead.stage_id === stageId) {
-          delete next[leadId];
-          changed = true;
-        }
-      });
-      return changed ? next : current;
-    });
-  }, [leads]);
-
-  const filteredLeads = useMemo(() => {
+  const matchesSearch = (lead: LeadRow) => {
     const q = normalize(search.trim());
-    if (!q) return leads;
-    return leads.filter((lead) => {
-      const cnpj = lead.custom_fields?.cnpj;
-      return [lead.empresa, lead.nome, lead.telefone, cnpj].some((value) => normalize(value).includes(q));
-    });
-  }, [leads, search]);
+    if (!q) return true;
+    return [lead.empresa, lead.nome, lead.telefone, lead.custom_fields?.cnpj].some((value) => normalize(value).includes(q));
+  };
 
-  const grouped = useMemo(() => {
-    const g: Record<string, LeadRow[]> = {};
-    stages.forEach((s) => { g[s.id] = []; });
-    filteredLeads.forEach((lead) => {
-      const effectiveStageId = optimisticStages[lead.id] ?? lead.stage_id;
-      if (effectiveStageId && g[effectiveStageId]) g[effectiveStageId].push(lead);
-    });
-    return g;
-  }, [stages, filteredLeads, optimisticStages]);
-
-  const activeLead = useMemo(() => leads.find((lead) => lead.id === activeDragId) ?? null, [leads, activeDragId]);
+  const activeLead = activeDragId ? leadMap.get(activeDragId) ?? null : null;
 
   const handleDragStart = (event: DragStartEvent) => {
+    dragStartBoard.current = cloneBoard(board);
     setActiveDragId(String(event.active.id));
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const leadId = String(event.active.id);
-    const targetStageId = event.over ? String(event.over.id) : null;
-    setActiveDragId(null);
-    if (!targetStageId || !activePipelineId) return;
+  const handleDragOver = (event: DragOverEvent) => {
+    const activeId = String(event.active.id);
+    const overId = event.over ? String(event.over.id) : null;
+    if (!overId) return;
 
-    const lead = leads.find((item) => item.id === leadId);
-    if (!lead) return;
-    const currentStageId = optimisticStages[lead.id] ?? lead.stage_id;
-    if (currentStageId === targetStageId) return;
+    setBoard((current) => {
+      const sourceStage = findContainer(current, activeId);
+      const stageFromArea = fromStageDropId(overId);
+      const targetStage = stageFromArea ?? findContainer(current, overId);
+      if (!sourceStage || !targetStage) return current;
 
-    setOptimisticStages((current) => ({ ...current, [lead.id]: targetStageId }));
-    try {
-      await updateStage.mutateAsync({ leadId: lead.id, stageId: targetStageId, pipelineId: activePipelineId });
-    } catch {
-      setOptimisticStages((current) => {
-        const next = { ...current };
-        delete next[lead.id];
+      const next = cloneBoard(current);
+      Object.keys(next).forEach((stageId) => { next[stageId] = next[stageId].filter((id) => id !== activeId); });
+
+      if (stageFromArea) {
+        next[targetStage] = [activeId, ...next[targetStage]];
         return next;
-      });
+      }
+
+      const targetIds = next[targetStage];
+      const overIndex = targetIds.indexOf(overId);
+      if (overIndex < 0) {
+        next[targetStage] = [activeId, ...targetIds];
+        return next;
+      }
+
+      const translatedTop = event.active.rect.current.translated?.top ?? 0;
+      const activeHeight = event.active.rect.current.translated?.height ?? 0;
+      const activeCenter = translatedTop + activeHeight / 2;
+      const overCenter = event.over!.rect.top + event.over!.rect.height / 2;
+      const insertAfter = activeCenter > overCenter;
+      targetIds.splice(overIndex + (insertAfter ? 1 : 0), 0, activeId);
+      return next;
+    });
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const activeId = String(event.active.id);
+    const lead = leadMap.get(activeId);
+    const targetStage = findContainer(board, activeId);
+    const sourceStage = findContainer(dragStartBoard.current, activeId);
+    setActiveDragId(null);
+
+    if (!lead || !targetStage || !sourceStage || !activePipelineId) {
+      setBoard(cloneBoard(dragStartBoard.current));
+      return;
     }
+
+    const targetIds = board[targetStage] ?? [];
+    const kanbanOrder = calculateOrder(targetIds, activeId, leadMap);
+    const changedStage = targetStage !== sourceStage;
+    const changedPosition = !arraysEqual(dragStartBoard.current[sourceStage], board[sourceStage]) || !arraysEqual(dragStartBoard.current[targetStage], board[targetStage]);
+    if (!changedStage && !changedPosition) return;
+
+    try {
+      if (changedStage) {
+        await updateStage.mutateAsync({ leadId: activeId, stageId: targetStage, pipelineId: activePipelineId, kanbanOrder });
+      } else {
+        await updateOrder.mutateAsync({ leadId: activeId, kanbanOrder });
+      }
+    } catch {
+      setBoard(cloneBoard(dragStartBoard.current));
+    }
+  };
+
+  const handleDragCancel = () => {
+    setBoard(cloneBoard(dragStartBoard.current));
+    setActiveDragId(null);
   };
 
   const selectPipeline = (id: string) => {
@@ -335,58 +385,45 @@ const KanbanPage = () => {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Pipelines</h1>
-          <p className="text-sm text-muted-foreground">Arraste os cards livremente entre as etapas. Nenhum preenchimento é obrigatório para movimentar um lead.</p>
+          <p className="text-sm text-muted-foreground">Arraste entre colunas ou encaixe o card na posição desejada. Ao soltar na área vazia da coluna, ele entra no topo.</p>
         </div>
-        {isAcelera && (
-          <div className="relative w-full xl:w-80">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar empresa, contato, telefone ou CNPJ" className="pl-9" />
-          </div>
-        )}
+        {isAcelera && <div className="relative w-full xl:w-80"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar empresa, contato, telefone ou CNPJ" className="pl-9" /></div>}
       </div>
 
       <PipelineTabs pipelines={pipelines} activeId={activePipelineId} onSelect={selectPipeline} />
 
       {!activePipelineId ? <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p> : loadingLeads ? <p className="text-sm text-muted-foreground">Carregando leads…</p> : stages.length === 0 ? <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p> : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragCancel={() => setActiveDragId(null)}
-        >
+        <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
           <div className="grid gap-3 overflow-x-auto pb-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))` }}>
-            {stages.map((col) => {
-              const cards = grouped[col.id] ?? [];
-              const overWip = col.wip_limit != null && cards.length > col.wip_limit;
+            {stages.map((stage) => {
+              const allIds = board[stage.id] ?? [];
+              const visibleIds = allIds.filter((id) => {
+                const lead = leadMap.get(id);
+                return lead ? matchesSearch(lead) : false;
+              });
+              const overWip = stage.wip_limit != null && allIds.length > stage.wip_limit;
               return (
-                <DroppableStageColumn key={col.id} id={col.id}>
+                <DroppableStageColumn key={stage.id} id={stage.id}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: col.cor ?? "#64748b" }} />{col.nome}{col.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}</h3>
-                    <Badge variant={overWip ? "destructive" : "secondary"} className="text-xs">{cards.length}{col.wip_limit != null ? `/${col.wip_limit}` : ""}</Badge>
+                    <h3 className="text-sm font-semibold inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: stage.cor ?? "#64748b" }} />{stage.nome}{stage.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}</h3>
+                    <Badge variant={overWip ? "destructive" : "secondary"} className="text-xs">{allIds.length}{stage.wip_limit != null ? `/${stage.wip_limit}` : ""}</Badge>
                   </div>
-                  <div className="space-y-2 min-h-[320px]">
-                    {cards.map((lead) => (
-                      <DraggableLeadCard
-                        key={lead.id}
-                        lead={lead}
-                        owner={ownerMap.get(lead.owner_id ?? "")}
-                        nextActivity={nextActivityMap.get(lead.id)}
-                        proposal={latestProposalMap.get(lead.id)}
-                      />
-                    ))}
-                  </div>
+                  <SortableContext items={visibleIds} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2 min-h-[320px]">
+                      {visibleIds.map((id) => {
+                        const lead = leadMap.get(id);
+                        if (!lead) return null;
+                        return <SortableLeadCard key={id} lead={lead} owner={ownerMap.get(lead.owner_id ?? "")} nextActivity={nextActivityMap.get(id)} proposal={latestProposalMap.get(id)} />;
+                      })}
+                    </div>
+                  </SortableContext>
                 </DroppableStageColumn>
               );
             })}
           </div>
 
           <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }}>
-            {activeLead ? (
-              <div className="w-[245px] rotate-[1.5deg] scale-[1.03] cursor-grabbing pointer-events-none">
-                <LeadCardVisual lead={activeLead} owner={overlayOwner} nextActivity={overlayActivity} proposal={overlayProposal} overlay />
-              </div>
-            ) : null}
+            {activeLead ? <div className="w-[245px] rotate-[1.5deg] scale-[1.03] cursor-grabbing pointer-events-none"><LeadCardVisual lead={activeLead} owner={overlayOwner} nextActivity={overlayActivity} proposal={overlayProposal} overlay /></div> : null}
           </DragOverlay>
         </DndContext>
       )}
