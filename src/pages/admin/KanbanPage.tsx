@@ -286,6 +286,7 @@ const KanbanPage = () => {
     };
 
     update();
+    requestAnimationFrame(update);
     const observer = new ResizeObserver(update);
     observer.observe(element);
     if (element.firstElementChild instanceof HTMLElement) observer.observe(element.firstElementChild);
@@ -481,13 +482,13 @@ const KanbanPage = () => {
     <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={exportCsv}><Download className="h-3.5 w-3.5" />Exportar</Button>
   </div>;
 
-  return <div className={`p-6 space-y-4 ${horizontalScroll.max > 0 ? "pb-20" : ""}`}>
+  return <div className="w-full min-w-0 max-w-full overflow-hidden p-6 pb-24 space-y-4">
     <div><h1 className="text-2xl font-display font-bold">Pipelines</h1><p className="text-sm text-muted-foreground">Arraste entre colunas ou encaixe o card na posição desejada.</p></div>
     <PipelineTabs pipelines={pipelines} activeId={activePipelineId} onSelect={selectPipeline} rightActions={toolbar} />
 
     {!activePipelineId ? <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p> : loadingLeads ? <p className="text-sm text-muted-foreground">Carregando leads…</p> : stages.length === 0 ? <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p> : (
       <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
-        <div ref={boardScrollRef} onScroll={syncHorizontalScroll} className="overflow-x-auto pb-3 overscroll-x-contain">
+        <div ref={boardScrollRef} onScroll={syncHorizontalScroll} className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-3">
           <div
             className="grid gap-3"
             style={{
@@ -513,14 +514,14 @@ const KanbanPage = () => {
       </DndContext>
     )}
 
-    {horizontalScroll.max > 0 && (
-      <div className="fixed bottom-4 left-1/2 z-50 w-[min(760px,calc(100vw-2rem))] -translate-x-1/2">
-        <div className="flex items-center gap-2 rounded-xl border bg-background/95 p-2 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-background/85">
-          <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => scrollBoardBy(-360)} disabled={horizontalScroll.left <= 0} title="Rolar pipeline para a esquerda">
+    {activePipelineId && stages.length > 1 && (
+      <div className="fixed inset-x-0 bottom-4 z-[100] flex justify-center px-4 pointer-events-none">
+        <div className="pointer-events-auto flex w-[min(820px,calc(100vw-2rem))] items-center gap-2 rounded-2xl border border-emerald-500/80 bg-emerald-600 px-3 py-2.5 text-white shadow-2xl shadow-emerald-950/25">
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white hover:bg-white/15 hover:text-white disabled:text-white/40" onClick={() => scrollBoardBy(-360)} disabled={horizontalScroll.left <= 0} title="Rolar pipeline para a esquerda">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <span className="hidden text-[11px] font-medium text-muted-foreground sm:block">Navegar colunas</span>
+            <span className="hidden whitespace-nowrap text-[11px] font-semibold text-white/90 sm:block">Arraste para navegar</span>
             <input
               type="range"
               min={0}
@@ -528,11 +529,11 @@ const KanbanPage = () => {
               step={1}
               value={Math.min(horizontalScroll.left, horizontalScroll.max)}
               onChange={(event) => setBoardScroll(Number(event.target.value))}
-              className="h-2 min-w-0 flex-1 cursor-ew-resize accent-primary"
+              className="h-2 min-w-0 flex-1 cursor-ew-resize accent-white"
               aria-label="Navegação horizontal do pipeline"
             />
           </div>
-          <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => scrollBoardBy(360)} disabled={horizontalScroll.left >= horizontalScroll.max - 1} title="Rolar pipeline para a direita">
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white hover:bg-white/15 hover:text-white disabled:text-white/40" onClick={() => scrollBoardBy(360)} disabled={horizontalScroll.max <= 0 || horizontalScroll.left >= horizontalScroll.max - 1} title="Rolar pipeline para a direita">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
