@@ -5,9 +5,10 @@ import { AlertTriangle, ArrowRight, CalendarDays, Clock3, FileDiff, History, Use
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+type Period = "7" | "30" | "90" | "all" | "custom";
 type AuditRow = {
   id: string;
   actor_id: string | null;
@@ -204,9 +205,18 @@ function subjectFromRow(row: AuditRow, profiles: Map<string, string>) {
   return entityLabels[row.entity_type] || row.entity_type;
 }
 
+function dateInputValue(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export default function AuditoriaPage() {
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [period, setPeriod] = useState<Period>("30");
+  const [dateFrom, setDateFrom] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 29);
+    return dateInputValue(date);
+  });
+  const [dateTo, setDateTo] = useState(() => dateInputValue(new Date()));
 
   const { data: rows = [], isLoading, error: auditError } = useQuery({
     queryKey: ["audit-events"],
@@ -273,16 +283,29 @@ export default function AuditoriaPage() {
   const stageMap = useMemo(() => new Map(stages.map((row) => [row.id, row.nome])), [stages]);
   const dynamicLabels = useMemo(() => new Map([...stageFields, ...formFields].map((row) => [row.field_key, row.label])), [stageFields, formFields]);
 
-  const filtered = useMemo(() => {
-    const start = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null;
-    const end = dateTo ? new Date(`${dateTo}T23:59:59.999`) : null;
-    return rows.filter((row) => {
-      const when = new Date(row.created_at);
-      if (start && when < start) return false;
-      if (end && when > end) return false;
-      return true;
-    });
-  }, [rows, dateFrom, dateTo]);
+  const range = useMemo(() => {
+    if (period === "all") return { start: null as Date | null, end: null as Date | null };
+    if (period === "custom") {
+      const first = new Date(`${dateFrom}T00:00:00`);
+      const second = new Date(`${dateTo}T23:59:59.999`);
+      if (first <= second) return { start: first, end: second };
+      const start = new Date(second); start.setHours(0, 0, 0, 0);
+      const end = new Date(first); end.setHours(23, 59, 59, 999);
+      return { start, end };
+    }
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (Number(period) - 1));
+    const end = new Date(); end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }, [period, dateFrom, dateTo]);
+
+  const filtered = useMemo(() => rows.filter((row) => {
+    const when = new Date(row.created_at);
+    if (range.start && when < range.start) return false;
+    if (range.end && when > range.end) return false;
+    return true;
+  }), [rows, range]);
 
   return (
     <div className="p-6 space-y-5">
@@ -292,16 +315,24 @@ export default function AuditoriaPage() {
       </div>
 
       <Card>
-        <CardContent className="p-4 flex flex-col gap-3 md:flex-row md:items-end">
+        <CardContent className="p-4 flex flex-col gap-3 md:flex-row md:items-end md:flex-wrap">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Data inicial</label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="md:w-44" />
+            <label className="text-xs font-medium text-muted-foreground">Período</label>
+            <Select value={period} onValueChange={(value) => setPeriod(value as Period)}>
+              <SelectTrigger className="md:w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Últimos 7 dias</SelectItem>
+                <SelectItem value="30">Últimos 30 dias</SelectItem>
+                <SelectItem value="90">Últimos 90 dias</SelectItem>
+                <SelectItem value="all">Todo o período</SelectItem>
+                <SelectItem value="custom">Período personalizado</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Data final</label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="md:w-44" />
-          </div>
-          <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); }}>Limpar filtro</Button>
+          {period === "custom" && <>
+            <div className="space-y-1.5"><label className="text-xs font-medium text-muted-foreground">Data inicial</label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="md:w-44" /></div>
+            <div className="space-y-1.5"><label className="text-xs font-medium text-muted-foreground">Data final</label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="md:w-44" /></div>
+          </>}
           <div className="md:ml-auto text-sm text-muted-foreground inline-flex items-center gap-2"><CalendarDays className="h-4 w-4" />{filtered.length} alterações</div>
         </CardContent>
       </Card>
