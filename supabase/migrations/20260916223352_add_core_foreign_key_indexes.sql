@@ -1,0 +1,10 @@
+create index if not exists idx_activities_created_by on public.activities(created_by);
+create index if not exists idx_audit_log_actor_id on public.audit_log(actor_id);
+create index if not exists idx_audit_log_organization_id on public.audit_log(organization_id);
+create index if not exists idx_clientes_organization_id on public.clientes(organization_id);
+create index if not exists idx_lead_stage_data_organization_id on public.lead_stage_data(organization_id);
+create index if not exists idx_lead_stage_data_stage_id on public.lead_stage_data(stage_id);
+create index if not exists idx_leads_organization_id on public.leads(organization_id);
+create index if not exists idx_leads_product_id on public.leads(product_id);
+create index if not exists idx_proposals_created_by on public.proposals(created_by);
+create index if not exists idx_proposals_product_id on public.proposals(product_id);
