@@ -131,7 +131,7 @@ export function NovoLeadDialog({ open, onOpenChange, onCreated }: Props) {
       const actor = p.display_name || uRes.data.user?.email || "usuário";
       const entry = {
         tipo: "manual",
-        descricao: `Lead cadastrado manualmente por ${actor}`,
+        descricao: `Vida cadastrada manualmente por ${actor}`,
         data: new Date().toISOString(),
         autor: actor,
       };
@@ -145,7 +145,7 @@ export function NovoLeadDialog({ open, onOpenChange, onCreated }: Props) {
         : [];
       await supabase.from("leads").update({ historico: [...hist, entry] } as never).eq("id", leadId);
 
-      toast.success("Lead cadastrado!");
+      toast.success("Vida cadastrada!");
       qc.invalidateQueries({ queryKey: ["leads"] });
       qc.invalidateQueries({ queryKey: ["pipeline-leads"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
@@ -163,7 +163,7 @@ export function NovoLeadDialog({ open, onOpenChange, onCreated }: Props) {
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Dados do prospecto</DialogTitle>
-          <DialogDescription>Cadastre um novo lead manualmente.</DialogDescription>
+          <DialogDescription>Cadastre uma nova vida manualmente.</DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
@@ -269,7 +269,7 @@ export function NovoLeadDialog({ open, onOpenChange, onCreated }: Props) {
             Cancelar
           </Button>
           <Button onClick={submit} disabled={saving || isLoading}>
-            {saving ? "Salvando…" : "Cadastrar lead"}
+            {saving ? "Salvando…" : "+Vidas"}
           </Button>
         </DialogFooter>
       </DialogContent>
