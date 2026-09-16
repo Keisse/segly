@@ -103,7 +103,7 @@ const LeadDetail = () => {
   const firstName = capitalizeWords(displayName.split(/\s+/)[0]);
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  if (!lead) return <div className="min-h-screen flex items-center justify-center"><div className="text-center"><p className="text-muted-foreground mb-4">Lead não encontrado</p><Button onClick={() => navigate("/admin/dashboard")}>Voltar ao Dashboard</Button></div></div>;
+  if (!lead) return <div className="min-h-screen flex items-center justify-center"><div className="text-center"><p className="text-muted-foreground mb-4">Vida não encontrada</p><Button onClick={() => navigate("/admin/dashboard")}>Voltar ao Dashboard</Button></div></div>;
 
   const currentStage = pipelineStages.find((stage) => stage.id === lead.stage_id) ?? null;
   const negotiationStage = pipelineStages.find((stage) => normalize(stage.nome).includes("negoci")) ?? null;
@@ -188,7 +188,7 @@ const LeadDetail = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4 sm:p-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="space-y-1 min-w-0">
-              <div className="flex items-center gap-2"><h1 className="text-2xl font-display font-bold text-foreground break-words">{capitalizeWords(lead.nome)}</h1><Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setEditOpen(true)} title="Editar lead"><Pencil className="h-4 w-4" /></Button></div>
+              <div className="flex items-center gap-2"><h1 className="text-2xl font-display font-bold text-foreground break-words">{capitalizeWords(lead.nome)}</h1><Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setEditOpen(true)} title="Editar vida"><Pencil className="h-4 w-4" /></Button></div>
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1"><Building2 className="w-4 h-4" />{lead.empresa}</span>
                 <span className="flex items-center gap-1"><Briefcase className="w-4 h-4" />{lead.cargo}</span>
@@ -211,7 +211,7 @@ const LeadDetail = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4 sm:p-6">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-foreground">Informações iniciais</h2>
-            <p className="text-sm text-muted-foreground">Dados do cadastro inicial do lead. Use o lápis para completar, corrigir ou deixar uma informação vazia.</p>
+            <p className="text-sm text-muted-foreground">Dados do cadastro inicial da vida. Use o lápis para completar, corrigir ou deixar uma informação vazia.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {infoFields.map((field) => {
@@ -241,7 +241,7 @@ const LeadDetail = () => {
         {canViewAudit && (
           <details className="glass-card group overflow-hidden">
             <summary className="cursor-pointer list-none p-5 flex items-center justify-between gap-3 select-none">
-              <div className="flex items-center gap-2"><History className="h-5 w-5 text-primary" /><div><p className="font-semibold">Histórico de alterações</p><p className="text-sm text-muted-foreground">Clique para consultar as alterações deste lead.</p></div></div>
+              <div className="flex items-center gap-2"><History className="h-5 w-5 text-primary" /><div><p className="font-semibold">Histórico de alterações</p><p className="text-sm text-muted-foreground">Clique para consultar as alterações desta vida.</p></div></div>
               <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform group-open:rotate-180" />
             </summary>
             <div className="px-5 pb-5"><LeadAuditTimeline leadId={lead.id} /></div>
