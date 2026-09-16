@@ -39,8 +39,8 @@ type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leader
 const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
-  { title: "Leads", url: "/admin/leads", icon: Users },
-  { title: "Cadastrar Leads", url: "/admin/leads/novo", icon: UserPlus },
+  { title: "Vidas", url: "/admin/leads", icon: Users },
+  { title: "+Vidas", url: "/admin/leads/novo", icon: UserPlus },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Standby", url: "/admin/standby", icon: PauseCircle },
   { title: "Agenda", url: "/admin/atividades", icon: CalendarCheck2 },
