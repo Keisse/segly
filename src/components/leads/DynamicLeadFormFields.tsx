@@ -73,7 +73,7 @@ export function DynamicLeadFormFields({
                 </SelectContent>
               </Select>
             ) : field.type === "multiselect" ? (
-              <div id={id} className="rounded-md border border-border px-4 py-3 min-h-14 flex items-center">
+              <div id={id} className="h-10 flex items-center">
                 {(field.options ?? []).length === 0 ? (
                   <Input
                     value={String(value ?? "")}
@@ -82,7 +82,7 @@ export function DynamicLeadFormFields({
                     onChange={(event) => onChange(field.field_key, event.target.value)}
                   />
                 ) : (
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                     {(field.options ?? []).map((option) => {
                       const current = Array.isArray(value)
                         ? String(value[0] ?? "")
