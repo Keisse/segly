@@ -128,6 +128,19 @@
     @apply border-border;
   }
 
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
@@ -137,10 +150,24 @@
     transition: background 180ms ease, color 180ms ease;
   }
 
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
     font-feature-settings: "ss01", "cv11";
     letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+
+  p,
+  span,
+  a {
+    overflow-wrap: anywhere;
   }
 }
 
