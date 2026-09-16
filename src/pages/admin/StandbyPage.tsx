@@ -114,9 +114,9 @@ export default function StandbyPage() {
       qc.invalidateQueries({ queryKey: ["pending-activities"] });
       qc.invalidateQueries({ queryKey: ["activities-page"] });
       qc.invalidateQueries({ queryKey: ["agenda-today"] });
-      toast.success("Lead retomado e movido para Em Contato.");
+      toast.success("Vida retomada e movida para Em Contato.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível retomar o lead.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível retomar a vida.");
     }
   };
 
@@ -124,7 +124,7 @@ export default function StandbyPage() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold">Stand-by</h1>
-        <p className="text-sm text-muted-foreground">Leads temporariamente pausados, organizados pela data de novo contato.</p>
+        <p className="text-sm text-muted-foreground">Vidas temporariamente pausadas, organizadas pela data de novo contato.</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -145,13 +145,13 @@ export default function StandbyPage() {
         </Tabs>
         <div className="relative w-full lg:w-80">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar lead, empresa ou contato" className="pl-9" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar vida, empresa ou contato" className="pl-9" />
         </div>
       </div>
 
       <div className="space-y-3">
         {rows.length === 0 ? (
-          <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Nenhum lead neste filtro.</CardContent></Card>
+          <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Nenhuma vida neste filtro.</CardContent></Card>
         ) : rows.map(({ lead, activity, state }) => (
           <Card key={lead.id}>
             <CardContent className="p-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -171,7 +171,7 @@ export default function StandbyPage() {
                 {activity?.notes && <p className="text-sm text-muted-foreground">Motivo: {activity.notes}</p>}
               </div>
               <div className="flex gap-2 shrink-0">
-                <Button variant="outline" asChild><Link to={`/admin/lead/${lead.id}`}>Abrir lead</Link></Button>
+                <Button variant="outline" asChild><Link to={`/admin/lead/${lead.id}`}>Abrir vida</Link></Button>
                 <Button onClick={() => reactivate(lead.id, activity?.id)} disabled={updateStage.isPending}>
                   <RotateCcw className="h-4 w-4 mr-2" />Retomar
                 </Button>
