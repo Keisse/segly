@@ -1,0 +1,66 @@
+name: Segly Quality Audit
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "quality-audit"
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        id: typescript
+        continue-on-error: true
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Tests
+        id: tests
+        continue-on-error: true
+        run: npm run test -- --passWithNoTests
+
+      - name: Dependency security audit
+        id: audit
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+      - name: Production build
+        id: build
+        continue-on-error: true
+        run: npm run build
+
+      - name: Audit summary
+        if: always()
+        run: |
+          echo "TypeScript: ${{ steps.typescript.outcome }}"
+          echo "ESLint: ${{ steps.lint.outcome }}"
+          echo "Tests: ${{ steps.tests.outcome }}"
+          echo "Dependency audit: ${{ steps.audit.outcome }}"
+          echo "Build: ${{ steps.build.outcome }}"
+          if [ "${{ steps.typescript.outcome }}" != "success" ] || [ "${{ steps.lint.outcome }}" != "success" ] || [ "${{ steps.tests.outcome }}" != "success" ] || [ "${{ steps.audit.outcome }}" != "success" ] || [ "${{ steps.build.outcome }}" != "success" ]; then
+            exit 1
+          fi
