@@ -21,6 +21,11 @@ type Cliente = {
   historico: any[];
 };
 
+const clientStatusLabel: Record<string, string> = {
+  ativo: "Ativo",
+  em_implantacao: "Em implantação",
+};
+
 const ClientesPage = () => {
   const [search, setSearch] = useState("");
 
@@ -87,7 +92,7 @@ const ClientesPage = () => {
                   {c.pipeline_origem ? ` · Origem: ${c.pipeline_origem}` : ""}
                 </p>
               </div>
-              <Badge variant="secondary">{c.status}</Badge>
+              <Badge variant={c.status === "em_implantacao" ? "outline" : "secondary"}>{clientStatusLabel[c.status] || c.status}</Badge>
             </Card>
           ))}
         </div>
