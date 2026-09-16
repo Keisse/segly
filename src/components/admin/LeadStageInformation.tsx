@@ -160,9 +160,10 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
         return (
           <div key={stage.id} className={`glass-card p-4 sm:p-6 space-y-5 ${isCurrent ? "border-primary/30" : ""}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <h2 className="text-lg font-semibold text-foreground">{isCurrent ? "Dados desta etapa" : "Dados da etapa"}</h2>
-                <p className="text-sm text-muted-foreground">{stage.nome}{isCurrent ? " · etapa atual" : ""}</p>
+                <span className="text-lg font-semibold text-primary">· {stage.nome}</span>
+                {isCurrent && <Badge variant="outline" className="ml-1 text-[10px] font-normal text-primary border-primary/30">Etapa atual</Badge>}
               </div>
               <Badge variant={answered === stageFields.length && stageFields.length > 0 ? "default" : "secondary"}>{answered}/{stageFields.length} preenchidas</Badge>
             </div>
