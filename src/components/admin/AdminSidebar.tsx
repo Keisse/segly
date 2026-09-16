@@ -47,7 +47,6 @@ const mainItems: Item[] = [
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Standby", url: "/admin/standby", icon: PauseCircle },
   { title: "Agenda", url: "/admin/atividades", icon: CalendarCheck2 },
-  { title: "Auditoria", url: "/admin/auditoria", icon: History, leaderOnly: true },
   { title: "Produtos", url: "/admin/produtos", icon: Package, adminOnly: true },
   { title: "Desempenho", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Comissões", url: "/admin/comissoes", icon: CircleDollarSign, leaderOnly: true },
@@ -121,6 +120,16 @@ export function AdminSidebar() {
                   <NavLink to="/admin/administradores" className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"}>
                     <ShieldCheck className="h-4 w-4" />
                     {!collapsed && <span>Usuários e Permissões</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            {isLeader && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/admin/auditoria" className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"}>
+                    <History className="h-4 w-4" />
+                    {!collapsed && <span>Log de alterações</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
