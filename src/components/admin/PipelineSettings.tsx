@@ -267,7 +267,7 @@ export function PipelineSettings() {
         <Card>
           <CardHeader>
             <CardTitle>Definir como padrão</CardTitle>
-            <CardDescription>Novos leads sem pipeline definido irão para o pipeline padrão da organização.</CardDescription>
+            <CardDescription>Novas vidas sem pipeline definido irão para o pipeline padrão da organização.</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <p className="text-sm">Este é o pipeline padrão?</p>
@@ -362,11 +362,11 @@ function DeletePipelineDialog({ open, onOpenChange, pipeline, options, onDone, d
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir pipeline "{pipeline.nome}"?</AlertDialogTitle>
           <AlertDialogDescription>
-            Leads vinculados serão movidos para o pipeline selecionado abaixo. Esta ação não pode ser desfeita.
+            Vidas vinculadas serão movidas para o pipeline selecionado abaixo. Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2">
-          <Label>Mover leads para</Label>
+          <Label>Mover vidas para</Label>
           <Select value={moveTo} onValueChange={setMoveTo}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
             <SelectContent>
