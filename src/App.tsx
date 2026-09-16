@@ -30,95 +30,98 @@ import ProdutividadePage from "./pages/admin/ProdutividadePage";
 import StandbyPage from "./pages/admin/StandbyPage";
 import AuditoriaPage from "./pages/admin/AuditoriaPage";
 import ProdutosPage from "./pages/admin/ProdutosPage";
+import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/admin-login" replace />} />
-          <Route path="/diagnostico" element={<DiagnosticoPage />} />
-          <Route path="/diagnostico-direto" element={<DiagnosticoDiretoPage />} />
-          <Route path="/plano-acao" element={<ActionPlanPage />} />
-          <Route path="/acompanhamento" element={<TrackingTemplatePage />} />
-          <Route path="/mail" element={<OutboundCadastro />} />
-          <Route path="/obrigada" element={<ObrigadaPage />} />
-          <Route path="/formulario/:formId" element={<PublicLeadFormPage />} />
-          <Route path="/admin-login" element={<AdminLogin />} />
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Navigate to="/admin-login" replace />} />
+            <Route path="/diagnostico" element={<DiagnosticoPage />} />
+            <Route path="/diagnostico-direto" element={<DiagnosticoDiretoPage />} />
+            <Route path="/plano-acao" element={<ActionPlanPage />} />
+            <Route path="/acompanhamento" element={<TrackingTemplatePage />} />
+            <Route path="/mail" element={<OutboundCadastro />} />
+            <Route path="/obrigada" element={<ObrigadaPage />} />
+            <Route path="/formulario/:formId" element={<PublicLeadFormPage />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
 
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="agenda" element={<Navigate to="/admin/atividades" replace />} />
-            <Route path="agenda/item/:id" element={<Navigate to="/admin/atividades" replace />} />
-            <Route path="kanban" element={<KanbanPage />} />
-            <Route path="standby" element={<StandbyPage />} />
-            <Route path="atividades" element={<AtividadesPage />} />
             <Route
-              path="produtividade"
+              path="/admin"
               element={
-                <LeaderOnlyRoute>
-                  <ProdutividadePage />
-                </LeaderOnlyRoute>
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
               }
-            />
-            <Route path="comissoes" element={<Navigate to="/admin/produtividade" replace />} />
-            <Route
-              path="auditoria"
-              element={
-                <LeaderOnlyRoute>
-                  <AuditoriaPage />
-                </LeaderOnlyRoute>
-              }
-            />
-            <Route path="leads" element={<LeadsPage />} />
-            <Route path="leads/novo" element={<NovoLeadPage />} />
-            <Route path="clientes" element={<ClientesPage />} />
-            <Route path="meu-perfil" element={<MeuPerfilPage />} />
-            <Route
-              path="produtos"
-              element={
-                <AdminOnlyRoute>
-                  <ProdutosPage />
-                </AdminOnlyRoute>
-              }
-            />
-            <Route
-              path="administradores"
-              element={
-                <AdminOnlyRoute>
-                  <AdministradoresPage />
-                </AdminOnlyRoute>
-              }
-            />
-            <Route
-              path="configuracoes"
-              element={
-                <AdminOnlyRoute>
-                  <ConfiguracoesPage />
-                </AdminOnlyRoute>
-              }
-            />
-            <Route path="lead/:id" element={<LeadDetail />} />
-          </Route>
+            >
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="agenda" element={<Navigate to="/admin/atividades" replace />} />
+              <Route path="agenda/item/:id" element={<Navigate to="/admin/atividades" replace />} />
+              <Route path="kanban" element={<KanbanPage />} />
+              <Route path="standby" element={<StandbyPage />} />
+              <Route path="atividades" element={<AtividadesPage />} />
+              <Route
+                path="produtividade"
+                element={
+                  <LeaderOnlyRoute>
+                    <ProdutividadePage />
+                  </LeaderOnlyRoute>
+                }
+              />
+              <Route path="comissoes" element={<Navigate to="/admin/produtividade" replace />} />
+              <Route
+                path="auditoria"
+                element={
+                  <LeaderOnlyRoute>
+                    <AuditoriaPage />
+                  </LeaderOnlyRoute>
+                }
+              />
+              <Route path="leads" element={<LeadsPage />} />
+              <Route path="leads/novo" element={<NovoLeadPage />} />
+              <Route path="clientes" element={<ClientesPage />} />
+              <Route path="meu-perfil" element={<MeuPerfilPage />} />
+              <Route
+                path="produtos"
+                element={
+                  <AdminOnlyRoute>
+                    <ProdutosPage />
+                  </AdminOnlyRoute>
+                }
+              />
+              <Route
+                path="administradores"
+                element={
+                  <AdminOnlyRoute>
+                    <AdministradoresPage />
+                  </AdminOnlyRoute>
+                }
+              />
+              <Route
+                path="configuracoes"
+                element={
+                  <AdminOnlyRoute>
+                    <ConfiguracoesPage />
+                  </AdminOnlyRoute>
+                }
+              />
+              <Route path="lead/:id" element={<LeadDetail />} />
+            </Route>
 
-          <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="/admin-dashboard/lead/:id" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin-dashboard/lead/:id" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
