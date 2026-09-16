@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Lock, Mail, ArrowRight, Loader2 } from "lucide-react";
 
-const seglyLogo = "/segly-logo.png";
+const seglyLogo = "/segly-logo-light.svg";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
