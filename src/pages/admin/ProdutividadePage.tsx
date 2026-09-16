@@ -29,10 +29,11 @@ import { useMyRole } from "@/hooks/useMyRole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-type Period = 7 | 30 | 90;
+type Period = "7" | "30" | "90" | "all" | "custom";
 type Person = { id: string; display_name: string | null; lider_id: string | null };
 type ActivityRow = { id: string; responsible_id: string; type: string; scheduled_at: string; status: string; completed_at: string | null };
 type ContactRow = { id: string; user_id: string; contact_type: string; completed_at: string; on_time: boolean };
@@ -93,6 +94,10 @@ function parseDateOnly(value: string) {
   return new Date(`${value}T12:00:00`);
 }
 
+function dateInputValue(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 function changeText(current: number, previous: number, suffix = "") {
   if (current === previous) return `igual ao período anterior (${previous}${suffix})`;
   const diff = current - previous;
@@ -108,20 +113,45 @@ export default function ProdutividadePage() {
   const { user } = useAuth();
   const { data: role } = useMyRole();
   const qc = useQueryClient();
-  const [period, setPeriod] = useState<Period>(30);
+  const [period, setPeriod] = useState<Period>("30");
+  const [customStart, setCustomStart] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return dateInputValue(d);
+  });
+  const [customEnd, setCustomEnd] = useState(() => dateInputValue(new Date()));
   const [selectedId, setSelectedId] = useState("all");
   const [commissionStatus, setCommissionStatus] = useState("all");
   const [cycle, setCycle] = useState(nextCycle());
   const isAdmin = role === "admin";
 
   const range = useMemo(() => {
+    if (period === "all") {
+      const now = new Date();
+      const start = new Date(0);
+      return { now, start, previousStart: start, hasPrevious: false };
+    }
+
+    if (period === "custom") {
+      const first = parseDateOnly(customStart);
+      const second = parseDateOnly(customEnd);
+      const start = first <= second ? first : second;
+      const now = first <= second ? second : first;
+      start.setHours(0, 0, 0, 0);
+      now.setHours(23, 59, 59, 999);
+      const duration = Math.max(24 * 60 * 60 * 1000, now.getTime() - start.getTime() + 1);
+      const previousStart = new Date(start.getTime() - duration);
+      return { now, start, previousStart, hasPrevious: true };
+    }
+
     const now = new Date();
+    const days = Number(period);
     const start = new Date(now);
-    start.setDate(start.getDate() - period);
+    start.setDate(start.getDate() - days);
     const previousStart = new Date(start);
-    previousStart.setDate(previousStart.getDate() - period);
-    return { now, start, previousStart };
-  }, [period]);
+    previousStart.setDate(previousStart.getDate() - days);
+    return { now, start, previousStart, hasPrevious: true };
+  }, [period, customStart, customEnd]);
 
   const nextMonth = useMemo(() => {
     const now = new Date();
@@ -151,7 +181,7 @@ export default function ProdutividadePage() {
   const selectedIds = useMemo(() => selectedId === "all" ? personIds : [selectedId], [selectedId, personIds]);
 
   const { data: activities = [] } = useQuery({
-    queryKey: ["performance-activities", personIds.join(","), period],
+    queryKey: ["performance-activities", personIds.join(","), period, customStart, customEnd],
     queryFn: async () => {
       if (!personIds.length) return [];
       const { data, error } = await supabase.from("activities" as never)
@@ -166,7 +196,7 @@ export default function ProdutividadePage() {
   });
 
   const { data: contacts = [] } = useQuery({
-    queryKey: ["performance-contacts", personIds.join(","), period],
+    queryKey: ["performance-contacts", personIds.join(","), period, customStart, customEnd],
     queryFn: async () => {
       if (!personIds.length) return [];
       const { data, error } = await supabase.from("contact_execution_log" as never)
@@ -250,13 +280,13 @@ export default function ProdutividadePage() {
 
   const performanceFor = (ids: string[]) => {
     const currentActivities = activities.filter((item) => ids.includes(item.responsible_id) && new Date(item.scheduled_at) >= range.start && new Date(item.scheduled_at) <= range.now && item.status !== "cancelada");
-    const previousActivities = activities.filter((item) => ids.includes(item.responsible_id) && new Date(item.scheduled_at) >= range.previousStart && new Date(item.scheduled_at) < range.start && item.status !== "cancelada");
+    const previousActivities = range.hasPrevious ? activities.filter((item) => ids.includes(item.responsible_id) && new Date(item.scheduled_at) >= range.previousStart && new Date(item.scheduled_at) < range.start && item.status !== "cancelada") : [];
     const currentCompleted = currentActivities.filter((item) => item.status === "concluida");
     const previousCompleted = previousActivities.filter((item) => item.status === "concluida");
     const currentContacts = contacts.filter((item) => ids.includes(item.user_id) && new Date(item.completed_at) >= range.start && new Date(item.completed_at) <= range.now);
-    const previousContacts = contacts.filter((item) => ids.includes(item.user_id) && new Date(item.completed_at) >= range.previousStart && new Date(item.completed_at) < range.start);
+    const previousContacts = range.hasPrevious ? contacts.filter((item) => ids.includes(item.user_id) && new Date(item.completed_at) >= range.previousStart && new Date(item.completed_at) < range.start) : [];
     const currentLeads = leads.filter((lead) => lead.owner_id && ids.includes(lead.owner_id) && new Date(lead.created_at) >= range.start && new Date(lead.created_at) <= range.now);
-    const previousLeads = leads.filter((lead) => lead.owner_id && ids.includes(lead.owner_id) && new Date(lead.created_at) >= range.previousStart && new Date(lead.created_at) < range.start);
+    const previousLeads = range.hasPrevious ? leads.filter((lead) => lead.owner_id && ids.includes(lead.owner_id) && new Date(lead.created_at) >= range.previousStart && new Date(lead.created_at) < range.start) : [];
     const stoppedThreshold = new Date(range.now.getTime() - 48 * 60 * 60 * 1000);
     const stopped = leads.filter((lead) => lead.owner_id && ids.includes(lead.owner_id) && lead.stage_entered_at && new Date(lead.stage_entered_at) < stoppedThreshold && !["convertido", "perdido"].includes(lead.status)).length;
     const onTime = pct(currentCompleted.filter((item) => item.completed_at && new Date(item.completed_at) <= new Date(item.scheduled_at)).length, currentCompleted.length);
@@ -290,7 +320,7 @@ export default function ProdutividadePage() {
   const periodEntries = useMemo(() => {
     const valid = visibleEntries.filter((entry) => selectedIds.includes(entry.user_id) && entry.status !== "cancelled");
     const current = valid.filter((entry) => { const d = parseDateOnly(entry.reference_date); return d >= range.start && d <= range.now; });
-    const previous = valid.filter((entry) => { const d = parseDateOnly(entry.reference_date); return d >= range.previousStart && d < range.start; });
+    const previous = range.hasPrevious ? valid.filter((entry) => { const d = parseDateOnly(entry.reference_date); return d >= range.previousStart && d < range.start; }) : [];
     const summarize = (rows: CommissionRow[]) => ({
       broker: rows.filter((entry) => ["earned", "paid"].includes(entry.status)).reduce((sum, entry) => sum + Number(entry.amount || 0), 0),
       gross: rows.filter((entry) => ["earned", "paid"].includes(entry.status)).reduce((sum, entry) => sum + Number(entry.admin_amount || 0), 0),
@@ -374,8 +404,10 @@ export default function ProdutividadePage() {
   const leadName = (id: string | null) => commissionLeads.find((lead) => lead.id === id);
   const cycleInFuture = cycle > new Date().toISOString().slice(0, 10);
   const selectedPerson = people.find((person) => person.id === selectedId);
-  const rangeLabel = `${dateBr(range.start)} a ${dateBr(range.now)}`;
-  const previousRangeLabel = `${dateBr(range.previousStart)} a ${dateBr(new Date(range.start.getTime() - 1))}`;
+  const rangeLabel = period === "all" ? "Todo o período" : `${dateBr(range.start)} a ${dateBr(range.now)}`;
+  const previousRangeLabel = range.hasPrevious ? `${dateBr(range.previousStart)} a ${dateBr(new Date(range.start.getTime() - 1))}` : "sem comparação anterior";
+  const detailChange = (current: number, previous: number, suffix = "") => range.hasPrevious ? changeText(current, previous, suffix) : "Todo o período";
+  const detailMoneyChange = (current: number, previous: number) => range.hasPrevious ? moneyChangeText(current, previous) : "Todo o período";
 
   return (
     <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-6 p-3 sm:p-4 lg:p-6">
@@ -389,10 +421,28 @@ export default function ProdutividadePage() {
             <SelectTrigger className="w-full xl:w-[270px]"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">Todos os colaboradores</SelectItem>{people.map((person) => <SelectItem key={person.id} value={person.id}>{person.display_name || "Usuário"}</SelectItem>)}</SelectContent>
           </Select>
-          <Select value={String(period)} onValueChange={(value) => setPeriod(Number(value) as Period)}>
-            <SelectTrigger className="w-full xl:w-[190px]"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value="7">Últimos 7 dias</SelectItem><SelectItem value="30">Últimos 30 dias</SelectItem><SelectItem value="90">Últimos 90 dias</SelectItem></SelectContent>
+          <Select value={period} onValueChange={(value) => setPeriod(value as Period)}>
+            <SelectTrigger className="w-full xl:w-[210px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+              <SelectItem value="all">Todo o período</SelectItem>
+              <SelectItem value="custom">Período personalizado</SelectItem>
+            </SelectContent>
           </Select>
+          {period === "custom" && (
+            <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
+              <div className="space-y-1">
+                <span className="text-[11px] text-muted-foreground">Data inicial</span>
+                <Input type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[11px] text-muted-foreground">Data final</span>
+                <Input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -401,19 +451,19 @@ export default function ProdutividadePage() {
       </div>
 
       <section className="space-y-4 min-w-0">
-        <div><h2 className="text-lg font-semibold">Desempenho</h2><p className="text-sm text-muted-foreground">Execução comercial comparada com o mesmo intervalo imediatamente anterior.</p></div>
+        <div><h2 className="text-lg font-semibold">Desempenho</h2><p className="text-sm text-muted-foreground">{range.hasPrevious ? "Execução comercial comparada com o mesmo intervalo imediatamente anterior." : "Execução comercial considerando todo o histórico disponível."}</p></div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-          <MetricCard icon={Activity} title="Atividades concluídas" value={String(performance.completed)} detail={changeText(performance.completed, performance.previousCompleted)} />
-          <MetricCard icon={PhoneCall} title="Contatos realizados" value={String(performance.contacts)} detail={changeText(performance.contacts, performance.previousContacts)} />
-          <MetricCard icon={Target} title="OnTime" value={`${performance.onTime}%`} detail={changeText(performance.onTime, performance.previousOnTime, " p.p.")} />
-          <MetricCard icon={TrendingUp} title="Execução da agenda" value={`${performance.execution}%`} detail={changeText(performance.execution, performance.previousExecution, " p.p.")} />
-          <MetricCard icon={Users} title="Novas vidas" value={String(performance.newLeads)} detail={changeText(performance.newLeads, performance.previousNewLeads)} />
+          <MetricCard icon={Activity} title="Atividades concluídas" value={String(performance.completed)} detail={detailChange(performance.completed, performance.previousCompleted)} />
+          <MetricCard icon={PhoneCall} title="Contatos realizados" value={String(performance.contacts)} detail={detailChange(performance.contacts, performance.previousContacts)} />
+          <MetricCard icon={Target} title="OnTime" value={`${performance.onTime}%`} detail={detailChange(performance.onTime, performance.previousOnTime, " p.p.")} />
+          <MetricCard icon={TrendingUp} title="Execução da agenda" value={`${performance.execution}%`} detail={detailChange(performance.execution, performance.previousExecution, " p.p.")} />
+          <MetricCard icon={Users} title="Novas vidas" value={String(performance.newLeads)} detail={detailChange(performance.newLeads, performance.previousNewLeads)} />
           <MetricCard icon={AlarmClock} title="Vidas paradas >48h" value={String(performance.stopped)} detail={`${performance.overdue} atividades atrasadas no período`} />
         </div>
 
         <Card className="min-w-0">
-          <CardHeader><CardTitle className="text-base">Atual x período anterior</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{range.hasPrevious ? "Atual x período anterior" : "Resultados de todo o período"}</CardTitle></CardHeader>
           <CardContent className="min-w-0">
             <div className="h-[280px] w-full min-w-0 sm:h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -424,7 +474,7 @@ export default function ProdutividadePage() {
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="atual" name="Período atual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="anterior" name="Período anterior" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+                  {range.hasPrevious && <Bar dataKey="anterior" name="Período anterior" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />}
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -444,36 +494,6 @@ export default function ProdutividadePage() {
             </CardContent>
           </Card>
         )}
-      </section>
-
-      <section className="space-y-4 border-t pt-6 min-w-0">
-        <div><h2 className="text-lg font-semibold">Comissões</h2><p className="text-sm text-muted-foreground">Resultados financeiros do mesmo filtro de pessoa e período, seguidos do fechamento mensal completo.</p></div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard icon={CircleDollarSign} title="Comissões no período" value={money(periodEntries.current.broker)} detail={moneyChangeText(periodEntries.current.broker, periodEntries.previous.broker)} />
-          <MetricCard icon={ReceiptText} title="Administradora bruta" value={money(periodEntries.current.gross)} detail={moneyChangeText(periodEntries.current.gross, periodEntries.previous.gross)} />
-          <MetricCard icon={WalletCards} title="Administradora líquida" value={money(periodEntries.current.net)} detail={moneyChangeText(periodEntries.current.net, periodEntries.previous.net)} />
-          <MetricCard icon={CheckCircle2} title="Vendas com comissão" value={String(periodEntries.current.sales)} detail={changeText(periodEntries.current.sales, periodEntries.previous.sales)} />
-        </div>
-
-        <Card className="min-w-0">
-          <CardHeader><CardTitle className="text-base">Comparativo financeiro do período</CardTitle></CardHeader>
-          <CardContent className="min-w-0">
-            <div className="h-[280px] w-full min-w-0 sm:h-[320px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={commissionChart} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `R$ ${Math.round(Number(value) / 1000)}k`} />
-                  <Tooltip formatter={(value) => money(value)} />
-                  <Legend />
-                  <Bar dataKey="atual" name="Período atual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="anterior" name="Período anterior" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card className="border-primary/20">
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><WalletCards className="h-4 w-4" />Previsão de ganho em {dateBr(nextMonth.start)}</CardTitle></CardHeader>
@@ -486,6 +506,36 @@ export default function ProdutividadePage() {
                 <div className="lg:text-right"><p className="text-xs text-muted-foreground">Ganho previsto</p><p className="text-xl font-bold text-primary">{money(person.total)}</p></div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="space-y-4 border-t pt-6 min-w-0">
+        <div><h2 className="text-lg font-semibold">Comissões</h2><p className="text-sm text-muted-foreground">Resultados financeiros do mesmo filtro de pessoa e período, seguidos do fechamento mensal completo.</p></div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard icon={CircleDollarSign} title="Comissões no período" value={money(periodEntries.current.broker)} detail={detailMoneyChange(periodEntries.current.broker, periodEntries.previous.broker)} />
+          <MetricCard icon={ReceiptText} title="Administradora bruta" value={money(periodEntries.current.gross)} detail={detailMoneyChange(periodEntries.current.gross, periodEntries.previous.gross)} />
+          <MetricCard icon={WalletCards} title="Administradora líquida" value={money(periodEntries.current.net)} detail={detailMoneyChange(periodEntries.current.net, periodEntries.previous.net)} />
+          <MetricCard icon={CheckCircle2} title="Vendas com comissão" value={String(periodEntries.current.sales)} detail={detailChange(periodEntries.current.sales, periodEntries.previous.sales)} />
+        </div>
+
+        <Card className="min-w-0">
+          <CardHeader><CardTitle className="text-base">{range.hasPrevious ? "Comparativo financeiro do período" : "Resultado financeiro de todo o período"}</CardTitle></CardHeader>
+          <CardContent className="min-w-0">
+            <div className="h-[280px] w-full min-w-0 sm:h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={commissionChart} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `R$ ${Math.round(Number(value) / 1000)}k`} />
+                  <Tooltip formatter={(value) => money(value)} />
+                  <Legend />
+                  <Bar dataKey="atual" name="Período atual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  {range.hasPrevious && <Bar dataKey="anterior" name="Período anterior" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
