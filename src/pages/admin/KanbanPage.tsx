@@ -38,7 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PartyPopper, Mail, MessageCircle, User, Clock3, Search, CalendarClock, CircleDollarSign, FileText, Pin, PinOff, Download } from "lucide-react";
+import { PartyPopper, Mail, MessageCircle, User, Clock3, Search, CalendarClock, CircleDollarSign, FileText, Pin, PinOff, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { capitalizeWords } from "@/lib/formatName";
 import { PipelineTabs } from "@/components/admin/PipelineTabs";
@@ -197,7 +197,9 @@ const KanbanPage = () => {
   const [filtersPinned, setFiltersPinned] = useState(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [board, setBoard] = useState<BoardState>({});
+  const [horizontalScroll, setHorizontalScroll] = useState({ left: 0, max: 0 });
   const dragStartBoard = useRef<BoardState>({});
+  const boardScrollRef = useRef<HTMLDivElement | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -272,6 +274,49 @@ const KanbanPage = () => {
   useEffect(() => {
     if (!activeDragId) setBoard(buildBoard(stages, leads));
   }, [stages, leads, activeDragId]);
+
+  useEffect(() => {
+    const element = boardScrollRef.current;
+    if (!element) return;
+
+    element.scrollLeft = 0;
+    const update = () => {
+      const max = Math.max(0, element.scrollWidth - element.clientWidth);
+      setHorizontalScroll({ left: Math.min(element.scrollLeft, max), max });
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    if (element.firstElementChild instanceof HTMLElement) observer.observe(element.firstElementChild);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [activePipelineId, stages.length]);
+
+  const syncHorizontalScroll = () => {
+    const element = boardScrollRef.current;
+    if (!element) return;
+    const max = Math.max(0, element.scrollWidth - element.clientWidth);
+    setHorizontalScroll({ left: Math.min(element.scrollLeft, max), max });
+  };
+
+  const setBoardScroll = (left: number) => {
+    const element = boardScrollRef.current;
+    if (!element) return;
+    const max = Math.max(0, element.scrollWidth - element.clientWidth);
+    const next = Math.max(0, Math.min(left, max));
+    element.scrollLeft = next;
+    setHorizontalScroll({ left: next, max });
+  };
+
+  const scrollBoardBy = (amount: number) => {
+    const element = boardScrollRef.current;
+    if (!element) return;
+    element.scrollBy({ left: amount, behavior: "smooth" });
+  };
 
   const { data: members = [] } = useOrgMembers({ activeOnly: true });
   const ownerMap = useMemo(() => {
@@ -436,28 +481,62 @@ const KanbanPage = () => {
     <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={exportCsv}><Download className="h-3.5 w-3.5" />Exportar</Button>
   </div>;
 
-  return <div className="p-6 space-y-4">
+  return <div className={`p-6 space-y-4 ${horizontalScroll.max > 0 ? "pb-20" : ""}`}>
     <div><h1 className="text-2xl font-display font-bold">Pipelines</h1><p className="text-sm text-muted-foreground">Arraste entre colunas ou encaixe o card na posição desejada.</p></div>
     <PipelineTabs pipelines={pipelines} activeId={activePipelineId} onSelect={selectPipeline} rightActions={toolbar} />
 
     {!activePipelineId ? <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p> : loadingLeads ? <p className="text-sm text-muted-foreground">Carregando leads…</p> : stages.length === 0 ? <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p> : (
       <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
-        <div className="grid gap-3 overflow-x-auto pb-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))` }}>
-          {stages.map((stage) => {
-            const allIds = board[stage.id] ?? [];
-            const visibleIds = sortIds(allIds.filter((id) => {
-              const lead = leadMap.get(id);
-              return lead ? matchesFilters(lead) : false;
-            }));
-            const overWip = stage.wip_limit != null && allIds.length > stage.wip_limit;
-            return <DroppableStageColumn key={stage.id} id={stage.id}>
-              <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: stage.cor ?? "#64748b" }} />{stage.nome}{stage.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}</h3><Badge variant={overWip ? "destructive" : "secondary"} className="text-xs">{visibleIds.length}{stage.wip_limit != null ? `/${stage.wip_limit}` : ""}</Badge></div>
-              <SortableContext items={visibleIds} strategy={verticalListSortingStrategy}><div className="space-y-2 min-h-[320px]">{visibleIds.map((id) => { const lead = leadMap.get(id); if (!lead) return null; return <SortableLeadCard key={id} lead={lead} owner={ownerMap.get(lead.owner_id ?? "")} nextActivity={nextActivityMap.get(id)} proposal={latestProposalMap.get(id)} />; })}</div></SortableContext>
-            </DroppableStageColumn>;
-          })}
+        <div ref={boardScrollRef} onScroll={syncHorizontalScroll} className="overflow-x-auto pb-3 overscroll-x-contain">
+          <div
+            className="grid gap-3"
+            style={{
+              gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))`,
+              minWidth: `max(100%, ${Math.max(0, stages.length * 245 + Math.max(0, stages.length - 1) * 12)}px)`,
+            }}
+          >
+            {stages.map((stage) => {
+              const allIds = board[stage.id] ?? [];
+              const visibleIds = sortIds(allIds.filter((id) => {
+                const lead = leadMap.get(id);
+                return lead ? matchesFilters(lead) : false;
+              }));
+              const overWip = stage.wip_limit != null && allIds.length > stage.wip_limit;
+              return <DroppableStageColumn key={stage.id} id={stage.id}>
+                <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: stage.cor ?? "#64748b" }} />{stage.nome}{stage.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}</h3><Badge variant={overWip ? "destructive" : "secondary"} className="text-xs">{visibleIds.length}{stage.wip_limit != null ? `/${stage.wip_limit}` : ""}</Badge></div>
+                <SortableContext items={visibleIds} strategy={verticalListSortingStrategy}><div className="space-y-2 min-h-[320px]">{visibleIds.map((id) => { const lead = leadMap.get(id); if (!lead) return null; return <SortableLeadCard key={id} lead={lead} owner={ownerMap.get(lead.owner_id ?? "")} nextActivity={nextActivityMap.get(id)} proposal={latestProposalMap.get(id)} />; })}</div></SortableContext>
+              </DroppableStageColumn>;
+            })}
+          </div>
         </div>
         <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }}>{activeLead ? <div className="w-[245px] rotate-[1.5deg] scale-[1.03] cursor-grabbing pointer-events-none"><LeadCardVisual lead={activeLead} owner={overlayOwner} nextActivity={overlayActivity} proposal={overlayProposal} overlay /></div> : null}</DragOverlay>
       </DndContext>
+    )}
+
+    {horizontalScroll.max > 0 && (
+      <div className="fixed bottom-4 left-1/2 z-50 w-[min(760px,calc(100vw-2rem))] -translate-x-1/2">
+        <div className="flex items-center gap-2 rounded-xl border bg-background/95 p-2 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-background/85">
+          <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => scrollBoardBy(-360)} disabled={horizontalScroll.left <= 0} title="Rolar pipeline para a esquerda">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <span className="hidden text-[11px] font-medium text-muted-foreground sm:block">Navegar colunas</span>
+            <input
+              type="range"
+              min={0}
+              max={Math.max(1, horizontalScroll.max)}
+              step={1}
+              value={Math.min(horizontalScroll.left, horizontalScroll.max)}
+              onChange={(event) => setBoardScroll(Number(event.target.value))}
+              className="h-2 min-w-0 flex-1 cursor-ew-resize accent-primary"
+              aria-label="Navegação horizontal do pipeline"
+            />
+          </div>
+          <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => scrollBoardBy(360)} disabled={horizontalScroll.left >= horizontalScroll.max - 1} title="Rolar pipeline para a direita">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
     )}
   </div>;
 };
