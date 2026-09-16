@@ -66,9 +66,26 @@ const todayInput = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 
+const parseMoney = (value: unknown) => {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value !== "string") return 0;
+  const raw = value.trim().replace(/\s/g, "");
+  if (!raw) return 0;
+  let normalized = raw;
+  if (raw.includes(",") && raw.includes(".")) {
+    normalized = raw.lastIndexOf(",") > raw.lastIndexOf(".")
+      ? raw.replace(/\./g, "").replace(",", ".")
+      : raw.replace(/,/g, "");
+  } else if (raw.includes(",")) {
+    normalized = raw.replace(",", ".");
+  }
+  const parsed = Number(normalized.replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 const money = (value: unknown) => {
-  const number = Number(value || 0);
-  if (!Number.isFinite(number) || number <= 0) return "Não informado";
+  const number = parseMoney(value);
+  if (number <= 0) return "Não informado";
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(number);
 };
 
@@ -124,11 +141,7 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
       ?? null;
   }, [latestProposal, lead]);
 
-  const proposalDueDate = useMemo(() => {
-    return latestProposal?.boleto_due_date
-      ?? String(lead?.custom_fields?.data_boleto ?? "")
-      ?? "";
-  }, [latestProposal, lead]);
+  const proposalDueDate = useMemo(() => latestProposal?.boleto_due_date ?? String(lead?.custom_fields?.data_boleto ?? ""), [latestProposal, lead]);
 
   useEffect(() => {
     if (!open || !lead || !stageId) return;
@@ -158,7 +171,7 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
   const stayedWithCurrentOperator = stageName === "Perdido" && values.motivo_perda === "Permaneceu na operadora atual";
   const selectedProduct = products.find((product) => product.id === productId);
   const effectiveDueDate = String(values.data_boleto || proposalDueDate || "");
-  const numericProposalValue = Number(String(proposalValue ?? values.valor_fechado ?? "").replace(/\./g, "").replace(",", "."));
+  const numericProposalValue = parseMoney(proposalValue ?? values.valor_fechado ?? "");
 
   const changeValue = (field: PipelineStageField, value: string) => {
     let next = value;
@@ -274,8 +287,8 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
       const proposalPatch: Record<string, unknown> = {};
       if (isProposal) {
         proposalPatch.boleto_due_date = values.data_boleto || null;
-        const proposalAmount = Number(String(values.valor_fechado || "").replace(/\./g, "").replace(",", "."));
-        if (Number.isFinite(proposalAmount) && proposalAmount > 0) proposalPatch.negotiated_value = proposalAmount;
+        const proposalAmount = parseMoney(values.valor_fechado || "");
+        if (proposalAmount > 0) proposalPatch.negotiated_value = proposalAmount;
       }
       if (isGain) {
         proposalPatch.product_id = productId;
@@ -294,50 +307,108 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
         if (error) throw error;
       }
     }
+
+    await upsertStageActivity();
   };
 
-  const moveLead = async (completeNow: boolean) => {
-    if (!lead) return;
-    if (isGain && !validateGain()) return;
+  const handleConfirm = async () => {
+    if (!lead || !stageId) return;
+    for (const field of fields) {
+      if (field.required && !String(values[field.field_key] ?? "").trim()) {
+        toast.error(`Preencha: ${field.label}`);
+        return;
+      }
+    }
+    if (!validateGain()) return;
+
     setSaving(true);
     try {
       await saveStageAnswers();
-      if (completeNow) await upsertStageActivity();
       await onConfirm();
       onOpenChange(false);
-      toast.success(isGain ? "Venda confirmada como ganha e pagamento registrado." : completeNow ? "Informações salvas e vida movida." : "Respostas parciais salvas. Você pode completar depois.");
     } catch (error) {
-      console.error("Erro ao mover vida:", error);
-      toast.error(error instanceof Error ? error.message : "Não foi possível mover a vida.");
-    } finally { setSaving(false); }
-  };
-
-  const renderField = (field: PipelineStageField) => {
-    const value = values[field.field_key] ?? "";
-    if (field.field_type === "long_text") return <Textarea value={value} onChange={(e) => changeValue(field, e.target.value)} placeholder={field.placeholder ?? undefined} rows={3} />;
-    if (field.field_type === "select") {
-      const blankAllowed = !isGain;
-      return <Select value={value || (blankAllowed ? BLANK_VALUE : undefined)} onValueChange={(v) => changeValue(field, v === BLANK_VALUE ? "" : v)}><SelectTrigger><SelectValue placeholder={field.placeholder ?? "Selecione..."} /></SelectTrigger><SelectContent>{blankAllowed && <SelectItem value={BLANK_VALUE}>Deixar em branco</SelectItem>}{field.options.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent></Select>;
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar os dados da etapa.");
+    } finally {
+      setSaving(false);
     }
-    const type = field.field_type === "email" ? "email" : field.field_type === "phone" ? "tel" : field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : "text";
-    return <Input type={type} value={value} onChange={(e) => changeValue(field, e.target.value)} placeholder={field.placeholder ?? undefined} step={field.field_type === "number" ? "0.01" : undefined} />;
   };
 
-  const description = isGain
-    ? "Confirme os dados financeiros da venda. Nesta etapa o pagamento é obrigatório e libera a comissão para a previsão do próximo pagamento."
-    : isImplanted
-      ? "Registre somente os dados de implantação e ativação do plano. Os dados comerciais já vêm da venda ganha."
-      : "Estas informações não bloqueiam a movimentação. Preencha o que souber agora, deixe o restante em branco e complete depois.";
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Preencher etapa: {stageName}</DialogTitle>
+          <DialogDescription>Complete os dados desta etapa antes de mover a vida.</DialogDescription>
+        </DialogHeader>
 
-  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Informações de {stageName}</DialogTitle><DialogDescription>{description}</DialogDescription></DialogHeader>
-    {stayedWithCurrentOperator && <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 flex gap-3 text-sm"><CalendarClock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" /><div><p className="font-semibold">Você pode agendar uma nova abordagem.</p><p className="text-muted-foreground mt-1">Se informar uma data, o Segly cria automaticamente uma atividade para o responsável comercial.</p></div></div>}
+        {isLoading || proposalLoading ? (
+          <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+        ) : (
+          <div className="space-y-5">
+            {needsCommercialSummary && (
+              <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
+                <div className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" /><p className="font-medium">Resumo comercial</p></div>
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <div><p className="text-muted-foreground">Valor</p><p className="font-semibold">{money(proposalValue)}</p></div>
+                  <div><p className="text-muted-foreground">Vencimento do boleto</p><p className="font-semibold">{effectiveDueDate || "Não informado"}</p></div>
+                </div>
+                {(isGain || isImplanted) && (
+                  <div className="space-y-2">
+                    <Label>Produto vendido {isGain ? "*" : ""}</Label>
+                    <Select value={productId || BLANK_VALUE} onValueChange={(value) => setProductId(value === BLANK_VALUE ? "" : value)} disabled={productsLoading}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o produto" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={BLANK_VALUE}>Não informado</SelectItem>
+                        {products.map((product) => <SelectItem key={product.id} value={product.id}>{product.name}{product.insurer_name ? ` · ${product.insurer_name}` : ""}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    {selectedProduct && <p className="text-xs text-muted-foreground">Comissão corretor: {selectedProduct.broker_commission_pct}% · Administrativa: {selectedProduct.admin_commission_pct}%</p>}
+                  </div>
+                )}
+              </div>
+            )}
 
-    {needsCommercialSummary && <div className="rounded-lg border bg-muted/20 p-4 space-y-3"><div className="flex items-start gap-3">{isGain ? <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" /> : <Package className="h-5 w-5 text-primary shrink-0 mt-0.5" />}<div><p className="font-semibold">{isGain ? "Conferência da venda" : "Venda que será implantada"}</p><p className="text-xs text-muted-foreground">Produto, valor e vencimento vêm da proposta e permanecem vinculados à vida.</p></div></div>
-      {proposalLoading ? <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Carregando proposta...</div> : <div className="grid gap-2 sm:grid-cols-3 text-xs"><div className="rounded-md border bg-background p-2.5"><span className="text-muted-foreground">Produto</span><p className="font-semibold mt-1">{selectedProduct?.name || (productId ? "Produto vinculado" : "Não informado")}</p></div><div className="rounded-md border bg-background p-2.5"><span className="text-muted-foreground">Valor fechado</span><p className="font-semibold mt-1">{money(proposalValue)}</p></div><div className="rounded-md border bg-background p-2.5"><span className="text-muted-foreground">Vencimento</span><p className="font-semibold mt-1">{effectiveDueDate ? new Date(`${effectiveDueDate}T12:00:00`).toLocaleDateString("pt-BR") : "Não informado"}</p></div></div>}
-      {isGain && <div className="space-y-2"><Label>Produto vendido *</Label><Select value={productId || BLANK_VALUE} onValueChange={(value) => setProductId(value === BLANK_VALUE ? "" : value)} disabled={productsLoading}><SelectTrigger><SelectValue placeholder={productsLoading ? "Carregando produtos..." : "Selecione o produto"} /></SelectTrigger><SelectContent><SelectItem value={BLANK_VALUE}>Selecione o produto</SelectItem>{products.map((product) => <SelectItem key={product.id} value={product.id}>{product.name} · {product.category}{product.insurer_name ? ` · ${product.insurer_name}` : ""}</SelectItem>)}</SelectContent></Select>{selectedProduct && <div className="grid gap-2 sm:grid-cols-2 text-xs"><div className="rounded-md border bg-background p-2.5"><span className="text-muted-foreground">Administradora:</span> <strong>{Number(selectedProduct.admin_commission_pct).toLocaleString("pt-BR")}% do valor fechado</strong></div><div className="rounded-md border bg-background p-2.5"><span className="text-muted-foreground">Corretor:</span> <strong>{Number(selectedProduct.broker_commission_pct).toLocaleString("pt-BR")}% da comissão da administradora</strong></div></div>}</div>}
-    </div>}
+            {fields.map((field) => {
+              const value = values[field.field_key] ?? "";
+              return (
+                <div key={field.id} className="space-y-2">
+                  <Label>{field.label}{field.required ? " *" : ""}</Label>
+                  {field.field_type === "long_text" ? (
+                    <Textarea value={value} onChange={(event) => changeValue(field, event.target.value)} />
+                  ) : field.field_type === "select" ? (
+                    <Select value={value || BLANK_VALUE} onValueChange={(next) => changeValue(field, next === BLANK_VALUE ? "" : next)}>
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        {!field.required && <SelectItem value={BLANK_VALUE}>Não informado</SelectItem>}
+                        {(field.options ?? []).map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      type={field.field_type === "date" ? "date" : field.field_type === "number" ? "number" : "text"}
+                      value={value}
+                      onChange={(event) => changeValue(field, event.target.value)}
+                    />
+                  )}
+                </div>
+              );
+            })}
 
-    {isLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div> : fields.length === 0 ? <p className="text-sm text-muted-foreground py-4">Esta etapa não possui campos adicionais.</p> : <div className="grid gap-5 md:grid-cols-2 py-2">{fields.map((field) => <div key={field.id} className={field.field_type === "long_text" ? "space-y-2 md:col-span-2" : "space-y-2"}><div className="flex items-center gap-2"><Label>{field.label}</Label>{field.required && <Badge variant="secondary" className="text-[10px] font-normal">Obrigatório</Badge>}</div>{renderField(field)}</div>)}</div>}
-    <DialogFooter className="gap-2 sm:gap-2"><Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>{!isGain && <Button variant="outline" onClick={() => moveLead(false)} disabled={saving || isLoading}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar e responder depois</Button>}<Button onClick={() => moveLead(true)} disabled={saving || isLoading || (isGain && productsLoading)}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{isGain ? "Confirmar venda ganha" : "Salvar e mover vida"}</Button></DialogFooter>
-  </DialogContent></Dialog>;
+            {(stageName === "Visita Agendada" || stageName === "Estudo Apresentado" || stageName === "Negociação" || stageName === "Stand-by" || stageName === "Perdido") && (
+              <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground flex gap-2 items-start"><CalendarClock className="h-4 w-4 mt-0.5" />As datas de retorno desta etapa também alimentam a Agenda automaticamente.</div>
+            )}
+            {isGain && (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-muted-foreground flex gap-2 items-start"><CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-500" />Ganho confirma pagamento e gera a comissão quando produto, valor e datas obrigatórias estiverem completos.</div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+          <Button onClick={handleConfirm} disabled={saving || isLoading}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar e mover</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
