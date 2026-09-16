@@ -81,7 +81,7 @@ export function AceleraAlerts() {
       qc.invalidateQueries({ queryKey: ["activities-page"] });
       qc.invalidateQueries({ queryKey: ["agenda-today"] });
       qc.invalidateQueries({ queryKey: ["pipelines"] });
-      toast.success("Lead retomado e movido para Em Contato.");
+      toast.success("Vida retomada e movida para Em Contato.");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -112,10 +112,10 @@ export function AceleraAlerts() {
             id: `lead-48-${lead.id}`,
             leadId: lead.id,
             level: "critical" as const,
-            title: "Lead há mais de 48h sem chegar em Cotar",
+            title: "Vida há mais de 48h sem chegar em Cotar",
             subject: lead.empresa || lead.nome,
-            message: "Este lead precisa avançar para a etapa Cotar.",
-            meta: `Há ${formatAge(hours)} desde a entrada do lead`,
+            message: "Esta vida precisa avançar para a etapa Cotar.",
+            meta: `Há ${formatAge(hours)} desde a entrada da vida`,
           };
         }
 
@@ -124,10 +124,10 @@ export function AceleraAlerts() {
             id: `lead-24-${lead.id}`,
             leadId: lead.id,
             level: "warning" as const,
-            title: "Lead novo há mais de 24h",
+            title: "Vida nova há mais de 24h",
             subject: lead.empresa || lead.nome,
             message: "Faça o primeiro contato e avance a jornada.",
-            meta: `Há ${formatAge(hours)} desde a entrada do lead`,
+            meta: `Há ${formatAge(hours)} desde a entrada da vida`,
           };
         }
 
@@ -149,7 +149,7 @@ export function AceleraAlerts() {
         leadId: activity.lead_id,
         level: isOverdue ? ("critical" as const) : ("warning" as const),
         title: lostFollowUp
-          ? "Hora de retomar este lead perdido"
+          ? "Hora de retomar esta vida perdida"
           : standby
           ? "Stand-by próximo do contato"
           : "Retorno de cliente",
