@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Mail, Phone, Building2, Briefcase, Users, Calendar, MessageSquare, Plus, Loader2, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Building2, Briefcase, Users, Calendar, MessageSquare, Plus, Loader2, Pencil, Check, X, History, ChevronDown } from "lucide-react";
 import { useLead, useAddNote, useUpdateNote, useUpdateLeadStatus } from "@/hooks/useLeads";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyRole } from "@/hooks/useMyRole";
@@ -14,6 +14,7 @@ import { LeadActivitiesPanel } from "@/components/admin/LeadActivitiesPanel";
 import { LeadAuditTimeline } from "@/components/admin/LeadAuditTimeline";
 import { LeadEditDialog } from "@/components/admin/LeadEditDialog";
 import { LeadProposalsPanel } from "@/components/admin/LeadProposalsPanel";
+import { LeadStageInformation } from "@/components/admin/LeadStageInformation";
 import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors, type LeadStatus } from "@/types/lead";
 import { capitalizeWords } from "@/lib/formatName";
 import { formatPhone } from "@/lib/phone";
@@ -22,19 +23,6 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
-
-const customLabels: Record<string, string> = {
-  cnpj: "CNPJ",
-  responsavel_proprietario: "Responsável é proprietário?",
-  plano_saude_operadora: "Plano de Saúde / Operadora",
-  acomodacao: "Acomodação",
-  coparticipacao: "Coparticipação",
-  plano_odontologico: "Plano odontológico",
-  tipo_plano: "Tipo do plano",
-  quantidade_pessoas: "Quantidade de pessoas",
-  datas_nascimento: "Datas de nascimento",
-  comentarios: "Comentários",
-};
 
 type InfoField = {
   key: string;
@@ -62,7 +50,7 @@ const infoFields: InfoField[] = [
   { key: "comentarios", label: "Comentários", source: "custom", sourceKey: "comentarios", long: true },
 ];
 
-const registrationCustomKeys = new Set(infoFields.filter((field) => field.source === "custom").map((field) => field.sourceKey));
+const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 const formatCpfCnpj = (value: string) => {
   const digits = value.replace(/\D/g, "").slice(0, 14);
@@ -90,16 +78,23 @@ const LeadDetail = () => {
     queryKey: ["current-profile-name", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", user.id)
-        .maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
       if (error) throw error;
       return data as { display_name: string | null } | null;
     },
     enabled: !!user?.id,
   });
+  const { data: pipelineStages = [] } = useQuery({
+    queryKey: ["lead-detail-pipeline-stages", lead?.pipeline_id],
+    queryFn: async () => {
+      if (!lead?.pipeline_id) return [];
+      const { data, error } = await supabase.from("pipeline_stages" as never).select("id,nome,ordem").eq("pipeline_id", lead.pipeline_id).order("ordem");
+      if (error) throw error;
+      return (data ?? []) as unknown as { id: string; nome: string; ordem: number }[];
+    },
+    enabled: !!lead?.pipeline_id,
+  });
+
   const addNote = useAddNote();
   const updateNote = useUpdateNote();
   const updateStatus = useUpdateLeadStatus();
@@ -117,13 +112,15 @@ const LeadDetail = () => {
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (!lead) return <div className="min-h-screen flex items-center justify-center"><div className="text-center"><p className="text-muted-foreground mb-4">Lead não encontrado</p><Button onClick={() => navigate("/admin/dashboard")}>Voltar ao Dashboard</Button></div></div>;
 
+  const currentStage = pipelineStages.find((stage) => stage.id === lead.stage_id) ?? null;
+  const negotiationStage = pipelineStages.find((stage) => normalize(stage.nome).includes("negoci")) ?? null;
+  const canShowProposals = !!currentStage && !!negotiationStage && currentStage.ordem >= negotiationStage.ordem;
+
   const hasDiagnostic = !!lead.resultado_diagnostico && (lead.resultado_diagnostico.pillarScores?.length ?? 0) > 0;
   const score = lead.resultado_diagnostico?.percentage ?? 0;
   const maturityLevel = getMaturityLevel(score);
   const pillarScores = lead.resultado_diagnostico?.pillarScores || [];
   const radarData = pillarScores.map((p) => ({ subject: p.pillarName, value: p.percentage }));
-  const customEntries = Object.entries(lead.custom_fields || {}).filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "");
-  const stageEntries = customEntries.filter(([key]) => !registrationCustomKeys.has(key));
 
   const getInfoValue = (field: InfoField) => {
     if (field.source === "custom") return String(lead.custom_fields?.[field.sourceKey] ?? "");
@@ -148,26 +145,14 @@ const LeadDetail = () => {
       if (field.format === "document") value = formatCpfCnpj(value);
 
       if (field.source === "direct") {
-        const { error } = await supabase
-          .from("leads")
-          .update({ [field.sourceKey]: value } as never)
-          .eq("id", lead.id);
+        const { error } = await supabase.from("leads").update({ [field.sourceKey]: value } as never).eq("id", lead.id);
         if (error) throw error;
       } else {
-        const { data: currentLead, error: fetchError } = await supabase
-          .from("leads")
-          .select("custom_fields")
-          .eq("id", lead.id)
-          .single();
+        const { data: currentLead, error: fetchError } = await supabase.from("leads").select("custom_fields").eq("id", lead.id).single();
         if (fetchError) throw fetchError;
-        const currentCustom = currentLead?.custom_fields && typeof currentLead.custom_fields === "object"
-          ? currentLead.custom_fields as Record<string, unknown>
-          : {};
+        const currentCustom = currentLead?.custom_fields && typeof currentLead.custom_fields === "object" ? currentLead.custom_fields as Record<string, unknown> : {};
         const nextCustom = { ...currentCustom, [field.sourceKey]: value === "" ? null : value };
-        const { error } = await supabase
-          .from("leads")
-          .update({ custom_fields: nextCustom } as never)
-          .eq("id", lead.id);
+        const { error } = await supabase.from("leads").update({ custom_fields: nextCustom } as never).eq("id", lead.id);
         if (error) throw error;
       }
 
@@ -230,15 +215,21 @@ const LeadDetail = () => {
           </div>
         </motion.div>
 
-        <LeadProposalsPanel leadId={lead.id} ownerId={lead.owner_id ?? null} currentProductId={lead.product_id ?? null} customFields={lead.custom_fields} />
+        {canViewAudit && (
+          <details className="glass-card group overflow-hidden">
+            <summary className="cursor-pointer list-none p-5 flex items-center justify-between gap-3 select-none">
+              <div className="flex items-center gap-2"><History className="h-5 w-5 text-primary" /><div><p className="font-semibold">Histórico de alterações</p><p className="text-sm text-muted-foreground">Clique para consultar as alterações deste lead.</p></div></div>
+              <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="px-5 pb-5"><LeadAuditTimeline leadId={lead.id} /></div>
+          </details>
+        )}
 
-        {stageEntries.length > 0 && <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
-          <div className="mb-4"><h2 className="text-lg font-semibold text-foreground">Dados das etapas</h2><p className="text-sm text-muted-foreground">Informações registradas durante a evolução deste lead no pipeline.</p></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{stageEntries.map(([key, value]) => <div key={key} className="bg-secondary/30 rounded-lg p-4"><p className="text-xs text-muted-foreground mb-1">{customLabels[key] || key.replace(/_/g, " ")}</p><p className="text-sm text-foreground whitespace-pre-wrap">{String(value)}</p></div>)}</div>
-        </motion.div>}
+        {canShowProposals && <LeadProposalsPanel leadId={lead.id} ownerId={lead.owner_id ?? null} currentProductId={lead.product_id ?? null} customFields={lead.custom_fields} />}
+
+        <LeadStageInformation leadId={lead.id} />
 
         <LeadActivitiesPanel leadId={lead.id} ownerId={lead.owner_id ?? null} />
-        {canViewAudit && <LeadAuditTimeline leadId={lead.id} />}
 
         {hasDiagnostic && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6"><h2 className="text-lg font-semibold text-foreground mb-4">Perfil por Pilar</h2>{radarData.length > 0 ? <div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><RadarChart data={radarData}><PolarGrid stroke="hsl(var(--border))" /><PolarAngleAxis dataKey="subject" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><Radar name="Score" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} /></RadarChart></ResponsiveContainer></div> : <p className="text-muted-foreground text-center py-8">Dados do diagnóstico não disponíveis</p>}</motion.div>
@@ -272,26 +263,9 @@ const LeadDetail = () => {
                       {field.long ? (
                         <Textarea value={editingInfoValue} onChange={(e) => setEditingInfoValue(e.target.value)} rows={3} autoFocus disabled={saving} />
                       ) : (
-                        <Input
-                          value={editingInfoValue}
-                          onChange={(e) => {
-                            let next = e.target.value;
-                            if (field.format === "phone") next = formatPhone(next);
-                            if (field.format === "document") next = formatCpfCnpj(next);
-                            setEditingInfoValue(next);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") saveInfoField(field);
-                            if (e.key === "Escape") cancelInfoEdit();
-                          }}
-                          autoFocus
-                          disabled={saving}
-                        />
+                        <Input value={editingInfoValue} onChange={(e) => { let next = e.target.value; if (field.format === "phone") next = formatPhone(next); if (field.format === "document") next = formatCpfCnpj(next); setEditingInfoValue(next); }} onKeyDown={(e) => { if (e.key === "Enter") saveInfoField(field); if (e.key === "Escape") cancelInfoEdit(); }} autoFocus disabled={saving} />
                       )}
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={cancelInfoEdit} disabled={saving} title="Cancelar"><X className="h-4 w-4" /></Button>
-                        <Button size="icon" className="h-8 w-8" onClick={() => saveInfoField(field)} disabled={saving} title="Salvar">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}</Button>
-                      </div>
+                      <div className="flex justify-end gap-1"><Button variant="ghost" size="icon" className="h-8 w-8" onClick={cancelInfoEdit} disabled={saving} title="Cancelar"><X className="h-4 w-4" /></Button><Button size="icon" className="h-8 w-8" onClick={() => saveInfoField(field)} disabled={saving} title="Salvar">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}</Button></div>
                     </div>
                   ) : (
                     <p className={value ? "text-sm text-foreground font-medium whitespace-pre-wrap" : "text-sm text-muted-foreground italic"}>{value || "Não informado"}</p>
