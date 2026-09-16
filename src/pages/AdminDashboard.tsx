@@ -19,12 +19,13 @@ import { useMyRole } from "@/hooks/useMyRole";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LeadsChart from "@/components/admin/LeadsChart";
 import LeadsTable from "@/components/admin/LeadsTable";
 import type { Lead } from "@/types/lead";
 
-type Period = "7" | "30" | "90" | "all";
+type Period = "7" | "30" | "90" | "all" | "custom";
 type ProfileRow = { id: string; display_name: string | null; lider_id: string | null; is_active: boolean | null };
 type ActivityRow = { id: string; responsible_id: string; scheduled_at: string; completed_at: string | null; status: string };
 type ClientRow = { id: string; owner_id: string | null; data_conversao: string; status: string | null };
@@ -38,11 +39,14 @@ function startOfDay(date = new Date()) {
   return d;
 }
 
-function periodStart(period: Period) {
-  if (period === "all") return null;
-  const d = startOfDay();
-  d.setDate(d.getDate() - (Number(period) - 1));
+function endOfDay(date = new Date()) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
   return d;
+}
+
+function dateInputValue(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function percent(part: number, total: number) {
@@ -71,6 +75,12 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const { data: role } = useMyRole();
   const [period, setPeriod] = useState<Period>("30");
+  const [customStart, setCustomStart] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 29);
+    return dateInputValue(d);
+  });
+  const [customEnd, setCustomEnd] = useState(() => dateInputValue(new Date()));
   const [ownerFilter, setOwnerFilter] = useState("all");
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery({
@@ -134,18 +144,36 @@ export default function AdminDashboard() {
     return profiles.filter((p) => p.id === user.id);
   }, [profiles, role, user]);
 
-  const start = useMemo(() => periodStart(period), [period]);
+  const range = useMemo(() => {
+    if (period === "all") return { start: null as Date | null, end: null as Date | null };
+    if (period === "custom") {
+      const first = new Date(`${customStart}T00:00:00`);
+      const second = new Date(`${customEnd}T23:59:59.999`);
+      if (first <= second) return { start: first, end: second };
+      return { start: startOfDay(second), end: endOfDay(first) };
+    }
+    const start = startOfDay();
+    start.setDate(start.getDate() - (Number(period) - 1));
+    return { start, end: endOfDay() };
+  }, [period, customStart, customEnd]);
+
   const now = new Date();
   const today = startOfDay(now);
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
 
   const ownerMatches = (ownerId: string | null | undefined) => ownerFilter === "all" || ownerId === ownerFilter;
-  const inPeriod = (value: string | null | undefined) => !start || (!!value && new Date(value) >= start);
+  const inPeriod = (value: string | null | undefined) => {
+    if (!value) return false;
+    const date = new Date(value);
+    if (range.start && date < range.start) return false;
+    if (range.end && date > range.end) return false;
+    return true;
+  };
 
-  const filteredLeads = useMemo(() => leads.filter((lead) => ownerMatches(lead.owner_id) && inPeriod(lead.created_at)), [leads, ownerFilter, start]);
+  const filteredLeads = useMemo(() => leads.filter((lead) => ownerMatches(lead.owner_id) && inPeriod(lead.created_at)), [leads, ownerFilter, range]);
   const filteredActivities = useMemo(() => activities.filter((item) => ownerMatches(item.responsible_id)), [activities, ownerFilter]);
-  const filteredClients = useMemo(() => clients.filter((item) => ownerMatches(item.owner_id) && inPeriod(item.data_conversao)), [clients, ownerFilter, start]);
-  const filteredContacts = useMemo(() => contacts.filter((item) => ownerMatches(item.user_id) && inPeriod(item.completed_at)), [contacts, ownerFilter, start]);
+  const filteredClients = useMemo(() => clients.filter((item) => ownerMatches(item.owner_id) && inPeriod(item.data_conversao)), [clients, ownerFilter, range]);
+  const filteredContacts = useMemo(() => contacts.filter((item) => ownerMatches(item.user_id) && inPeriod(item.completed_at)), [contacts, ownerFilter, range]);
 
   const chartData = useMemo(() => {
     const counts = new Map<string, number>();
@@ -155,7 +183,7 @@ export default function AdminDashboard() {
       counts.set(key, (counts.get(key) || 0) + 1);
     });
 
-    let chartStart = start ? new Date(start) : null;
+    let chartStart = range.start ? new Date(range.start) : null;
     if (!chartStart && filteredLeads.length) {
       chartStart = filteredLeads.reduce((earliest, lead) => {
         const current = startOfDay(new Date(lead.created_at));
@@ -164,14 +192,14 @@ export default function AdminDashboard() {
     }
     if (!chartStart) chartStart = startOfDay();
 
-    const chartEnd = startOfDay();
+    const chartEnd = range.end ? startOfDay(range.end) : startOfDay();
     const data: { date: string; leads: number }[] = [];
     for (let cursor = new Date(chartStart); cursor <= chartEnd; cursor.setDate(cursor.getDate() + 1)) {
       const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
       data.push({ date: key, leads: counts.get(key) || 0 });
     }
     return data;
-  }, [filteredLeads, start]);
+  }, [filteredLeads, range]);
 
   const pending = filteredActivities.filter((a) => a.status === "pendente");
   const todayActivities = pending.filter((a) => { const d = new Date(a.scheduled_at); return d >= today && d < tomorrow; });
@@ -194,7 +222,11 @@ export default function AdminDashboard() {
     count: filteredLeads.filter((lead) => lead.stage_id === stage.id).length,
   })).filter((stage) => stage.count > 0), [stages, filteredLeads]);
 
-  const periodLabel = period === "all" ? "Todo o período" : `Últimos ${period} dias`;
+  const periodLabel = period === "all"
+    ? "Todo o período"
+    : period === "custom" && range.start && range.end
+      ? `${range.start.toLocaleDateString("pt-BR")} a ${range.end.toLocaleDateString("pt-BR")}`
+      : `Últimos ${period} dias`;
   const selectedPerson = ownerFilter === "all" ? null : people.find((person) => person.id === ownerFilter);
   const chartDescription = selectedPerson
     ? `${periodLabel} · ${selectedPerson.display_name || "Colaborador"}`
@@ -209,12 +241,13 @@ export default function AdminDashboard() {
         </div>
         <div className="grid w-full gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:flex-wrap lg:justify-end">
           <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-            <SelectTrigger className="w-full lg:w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full lg:w-[190px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="7">Últimos 7 dias</SelectItem>
               <SelectItem value="30">Últimos 30 dias</SelectItem>
               <SelectItem value="90">Últimos 90 dias</SelectItem>
               <SelectItem value="all">Todo o período</SelectItem>
+              <SelectItem value="custom">Período personalizado</SelectItem>
             </SelectContent>
           </Select>
           {(role === "admin" || role === "lider") && (
@@ -227,6 +260,12 @@ export default function AdminDashboard() {
             </Select>
           )}
           <Button asChild className="w-full sm:col-span-2 lg:w-auto lg:col-span-1"><Link to="/admin/leads/novo"><Plus className="h-4 w-4 mr-2" />+Vidas</Link></Button>
+          {period === "custom" && (
+            <div className="grid gap-2 sm:col-span-2 lg:w-full lg:grid-cols-2">
+              <div className="space-y-1"><span className="text-[11px] text-muted-foreground">Data inicial</span><Input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} /></div>
+              <div className="space-y-1"><span className="text-[11px] text-muted-foreground">Data final</span><Input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} /></div>
+            </div>
+          )}
         </div>
       </div>
 
