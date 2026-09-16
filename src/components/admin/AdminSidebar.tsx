@@ -36,11 +36,12 @@ const seglyLogoLight = "/segly-logo-light.svg";
 
 type IconProps = { className?: string };
 
-const StackedHearts = ({ className }: IconProps) => (
-  <span className={`relative inline-block ${className ?? ""}`} aria-hidden="true">
-    <Heart className="absolute left-0 top-0 h-[11px] w-[11px]" />
-    <Heart className="absolute bottom-0 right-0 h-[11px] w-[11px]" />
-  </span>
+const PulsingHeart = ({ className }: IconProps) => (
+  <Heart
+    className={`${className ?? ""} segly-heartbeat`}
+    aria-hidden="true"
+    strokeWidth={1.8}
+  />
 );
 
 const HeartPlus = ({ className }: IconProps) => (
@@ -55,7 +56,7 @@ type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leader
 const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
-  { title: "Vidas", url: "/admin/leads", icon: StackedHearts },
+  { title: "Vidas", url: "/admin/leads", icon: PulsingHeart },
   { title: "Cadastrar vidas", url: "/admin/leads/novo", icon: HeartPlus },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Standby", url: "/admin/standby", icon: PauseCircle },
