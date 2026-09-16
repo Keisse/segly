@@ -17,11 +17,9 @@ import {
   Tag,
   ShieldCheck,
   Sparkles,
-  Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PrincipioDoDiaDialog } from "@/components/admin/PrincipioDoDiaDialog";
-import { NossoPropositoDialog } from "@/components/admin/NossoPropositoDialog";
 
 const APP_VERSION = "1.0.0";
 
@@ -38,7 +36,6 @@ export function UserMenu() {
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string>("");
   const [principleOpen, setPrincipleOpen] = useState(false);
-  const [purposeOpen, setPurposeOpen] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -147,17 +144,6 @@ export function UserMenu() {
         </button>
         <Separator />
         <button
-          onClick={() => {
-            setOpen(false);
-            setPurposeOpen(true);
-          }}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent transition text-left"
-        >
-          <Compass className="h-4 w-4 shrink-0 text-primary" />
-          Nosso Propósito
-        </button>
-        <Separator />
-        <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-accent transition text-left"
         >
@@ -166,7 +152,6 @@ export function UserMenu() {
         </button>
       </PopoverContent>
       <PrincipioDoDiaDialog open={principleOpen} onOpenChange={setPrincipleOpen} />
-      <NossoPropositoDialog open={purposeOpen} onOpenChange={setPurposeOpen} />
     </Popover>
   );
 }
