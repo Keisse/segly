@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { CalendarClock, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,16 +102,6 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
 
   const stayedWithCurrentOperator = stageName === "Perdido" && values.motivo_perda === "Permaneceu na operadora atual";
   const selectedProduct = products.find((product) => product.id === productId);
-  const paidBoleto = values.boleto_pago === "Sim";
-
-  const requiredMissing = useMemo(() => {
-    const missing = fields.filter((field) => field.required && !String(values[field.field_key] ?? "").trim());
-    if (stayedWithCurrentOperator && !String(values.data_nova_abordagem ?? "").trim()) {
-      const followUpField = fields.find((field) => field.field_key === "data_nova_abordagem");
-      if (followUpField && !missing.some((field) => field.id === followUpField.id)) missing.push(followUpField);
-    }
-    return missing;
-  }, [fields, values, stayedWithCurrentOperator]);
 
   const changeValue = (field: PipelineStageField, value: string) => {
     let next = value;
@@ -167,47 +158,43 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
     if (error) throw error;
   };
 
-  const handleConfirm = async () => {
+  const saveEnteredAnswers = async () => {
     if (!lead) return;
-    if (requiredMissing.length > 0) {
-      toast.error(`Preencha os campos obrigatórios: ${requiredMissing.map((f) => f.label).join(", ")}`);
-      return;
-    }
-    if (isImplanted && !productId) {
-      toast.error("Selecione o produto vendido antes de implantar o contrato.");
-      return;
-    }
-    if (isImplanted && paidBoleto && !String(values.data_pagamento_boleto ?? "").trim()) {
-      toast.error("Informe a data em que o boleto foi efetivamente pago.");
-      return;
-    }
-    if (stayedWithCurrentOperator) {
-      const followUp = new Date(`${values.data_nova_abordagem}T09:00:00`);
-      if (Number.isNaN(followUp.getTime()) || followUp.getTime() <= Date.now()) {
-        toast.error("A data da nova abordagem precisa ser uma data futura.");
-        return;
-      }
-    }
+    const custom = { ...(lead.custom_fields ?? {}) } as Record<string, unknown>;
+    const directPatch: Record<string, unknown> = {};
+    let customChanged = false;
 
+    fields.forEach((field) => {
+      const value = String(values[field.field_key] ?? "").trim();
+      if (!value) return;
+      if (field.maps_to) directPatch[field.maps_to] = value;
+      else {
+        custom[field.field_key] = value;
+        customChanged = true;
+      }
+    });
+
+    if (isImplanted && productId) directPatch.product_id = productId;
+    const patch = { ...directPatch, ...(customChanged ? { custom_fields: custom } : {}) };
+    if (Object.keys(patch).length === 0) return;
+
+    const { error } = await supabase.from("leads").update(patch as never).eq("id", lead.id);
+    if (error) throw error;
+  };
+
+  const moveLead = async (saveAnswers: boolean) => {
+    if (!lead) return;
     setSaving(true);
     try {
-      const custom = { ...(lead.custom_fields ?? {}) } as Record<string, unknown>;
-      const directPatch: Record<string, unknown> = {};
-      fields.forEach((field) => {
-        const value = values[field.field_key] ?? "";
-        if (field.maps_to) directPatch[field.maps_to] = value;
-        else custom[field.field_key] = value;
-      });
-      if (isImplanted) directPatch.product_id = productId;
-
-      const { error } = await supabase.from("leads").update({ ...directPatch, custom_fields: custom } as never).eq("id", lead.id);
-      if (error) throw error;
-      await upsertStageActivity();
+      if (saveAnswers) {
+        await saveEnteredAnswers();
+        await upsertStageActivity();
+      }
       await onConfirm();
       onOpenChange(false);
     } catch (error) {
-      console.error("Erro ao salvar dados da etapa:", error);
-      toast.error(error instanceof Error ? error.message : "Não foi possível avançar o lead.");
+      console.error("Erro ao mover lead:", error);
+      toast.error(error instanceof Error ? error.message : "Não foi possível mover o lead.");
     } finally {
       setSaving(false);
     }
@@ -226,13 +213,16 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Avançar para {stageName}</DialogTitle><DialogDescription>Preencha os dados desta etapa. Os campos obrigatórios precisam estar completos antes de mover o lead.</DialogDescription></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Informações de {stageName}</DialogTitle>
+          <DialogDescription>Estas informações são importantes para a etapa, mas não bloqueiam a movimentação. Você pode preencher agora ou responder depois.</DialogDescription>
+        </DialogHeader>
 
-        {stayedWithCurrentOperator && <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 flex gap-3 text-sm"><CalendarClock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" /><div><p className="font-semibold">Este lead não será esquecido.</p><p className="text-muted-foreground mt-1">Informe uma data futura em “Data da nova abordagem”. O Segly criará automaticamente uma atividade para o responsável comercial e o lead voltará a aparecer na operação nessa data.</p></div></div>}
+        {stayedWithCurrentOperator && <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 flex gap-3 text-sm"><CalendarClock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" /><div><p className="font-semibold">Você pode agendar uma nova abordagem.</p><p className="text-muted-foreground mt-1">Se informar uma data, o Segly cria automaticamente uma atividade para o responsável comercial. Se preferir, isso também pode ser preenchido depois na tela do lead.</p></div></div>}
 
         {isImplanted && (
           <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
-            <div className="flex items-start gap-3"><Package className="h-5 w-5 text-primary shrink-0 mt-0.5" /><div><p className="font-semibold">Produto vendido *</p><p className="text-xs text-muted-foreground">A comissão só entra na previsão de pagamento quando o boleto estiver marcado como pago.</p></div></div>
+            <div className="flex items-start gap-3"><Package className="h-5 w-5 text-primary shrink-0 mt-0.5" /><div><p className="font-semibold">Produto vendido</p><p className="text-xs text-muted-foreground">Pode ser informado agora ou completado posteriormente no lead.</p></div></div>
             <Select value={productId} onValueChange={setProductId} disabled={productsLoading}>
               <SelectTrigger><SelectValue placeholder={productsLoading ? "Carregando produtos..." : "Selecione o produto"} /></SelectTrigger>
               <SelectContent>{products.map((product) => <SelectItem key={product.id} value={product.id}>{product.name} · {product.category}{product.insurer_name ? ` · ${product.insurer_name}` : ""}</SelectItem>)}</SelectContent>
@@ -243,15 +233,20 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
 
         {isLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div> : fields.length === 0 ? <p className="text-sm text-muted-foreground py-4">Esta etapa não possui campos adicionais.</p> : (
           <div className="grid gap-5 md:grid-cols-2 py-2">
-            {fields.map((field) => {
-              const isConditionalRequired = stayedWithCurrentOperator && field.field_key === "data_nova_abordagem";
-              const paidDateRequired = isImplanted && paidBoleto && field.field_key === "data_pagamento_boleto";
-              return <div key={field.id} className={field.field_type === "long_text" ? "space-y-2 md:col-span-2" : "space-y-2"}><Label htmlFor={field.field_key}>{field.label}{field.required || isConditionalRequired || paidDateRequired ? " *" : ""}</Label>{renderField(field)}</div>;
-            })}
+            {fields.map((field) => (
+              <div key={field.id} className={field.field_type === "long_text" ? "space-y-2 md:col-span-2" : "space-y-2"}>
+                <div className="flex items-center gap-2"><Label htmlFor={field.field_key}>{field.label}</Label>{field.required && <Badge variant="secondary" className="text-[10px] font-normal">Importante</Badge>}</div>
+                {renderField(field)}
+              </div>
+            ))}
           </div>
         )}
 
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button><Button onClick={handleConfirm} disabled={saving || isLoading || (isImplanted && productsLoading)}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar e mover lead</Button></DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+          <Button variant="outline" onClick={() => moveLead(false)} disabled={saving || isLoading}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Responder depois</Button>
+          <Button onClick={() => moveLead(true)} disabled={saving || isLoading || (isImplanted && productsLoading)}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar e mover lead</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
