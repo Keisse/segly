@@ -6,7 +6,6 @@ import {
   Users,
   Handshake,
   Settings,
-  Compass,
   UserCircle,
   UserPlus,
   CalendarCheck2,
@@ -14,9 +13,7 @@ import {
   PauseCircle,
   History,
   Package,
-  CircleDollarSign,
 } from "lucide-react";
-import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -32,7 +29,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyRole } from "@/hooks/useMyRole";
-import { NossoPropositoDialog } from "./NossoPropositoDialog";
 
 const seglyLogoDark = "/segly-logo.png";
 const seglyLogoLight = "/segly-logo-light.svg";
@@ -49,7 +45,6 @@ const mainItems: Item[] = [
   { title: "Agenda", url: "/admin/atividades", icon: CalendarCheck2 },
   { title: "Produtos", url: "/admin/produtos", icon: Package, adminOnly: true },
   { title: "Desempenho", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
-  { title: "Comissões", url: "/admin/comissoes", icon: CircleDollarSign, leaderOnly: true },
   { title: "Meu Perfil", url: "/admin/meu-perfil", icon: UserCircle },
 ];
 
@@ -61,7 +56,6 @@ export function AdminSidebar() {
   const isAdmin = role === "admin";
   const isLeader = role === "admin" || role === "lider";
   const navigate = useNavigate();
-  const [propositoOpen, setPropositoOpen] = useState(false);
   const logoClass = collapsed ? "h-6" : "h-8";
 
   const handleLogout = async () => {
@@ -79,8 +73,8 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="p-4 flex items-center justify-center border-b border-sidebar-border">
-          <img src={seglyLogoLight} alt="Segly" className={`${logoClass} dark:hidden`} />
-          <img src={seglyLogoDark} alt="Segly" className={`${logoClass} hidden dark:block`} />
+          <img src={seglyLogoLight} alt="Segly" className={`${logoClass} max-w-full dark:hidden`} />
+          <img src={seglyLogoDark} alt="Segly" className={`${logoClass} max-w-full hidden dark:block`} />
         </div>
         <SidebarGroup>
           <SidebarGroupLabel>Painel</SidebarGroupLabel>
@@ -97,8 +91,8 @@ export function AdminSidebar() {
                           : "hover:bg-sidebar-accent/50"
                       }
                     >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -108,18 +102,12 @@ export function AdminSidebar() {
         </SidebarGroup>
         <div className="mt-auto p-2 space-y-1">
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setPropositoOpen(true)} className="hover:bg-sidebar-accent/50">
-                <Compass className="h-4 w-4" />
-                {!collapsed && <span>Nosso Propósito</span>}
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             {isAdmin && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink to="/admin/administradores" className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"}>
-                    <ShieldCheck className="h-4 w-4" />
-                    {!collapsed && <span>Usuários e Permissões</span>}
+                    <ShieldCheck className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span className="truncate">Usuários e Permissões</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -128,8 +116,8 @@ export function AdminSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink to="/admin/auditoria" className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"}>
-                    <History className="h-4 w-4" />
-                    {!collapsed && <span>Log de alterações</span>}
+                    <History className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span className="truncate">Log de alterações</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -138,20 +126,19 @@ export function AdminSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink to="/admin/configuracoes" className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"}>
-                    <Settings className="h-4 w-4" />
-                    {!collapsed && <span>Configurações</span>}
+                    <Settings className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span className="truncate">Configurações</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
           </SidebarMenu>
           <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
+            <LogOut className="h-4 w-4 mr-2 shrink-0" />
             {!collapsed && "Sair"}
           </Button>
         </div>
       </SidebarContent>
-      <NossoPropositoDialog open={propositoOpen} onOpenChange={setPropositoOpen} />
     </Sidebar>
   );
 }
