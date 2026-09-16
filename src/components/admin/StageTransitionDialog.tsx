@@ -28,6 +28,8 @@ type LeadForTransition = {
 type ProductOption = { id: string; name: string; category: string; insurer_name: string | null; admin_commission_pct: number | string; broker_commission_pct: number | string };
 type Props = { open: boolean; onOpenChange: (open: boolean) => void; lead: LeadForTransition | null; stageId: string | null; stageName: string; onConfirm: () => Promise<void> | void };
 
+const BLANK_VALUE = "__segly_blank__";
+
 const cnpjMask = (value: string) => {
   const d = value.replace(/\D/g, "").slice(0, 14);
   return d.replace(/^(\d{2})(\d)/, "$1.$2").replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3").replace(/\.(\d{3})(\d)/, ".$1/$2").replace(/(\d{4})(\d)/, "$1-$2");
@@ -115,31 +117,36 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
     if (error) throw error;
   };
 
-  const saveEnteredAnswers = async () => {
+  const saveStageAnswers = async () => {
     if (!lead || !stageId) return;
-    const entered: Record<string, string> = {};
+
+    const saved: Record<string, string | null> = {};
     fields.forEach((field) => {
       const value = String(values[field.field_key] ?? "").trim();
-      if (value) entered[field.field_key] = value;
+      saved[field.field_key] = value || null;
     });
 
     const { data: leadMeta, error: leadMetaError } = await supabase.from("leads").select("organization_id,custom_fields").eq("id", lead.id).single();
     if (leadMetaError) throw leadMetaError;
-    const organizationId = (leadMeta as unknown as { organization_id: string }).organization_id;
+    const meta = leadMeta as unknown as { organization_id: string; custom_fields: Record<string, unknown> | null };
 
-    const { error: stageDataError } = await supabase.from("lead_stage_data" as never).upsert({ organization_id: organizationId, lead_id: lead.id, stage_id: stageId, data: entered } as never, { onConflict: "lead_id,stage_id" });
+    const { error: stageDataError } = await supabase.from("lead_stage_data" as never).upsert({ organization_id: meta.organization_id, lead_id: lead.id, stage_id: stageId, data: saved } as never, { onConflict: "lead_id,stage_id" });
     if (stageDataError) throw stageDataError;
 
-    const custom = { ...(lead.custom_fields ?? {}) } as Record<string, unknown>;
+    const custom = { ...(meta.custom_fields ?? {}) } as Record<string, unknown>;
     const directPatch: Record<string, unknown> = {};
     let customChanged = false;
+
     fields.forEach((field) => {
-      const value = entered[field.field_key];
-      if (!value) return;
+      const value = saved[field.field_key];
       if (field.maps_to) directPatch[field.maps_to] = value;
-      else { custom[field.field_key] = value; customChanged = true; }
+      else {
+        custom[field.field_key] = value;
+        customChanged = true;
+      }
     });
-    if (isImplanted && productId) directPatch.product_id = productId;
+
+    if (isImplanted) directPatch.product_id = productId || null;
     const patch = { ...directPatch, ...(customChanged ? { custom_fields: custom } : {}) };
     if (Object.keys(patch).length > 0) {
       const { error } = await supabase.from("leads").update(patch as never).eq("id", lead.id);
@@ -147,13 +154,15 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
     }
   };
 
-  const moveLead = async (saveAnswers: boolean) => {
+  const moveLead = async (completeNow: boolean) => {
     if (!lead) return;
     setSaving(true);
     try {
-      if (saveAnswers) { await saveEnteredAnswers(); await upsertStageActivity(); }
+      await saveStageAnswers();
+      if (completeNow) await upsertStageActivity();
       await onConfirm();
       onOpenChange(false);
+      toast.success(completeNow ? "Informações salvas e lead movido." : "Respostas parciais salvas. Você pode completar depois.");
     } catch (error) {
       console.error("Erro ao mover lead:", error);
       toast.error(error instanceof Error ? error.message : "Não foi possível mover o lead.");
@@ -163,15 +172,15 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
   const renderField = (field: PipelineStageField) => {
     const value = values[field.field_key] ?? "";
     if (field.field_type === "long_text") return <Textarea value={value} onChange={(e) => changeValue(field, e.target.value)} placeholder={field.placeholder ?? undefined} rows={3} />;
-    if (field.field_type === "select") return <Select value={value} onValueChange={(v) => changeValue(field, v)}><SelectTrigger><SelectValue placeholder={field.placeholder ?? "Selecione..."} /></SelectTrigger><SelectContent>{field.options.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent></Select>;
+    if (field.field_type === "select") return <Select value={value || BLANK_VALUE} onValueChange={(v) => changeValue(field, v === BLANK_VALUE ? "" : v)}><SelectTrigger><SelectValue placeholder={field.placeholder ?? "Selecione..."} /></SelectTrigger><SelectContent><SelectItem value={BLANK_VALUE}>Deixar em branco</SelectItem>{field.options.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent></Select>;
     const type = field.field_type === "email" ? "email" : field.field_type === "phone" ? "tel" : field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : "text";
     return <Input type={type} value={value} onChange={(e) => changeValue(field, e.target.value)} placeholder={field.placeholder ?? undefined} step={field.field_type === "number" ? "0.01" : undefined} />;
   };
 
-  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Informações de {stageName}</DialogTitle><DialogDescription>Estas informações são importantes para a etapa, mas não bloqueiam a movimentação. Você pode preencher agora ou responder depois.</DialogDescription></DialogHeader>
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Informações de {stageName}</DialogTitle><DialogDescription>Estas informações não bloqueiam a movimentação. Preencha o que souber agora, deixe o restante em branco e complete depois.</DialogDescription></DialogHeader>
     {stayedWithCurrentOperator && <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 flex gap-3 text-sm"><CalendarClock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" /><div><p className="font-semibold">Você pode agendar uma nova abordagem.</p><p className="text-muted-foreground mt-1">Se informar uma data, o Segly cria automaticamente uma atividade para o responsável comercial.</p></div></div>}
-    {isImplanted && <div className="rounded-lg border bg-muted/20 p-4 space-y-3"><div className="flex items-start gap-3"><Package className="h-5 w-5 text-primary shrink-0 mt-0.5" /><div><p className="font-semibold">Produto vendido</p><p className="text-xs text-muted-foreground">Pode ser informado agora ou completado posteriormente no lead.</p></div></div><Select value={productId} onValueChange={setProductId} disabled={productsLoading}><SelectTrigger><SelectValue placeholder={productsLoading ? "Carregando produtos..." : "Selecione o produto"} /></SelectTrigger><SelectContent>{products.map((product) => <SelectItem key={product.id} value={product.id}>{product.name} · {product.category}{product.insurer_name ? ` · ${product.insurer_name}` : ""}</SelectItem>)}</SelectContent></Select>{selectedProduct && <div className="grid gap-2 sm:grid-cols-2 text-xs"><div className="rounded-md border bg-background p-2.5"><span className="text-muted-foreground">Administradora:</span> <strong>{Number(selectedProduct.admin_commission_pct).toLocaleString("pt-BR")}% do valor fechado</strong></div><div className="rounded-md border bg-background p-2.5"><span className="text-muted-foreground">Corretor:</span> <strong>{Number(selectedProduct.broker_commission_pct).toLocaleString("pt-BR")}% da comissão da administradora</strong></div></div>}</div>}
+    {isImplanted && <div className="rounded-lg border bg-muted/20 p-4 space-y-3"><div className="flex items-start gap-3"><Package className="h-5 w-5 text-primary shrink-0 mt-0.5" /><div><p className="font-semibold">Produto vendido</p><p className="text-xs text-muted-foreground">Pode ser informado agora ou completado posteriormente no lead.</p></div></div><Select value={productId || BLANK_VALUE} onValueChange={(value) => setProductId(value === BLANK_VALUE ? "" : value)} disabled={productsLoading}><SelectTrigger><SelectValue placeholder={productsLoading ? "Carregando produtos..." : "Selecione o produto"} /></SelectTrigger><SelectContent><SelectItem value={BLANK_VALUE}>Deixar em branco</SelectItem>{products.map((product) => <SelectItem key={product.id} value={product.id}>{product.name} · {product.category}{product.insurer_name ? ` · ${product.insurer_name}` : ""}</SelectItem>)}</SelectContent></Select>{selectedProduct && <div className="grid gap-2 sm:grid-cols-2 text-xs"><div className="rounded-md border bg-background p-2.5"><span className="text-muted-foreground">Administradora:</span> <strong>{Number(selectedProduct.admin_commission_pct).toLocaleString("pt-BR")}% do valor fechado</strong></div><div className="rounded-md border bg-background p-2.5"><span className="text-muted-foreground">Corretor:</span> <strong>{Number(selectedProduct.broker_commission_pct).toLocaleString("pt-BR")}% da comissão da administradora</strong></div></div>}</div>}
     {isLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div> : fields.length === 0 ? <p className="text-sm text-muted-foreground py-4">Esta etapa não possui campos adicionais.</p> : <div className="grid gap-5 md:grid-cols-2 py-2">{fields.map((field) => <div key={field.id} className={field.field_type === "long_text" ? "space-y-2 md:col-span-2" : "space-y-2"}><div className="flex items-center gap-2"><Label>{field.label}</Label>{field.required && <Badge variant="secondary" className="text-[10px] font-normal">Importante</Badge>}</div>{renderField(field)}</div>)}</div>}
-    <DialogFooter className="gap-2 sm:gap-2"><Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button><Button variant="outline" onClick={() => moveLead(false)} disabled={saving || isLoading}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Responder depois</Button><Button onClick={() => moveLead(true)} disabled={saving || isLoading || (isImplanted && productsLoading)}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar e mover lead</Button></DialogFooter>
+    <DialogFooter className="gap-2 sm:gap-2"><Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button><Button variant="outline" onClick={() => moveLead(false)} disabled={saving || isLoading}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar e responder depois</Button><Button onClick={() => moveLead(true)} disabled={saving || isLoading || (isImplanted && productsLoading)}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar e mover lead</Button></DialogFooter>
   </DialogContent></Dialog>;
 }
