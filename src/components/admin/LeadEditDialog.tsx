@@ -72,10 +72,10 @@ export function LeadEditDialog({ lead, open, onOpenChange }: { lead: Lead; open:
         qc.invalidateQueries({ queryKey: ["lead-audit-timeline", lead.id] }),
         qc.invalidateQueries({ queryKey: ["audit-events"] }),
       ]);
-      toast.success("Lead atualizado com sucesso.");
+      toast.success("Vida atualizada com sucesso.");
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o lead.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a vida.");
     } finally {
       setSaving(false);
     }
@@ -87,7 +87,7 @@ export function LeadEditDialog({ lead, open, onOpenChange }: { lead: Lead; open:
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Editar lead</DialogTitle><DialogDescription>As alterações são salvas diretamente no banco e registradas na auditoria.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>Editar vida</DialogTitle><DialogDescription>As alterações são salvas diretamente no banco e registradas na auditoria.</DialogDescription></DialogHeader>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2"><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm((p) => ({ ...p, nome: e.target.value }))} /></div>
           <div className="space-y-2"><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm((p) => ({ ...p, telefone: formatPhone(e.target.value) }))} /></div>
@@ -99,7 +99,7 @@ export function LeadEditDialog({ lead, open, onOpenChange }: { lead: Lead; open:
         </div>
 
         {(orderedCustom.length > 0 || extraCustom.length > 0) && <div className="pt-4 border-t space-y-4">
-          <div><p className="font-medium">Dados do formulário / etapa</p><p className="text-xs text-muted-foreground">Esses campos permanecem vinculados ao lead.</p></div>
+          <div><p className="font-medium">Dados do formulário / etapa</p><p className="text-xs text-muted-foreground">Esses campos permanecem vinculados à vida.</p></div>
           <div className="grid gap-4 md:grid-cols-2">
             {orderedCustom.map((key) => {
               const long = key === "datas_nascimento" || key === "comentarios";
