@@ -75,7 +75,7 @@ const AtividadesPage = () => {
 
   const complete = useMutation({ mutationFn: completeActivity, onSuccess: () => { invalidate(); toast.success("Atividade concluída."); }, onError: (e: Error) => toast.error(e.message) });
   const reschedule = useMutation({ mutationFn: (activity: ActivityRow) => rescheduleActivityForTomorrow(activity.id, activity.scheduled_at), onSuccess: () => { invalidate(); toast.success("Atividade reagendada para amanhã."); }, onError: (e: Error) => toast.error(e.message) });
-  const resume = useMutation({ mutationFn: (activity: ActivityRow) => resumeStandbyLead(activity.lead_id!, activity.id), onSuccess: () => { invalidate(); toast.success("Lead retomado e movido para Em Contato."); }, onError: (e: Error) => toast.error(e.message) });
+  const resume = useMutation({ mutationFn: (activity: ActivityRow) => resumeStandbyLead(activity.lead_id!, activity.id), onSuccess: () => { invalidate(); toast.success("Vida retomada e movida para Em Contato."); }, onError: (e: Error) => toast.error(e.message) });
 
   const createActivity = useMutation({
     mutationFn: async () => {
@@ -122,13 +122,13 @@ const AtividadesPage = () => {
         <CardContent className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2"><Badge variant={overdue ? "destructive" : "secondary"}>{activity.type}</Badge><span className="text-sm font-medium">{formatDateTime(activity.scheduled_at)}</span></div>
-            {activity.lead_id ? <Link to={`/admin/lead/${activity.lead_id}`} className="font-semibold hover:text-primary">{activity.lead?.empresa || activity.lead?.nome || "Abrir lead"}</Link> : <span className="font-semibold">{activity.title || "Atividade"}</span>}
+            {activity.lead_id ? <Link to={`/admin/lead/${activity.lead_id}`} className="font-semibold hover:text-primary">{activity.lead?.empresa || activity.lead?.nome || "Abrir vida"}</Link> : <span className="font-semibold">{activity.title || "Atividade"}</span>}
             {activity.lead?.empresa && activity.lead?.nome && <p className="text-xs text-muted-foreground">Contato: {activity.lead.nome}</p>}
             {activity.notes && <p className="text-sm text-muted-foreground">{activity.notes}</p>}
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             {overdue && <Button size="sm" variant="outline" onClick={() => reschedule.mutate(activity)} disabled={reschedule.isPending}><RefreshCcw className="h-4 w-4 mr-2" />Amanhã</Button>}
-            {overdue && activity.type === "retorno_standby" && activity.lead_id && <Button size="sm" variant="outline" onClick={() => resume.mutate(activity)} disabled={resume.isPending}><RotateCcw className="h-4 w-4 mr-2" />Retomar lead</Button>}
+            {overdue && activity.type === "retorno_standby" && activity.lead_id && <Button size="sm" variant="outline" onClick={() => resume.mutate(activity)} disabled={resume.isPending}><RotateCcw className="h-4 w-4 mr-2" />Retomar vida</Button>}
             <Button size="sm" onClick={() => complete.mutate(activity)} disabled={complete.isPending}><CheckCircle2 className="h-4 w-4 mr-2" />Concluir</Button>
           </div>
         </CardContent>
