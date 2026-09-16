@@ -252,7 +252,7 @@ export function LeadFormBuilder() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-lg font-display font-semibold">Construtor de Formulário</h2>
-          <p className="text-sm text-muted-foreground">Crie formulários de cadastro e escolha qual deles aparece em Cadastrar Lead.</p>
+          <p className="text-sm text-muted-foreground">Crie formulários de cadastro e escolha qual deles aparece em +Vidas.</p>
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4 mr-1.5" />Novo formulário</Button>
       </div>
@@ -343,11 +343,11 @@ export function LeadFormBuilder() {
       </Dialog>
 
       <AlertDialog open={!!confirmDeleteField} onOpenChange={(open) => !open && setConfirmDeleteField(null)}>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir campo?</AlertDialogTitle><AlertDialogDescription>O campo “{confirmDeleteField?.label}” será removido apenas deste formulário. Os valores já salvos nos leads não serão apagados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => { if (confirmDeleteField) del.mutate(confirmDeleteField.id); setConfirmDeleteField(null); }}>Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir campo?</AlertDialogTitle><AlertDialogDescription>O campo “{confirmDeleteField?.label}” será removido apenas deste formulário. Os valores já salvos nas vidas não serão apagados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => { if (confirmDeleteField) del.mutate(confirmDeleteField.id); setConfirmDeleteField(null); }}>Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={!!confirmDeleteForm} onOpenChange={(open) => !open && setConfirmDeleteForm(null)}>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir formulário?</AlertDialogTitle><AlertDialogDescription>O formulário “{confirmDeleteForm?.name}” e sua configuração serão removidos. Os leads cadastrados por ele continuam preservados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => { if (confirmDeleteForm) deleteForm.mutate(confirmDeleteForm); setConfirmDeleteForm(null); }}>Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir formulário?</AlertDialogTitle><AlertDialogDescription>O formulário “{confirmDeleteForm?.name}” e sua configuração serão removidos. As vidas cadastradas por ele continuam preservadas.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => { if (confirmDeleteForm) deleteForm.mutate(confirmDeleteForm); setConfirmDeleteForm(null); }}>Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
     </div>
   );
