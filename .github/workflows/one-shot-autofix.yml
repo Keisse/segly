@@ -21,14 +21,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Apply dependency security fixes
-        run: npm audit fix
+      - name: Apply non-breaking dependency security fixes
+        run: npm audit fix || true
 
       - name: Apply safe ESLint auto-fixes
         run: npx eslint . --fix || true
