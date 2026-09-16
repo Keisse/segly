@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,8 +22,6 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
-
-const seglyLogo = "/segly-logo.png";
 
 const customLabels: Record<string, string> = {
   cnpj: "CNPJ",
@@ -88,6 +86,20 @@ const LeadDetail = () => {
   const { user } = useAuth();
   const { data: role } = useMyRole();
   const { data: lead, isLoading } = useLead(id || "");
+  const { data: currentProfile } = useQuery({
+    queryKey: ["current-profile-name", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { display_name: string | null } | null;
+    },
+    enabled: !!user?.id,
+  });
   const addNote = useAddNote();
   const updateNote = useUpdateNote();
   const updateStatus = useUpdateLeadStatus();
@@ -99,6 +111,8 @@ const LeadDetail = () => {
   const [editingInfoValue, setEditingInfoValue] = useState("");
   const [savingInfoKey, setSavingInfoKey] = useState<string | null>(null);
   const canViewAudit = role === "admin" || role === "lider";
+  const displayName = currentProfile?.display_name?.trim() || user?.email?.split("@")[0] || "time";
+  const firstName = capitalizeWords(displayName.split(/\s+/)[0]);
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (!lead) return <div className="min-h-screen flex items-center justify-center"><div className="text-center"><p className="text-muted-foreground mb-4">Lead não encontrado</p><Button onClick={() => navigate("/admin/dashboard")}>Voltar ao Dashboard</Button></div></div>;
@@ -190,7 +204,7 @@ const LeadDetail = () => {
       <div className="max-w-5xl mx-auto space-y-6">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/admin/dashboard")}><ArrowLeft className="w-5 h-5" /></Button>
-          <img src={seglyLogo} alt="Segly" className="h-8" />
+          <p className="text-lg font-semibold text-foreground">Bom trabalho, {firstName}.</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
