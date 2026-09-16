@@ -7,7 +7,7 @@ import {
   Handshake,
   Settings,
   UserCircle,
-  Plus,
+  UserPlus,
   CalendarCheck2,
   Gauge,
   PauseCircle,
@@ -44,20 +44,13 @@ const PulsingHeart = ({ className }: IconProps) => (
   />
 );
 
-const HeartPlus = ({ className }: IconProps) => (
-  <span className={`relative inline-block ${className ?? ""}`} aria-hidden="true">
-    <Heart className="absolute left-0 top-[2px] h-[12px] w-[12px]" />
-    <Plus className="absolute -right-[1px] -top-[1px] h-[9px] w-[9px]" strokeWidth={2.4} />
-  </span>
-);
-
 type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leaderOnly?: boolean };
 
 const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Pipelines", url: "/admin/kanban", icon: KanbanSquare },
   { title: "Vidas", url: "/admin/leads", icon: PulsingHeart },
-  { title: "Cadastrar vidas", url: "/admin/leads/novo", icon: HeartPlus },
+  { title: "Cadastrar vidas", url: "/admin/leads/novo", icon: UserPlus },
   { title: "Clientes", url: "/admin/clientes", icon: Handshake },
   { title: "Standby", url: "/admin/standby", icon: PauseCircle },
   { title: "Agenda", url: "/admin/atividades", icon: CalendarCheck2 },
