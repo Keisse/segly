@@ -125,7 +125,7 @@ const NovoLeadPage = () => {
       const history = Array.isArray(row.historico) ? row.historico : [];
       const entry = {
         tipo: "manual",
-        descricao: `Lead cadastrado manualmente por ${actor} usando o formulário ${defaultForm.name}`,
+        descricao: `Vida cadastrada manualmente por ${actor} usando o formulário ${defaultForm.name}`,
         data: new Date().toISOString(),
         autor: actor,
       };
@@ -142,11 +142,11 @@ const NovoLeadPage = () => {
         queryClient.invalidateQueries({ queryKey: ["audit-events"] }),
       ]);
 
-      toast.success("Lead cadastrado com sucesso!");
+      toast.success("Vida cadastrada com sucesso!");
       navigate(`/admin/lead/${row.id}`);
     } catch (error) {
-      console.error("Erro ao cadastrar lead:", error);
-      toast.error(error instanceof Error ? error.message : "Erro ao cadastrar lead.");
+      console.error("Erro ao cadastrar vida:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao cadastrar vida.");
     } finally {
       setSaving(false);
     }
@@ -159,7 +159,7 @@ const NovoLeadPage = () => {
   if (!defaultForm) {
     return (
       <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-3"><Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button><h1 className="text-2xl font-display font-bold">Cadastrar Lead</h1></div>
+        <div className="flex items-center gap-3"><Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button><h1 className="text-2xl font-display font-bold">+Vidas</h1></div>
         <Card><CardContent className="py-8 text-center"><p className="text-muted-foreground">Nenhum formulário padrão ativo foi configurado.</p><Button className="mt-4" onClick={() => navigate("/admin/configuracoes?tab=formulario")}>Configurar formulário</Button></CardContent></Card>
       </div>
     );
@@ -170,7 +170,7 @@ const NovoLeadPage = () => {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
-          <div><h1 className="text-2xl font-display font-bold">Cadastrar Lead</h1><p className="text-sm text-muted-foreground">Formulário padrão: {defaultForm.name}</p></div>
+          <div><h1 className="text-2xl font-display font-bold">+Vidas</h1><p className="text-sm text-muted-foreground">Formulário padrão: {defaultForm.name}</p></div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={copyPublicLink}><Copy className="h-4 w-4 mr-2" />Copiar link público</Button>
@@ -188,7 +188,7 @@ const NovoLeadPage = () => {
             <DynamicLeadFormFields fields={fields} values={values} onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))} disabled={saving} />
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => navigate("/admin/leads")}>Cancelar</Button>
-              <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}Cadastrar Lead</Button>
+              <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}+Vidas</Button>
             </div>
           </CardContent>
         </Card>
