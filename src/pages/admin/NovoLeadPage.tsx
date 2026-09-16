@@ -4,7 +4,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Copy, ExternalLink, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DynamicLeadFormFields, type LeadFormValues } from "@/components/leads/DynamicLeadFormFields";
+import {
+  birthDateValues,
+  DynamicLeadFormFields,
+  isBirthDatesField,
+  isPeopleCountField,
+  type LeadFormValues,
+} from "@/components/leads/DynamicLeadFormFields";
 import { useLeadForms } from "@/hooks/useLeadForms";
 import { useLeadFormFields } from "@/hooks/useLeadFormFields";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,8 +30,26 @@ const NovoLeadPage = () => {
   const publicUrl = defaultForm ? `${window.location.origin}/formulario/${defaultForm.id}` : "";
 
   const validate = () => {
+    const peopleField = fields.find(isPeopleCountField);
+    const birthField = fields.find(isBirthDatesField);
+    const peopleCount = peopleField ? Math.max(0, Math.trunc(Number(values[peopleField.field_key] ?? peopleField.default_value ?? 0) || 0)) : 0;
+
     for (const field of fields) {
       if (!field.required) continue;
+
+      if (birthField && field.id === birthField.id) {
+        if (peopleCount <= 0) {
+          toast.error("Informe primeiro a quantidade de pessoas.");
+          return false;
+        }
+        const dates = birthDateValues(values[field.field_key], peopleCount);
+        if (dates.some((date) => !date)) {
+          toast.error(`Preencha a data de nascimento das ${peopleCount} pessoas.`);
+          return false;
+        }
+        continue;
+      }
+
       const value = values[field.field_key] ?? field.default_value ?? "";
       const empty = Array.isArray(value) ? value.length === 0 : String(value).trim() === "";
       if (empty) {
@@ -142,11 +166,11 @@ const NovoLeadPage = () => {
         queryClient.invalidateQueries({ queryKey: ["audit-events"] }),
       ]);
 
-      toast.success("Vida cadastrada com sucesso!");
+      toast.success("Vidas cadastradas com sucesso!");
       navigate(`/admin/lead/${row.id}`);
     } catch (error) {
-      console.error("Erro ao cadastrar vida:", error);
-      toast.error(error instanceof Error ? error.message : "Erro ao cadastrar vida.");
+      console.error("Erro ao cadastrar vidas:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao cadastrar vidas.");
     } finally {
       setSaving(false);
     }
@@ -159,7 +183,7 @@ const NovoLeadPage = () => {
   if (!defaultForm) {
     return (
       <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-3"><Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button><h1 className="text-2xl font-display font-bold">+Vidas</h1></div>
+        <div className="flex items-center gap-3"><Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button><h1 className="text-2xl font-display font-bold">Cadastrar Vidas</h1></div>
         <Card><CardContent className="py-8 text-center"><p className="text-muted-foreground">Nenhum formulário padrão ativo foi configurado.</p><Button className="mt-4" onClick={() => navigate("/admin/configuracoes?tab=formulario")}>Configurar formulário</Button></CardContent></Card>
       </div>
     );
@@ -170,7 +194,7 @@ const NovoLeadPage = () => {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
-          <div><h1 className="text-2xl font-display font-bold">+Vidas</h1><p className="text-sm text-muted-foreground">Formulário padrão: {defaultForm.name}</p></div>
+          <div><h1 className="text-2xl font-display font-bold">Cadastrar Vidas</h1><p className="text-sm text-muted-foreground">Formulário padrão: {defaultForm.name}</p></div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={copyPublicLink}><Copy className="h-4 w-4 mr-2" />Copiar link público</Button>
@@ -181,14 +205,20 @@ const NovoLeadPage = () => {
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>{defaultForm.name}</CardTitle>
+            <CardTitle>Cadastrar Vidas</CardTitle>
             <CardDescription>{defaultForm.description || "Os campos marcados com * são obrigatórios."}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <DynamicLeadFormFields fields={fields} values={values} onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))} disabled={saving} />
+            <DynamicLeadFormFields
+              fields={fields}
+              values={values}
+              onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
+              disabled={saving}
+              expandBirthDatesByPeople
+            />
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => navigate("/admin/leads")}>Cancelar</Button>
-              <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}+Vidas</Button>
+              <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}Cadastrar Vidas</Button>
             </div>
           </CardContent>
         </Card>
