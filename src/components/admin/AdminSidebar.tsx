@@ -13,6 +13,7 @@ import {
   PauseCircle,
   History,
   Package,
+  BookOpen,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -46,6 +47,7 @@ const mainItems: Item[] = [
   { title: "Produtos", url: "/admin/produtos", icon: Package, adminOnly: true },
   { title: "Desempenho e Comissões", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Meu Perfil", url: "/admin/meu-perfil", icon: UserCircle },
+  { title: "Sobre o sistema", url: "/admin/sobre-o-sistema", icon: BookOpen },
 ];
 
 export function AdminSidebar() {
