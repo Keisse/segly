@@ -34,7 +34,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMyRole } from "@/hooks/useMyRole";
 import { NossoPropositoDialog } from "./NossoPropositoDialog";
 
-const seglyLogo = "/segly-logo.png";
+const seglyLogoDark = "/segly-logo.png";
+const seglyLogoLight = "/segly-logo-light.png";
 
 type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leaderOnly?: boolean };
 
@@ -62,6 +63,7 @@ export function AdminSidebar() {
   const isLeader = role === "admin" || role === "lider";
   const navigate = useNavigate();
   const [propositoOpen, setPropositoOpen] = useState(false);
+  const logoClass = collapsed ? "h-6" : "h-8";
 
   const handleLogout = async () => {
     await signOut();
@@ -78,7 +80,8 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="p-4 flex items-center justify-center border-b border-sidebar-border">
-          <img src={seglyLogo} alt="Segly" className={collapsed ? "h-6" : "h-8"} />
+          <img src={seglyLogoLight} alt="Segly" className={`${logoClass} dark:hidden`} />
+          <img src={seglyLogoDark} alt="Segly" className={`${logoClass} hidden dark:block`} />
         </div>
         <SidebarGroup>
           <SidebarGroupLabel>Painel</SidebarGroupLabel>
