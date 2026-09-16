@@ -196,4 +196,22 @@
     @apply border-primary bg-primary/10;
     box-shadow: var(--glow-primary);
   }
+
+  .segly-heartbeat {
+    transform-origin: center;
+    animation: segly-heartbeat 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes segly-heartbeat {
+  0%, 45%, 100% { transform: scale(1); }
+  12% { transform: scale(1.13); }
+  22% { transform: scale(1); }
+  32% { transform: scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segly-heartbeat {
+    animation: none;
+  }
 }
