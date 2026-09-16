@@ -85,12 +85,7 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
       if (field.field_key === "cnpj") value = formatCpfCnpj(value);
 
       const nextStageData = { ...(stageValues ?? {}), [field.field_key]: value || null };
-      const { error: stageDataError } = await supabase.from("lead_stage_data" as never).upsert({
-        organization_id: lead.organization_id,
-        lead_id: leadId,
-        stage_id: stage.id,
-        data: nextStageData,
-      } as never, { onConflict: "lead_id,stage_id" });
+      const { error: stageDataError } = await supabase.from("lead_stage_data" as never).upsert({ organization_id: lead.organization_id, lead_id: leadId, stage_id: stage.id, data: nextStageData } as never, { onConflict: "lead_id,stage_id" });
       if (stageDataError) throw stageDataError;
 
       if (field.maps_to) {
@@ -142,9 +137,7 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
         {answered > 0 && <Badge variant="secondary">{answered}/{fields.length} preenchidas</Badge>}
       </div>
 
-      {answered === 0 ? (
-        <div className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">Nenhuma informação preenchida nesta etapa ainda.</div>
-      ) : (
+      {answered > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {fields.map((field) => {
             const value = valueFor(field);
