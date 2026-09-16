@@ -65,12 +65,12 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
     else { setSortField(field); setSortDirection("desc"); }
   };
 
-  if (isLoading) return <div className="glass-card p-8 text-center"><div className="animate-pulse text-muted-foreground">Carregando leads...</div></div>;
-  if (leads.length === 0) return <div className="glass-card p-8 text-center"><p className="text-muted-foreground">Nenhum lead encontrado.</p></div>;
+  if (isLoading) return <div className="glass-card p-8 text-center"><div className="animate-pulse text-muted-foreground">Carregando vidas...</div></div>;
+  if (leads.length === 0) return <div className="glass-card p-8 text-center"><p className="text-muted-foreground">Nenhuma vida encontrada.</p></div>;
 
   const Pagination = () => totalPages > 1 ? (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-t border-border/50">
-      <p className="text-xs sm:text-sm text-muted-foreground">Mostrando {(page - 1) * ITEMS_PER_PAGE + 1} a {Math.min(page * ITEMS_PER_PAGE, leads.length)} de {leads.length} leads</p>
+      <p className="text-xs sm:text-sm text-muted-foreground">Mostrando {(page - 1) * ITEMS_PER_PAGE + 1} a {Math.min(page * ITEMS_PER_PAGE, leads.length)} de {leads.length} vidas</p>
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page === 1}><ChevronLeft className="w-4 h-4" /></Button>
         <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Página {page} de {totalPages}</span>
@@ -100,11 +100,11 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                   <TableCell><ResponsavelPicker value={lead.owner_id} onChange={(uid) => updateOwner.mutate({ id: lead.id, ownerId: uid })} /></TableCell>
                   <TableCell><StagePicker leadId={lead.id} pipelineId={lead.pipeline_id} stageId={lead.stage_id} /></TableCell>
                   <TableCell className="text-right"><div className="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingLead(lead)} title="Editar lead"><Pencil className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingLead(lead)} title="Editar vida"><Pencil className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/admin/lead/${lead.id}`)} title="Ver detalhes"><Eye className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" asChild><a href={`tel:${lead.telefone}`} title="Ligar"><Phone className="w-4 h-4" /></a></Button>
                     <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
-                      <AlertDialogContent className="bg-card border-border"><AlertDialogHeader><AlertDialogTitle>Excluir Lead</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o lead <strong>{capitalizeWords(lead.nome)}</strong>? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => deleteLead.mutate(lead.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                      <AlertDialogContent className="bg-card border-border"><AlertDialogHeader><AlertDialogTitle>Excluir Vida</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir a vida <strong>{capitalizeWords(lead.nome)}</strong>? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => deleteLead.mutate(lead.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                     </AlertDialog>
                   </div></TableCell>
                 </TableRow>
@@ -122,7 +122,7 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
                   <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarClock className="h-3.5 w-3.5 shrink-0" />{format(new Date(lead.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</div>
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingLead(lead)} title="Editar lead"><Pencil className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingLead(lead)} title="Editar vida"><Pencil className="w-4 h-4" /></Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/admin/lead/${lead.id}`)} title="Ver detalhes"><Eye className="w-4 h-4" /></Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8" asChild><a href={`tel:${lead.telefone}`} title="Ligar"><Phone className="w-4 h-4" /></a></Button>
                 </div>
@@ -147,7 +147,7 @@ const LeadsTable = ({ leads, isLoading }: LeadsTableProps) => {
               <div className="flex items-center justify-end gap-3 pt-1">
                 {lead.campaign_name && <Badge variant="outline" className="max-w-[70%] truncate">{lead.campaign_name}</Badge>}
                 <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4 mr-1.5" />Excluir</Button></AlertDialogTrigger>
-                  <AlertDialogContent className="bg-card border-border"><AlertDialogHeader><AlertDialogTitle>Excluir Lead</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o lead <strong>{capitalizeWords(lead.nome)}</strong>? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => deleteLead.mutate(lead.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                  <AlertDialogContent className="bg-card border-border"><AlertDialogHeader><AlertDialogTitle>Excluir Vida</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir a vida <strong>{capitalizeWords(lead.nome)}</strong>? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => deleteLead.mutate(lead.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                 </AlertDialog>
               </div>
             </div>
