@@ -1,6 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import { usePipelines, usePipelineStages, useLeadsByPipeline, useUpdateLeadStage } from "@/hooks/usePipelines";
 import { usePendingActivitiesForLeads } from "@/hooks/useActivities";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +25,6 @@ import { PartyPopper, Mail, MessageCircle, User, Clock3, Search, CalendarClock, 
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { capitalizeWords } from "@/lib/formatName";
 import { PipelineTabs } from "@/components/admin/PipelineTabs";
-import { StageTransitionDialog } from "@/components/admin/StageTransitionDialog";
 
 type LeadRow = {
   id: string;
@@ -39,11 +52,8 @@ type ProposalRow = {
   products?: { name: string; insurer_name: string | null } | null;
 };
 
-type PendingMove = {
-  lead: LeadRow;
-  stageId: string;
-  stageName: string;
-} | null;
+type OwnerInfo = { display_name: string | null; email: string | null };
+type ActivityInfo = { type: string; scheduled_at: string };
 
 const proposalStatusLabel: Record<ProposalRow["status"], string> = {
   draft: "Proposta em rascunho",
@@ -89,10 +99,101 @@ function activityState(date: string) {
 const activityDotClass = { overdue: "bg-red-500", today: "bg-amber-400", future: "bg-emerald-500" };
 const activityLabel = { overdue: "Atividade atrasada", today: "Atividade para hoje", future: "Atividade futura" };
 
+function LeadCardVisual({
+  lead,
+  owner,
+  nextActivity,
+  proposal,
+  overlay = false,
+}: {
+  lead: LeadRow;
+  owner?: OwnerInfo;
+  nextActivity?: ActivityInfo;
+  proposal?: ProposalRow;
+  overlay?: boolean;
+}) {
+  const wa = lead.telefone ? lead.telefone.replace(/\D/g, "") : "";
+  const activityStatus = nextActivity ? activityState(nextActivity.scheduled_at) : null;
+  const amount = formatMoney(proposal?.negotiated_value ?? lead.custom_fields?.valor_apresentado ?? lead.custom_fields?.valor_fechado ?? lead.custom_fields?.valor_final_fechado);
+
+  const mainContent = (
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate uppercase">{lead.empresa || lead.nome}</p>
+          <p className="text-xs text-muted-foreground truncate">{lead.nome}</p>
+        </div>
+        {activityStatus && <span title={activityLabel[activityStatus]} className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${activityDotClass[activityStatus]}`} />}
+      </div>
+      {amount && <div className="flex items-center gap-1.5 text-xs font-medium text-foreground"><CircleDollarSign className="w-3.5 h-3.5" /><span>{amount}</span></div>}
+      {proposal && <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" /><div className="min-w-0"><p className="font-medium text-foreground truncate">{proposal.products?.name || "Proposta comercial"}</p><p className="truncate">{proposalStatusLabel[proposal.status]}{proposal.products?.insurer_name ? ` · ${proposal.products.insurer_name}` : ""}</p></div></div>}
+    </>
+  );
+
+  return (
+    <Card className={`p-3 space-y-2 ${overlay ? "border-primary/60 shadow-2xl ring-1 ring-primary/20" : "hover:border-primary/50"}`}>
+      {overlay ? <div className="block space-y-1.5">{mainContent}</div> : <Link to={`/admin/lead/${lead.id}`} className="block space-y-1.5">{mainContent}</Link>}
+      <div className="pt-2 border-t border-border/50 space-y-1.5">
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><User className="w-3 h-3 shrink-0" /><span className="truncate">{owner ? capitalizeWords(owner.display_name || owner.email || "Usuário") : "Sem responsável comercial"}</span></div>
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Clock3 className="w-3 h-3 shrink-0" /><span>{stageAge(lead.stage_entered_at || lead.created_at)} nesta etapa</span></div>
+        {nextActivity ? <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0 mt-0.5" /><span className="line-clamp-2">{nextActivity.type} · {new Date(nextActivity.scheduled_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div> : <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0" /><span>Sem próxima atividade</span></div>}
+        {!overlay && lead.email && <a href={`mailto:${lead.email}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></a>}
+        {!overlay && wa && <a href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors"><MessageCircle className="w-3 h-3 shrink-0" /><span className="truncate">{lead.telefone}</span></a>}
+      </div>
+    </Card>
+  );
+}
+
+function DraggableLeadCard({
+  lead,
+  owner,
+  nextActivity,
+  proposal,
+}: {
+  lead: LeadRow;
+  owner?: OwnerInfo;
+  nextActivity?: ActivityInfo;
+  proposal?: ProposalRow;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: lead.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={`cursor-grab active:cursor-grabbing transition-[opacity,transform] duration-150 ${isDragging ? "opacity-25 scale-[0.98]" : "opacity-100 scale-100"}`}
+      style={{ touchAction: "manipulation" }}
+    >
+      <LeadCardVisual lead={lead} owner={owner} nextActivity={nextActivity} proposal={proposal} />
+    </div>
+  );
+}
+
+function DroppableStageColumn({ id, children }: { id: string; children: ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`bg-card/50 rounded-lg p-3 min-h-[400px] border transition-all duration-150 ${isOver ? "border-primary ring-2 ring-primary/20 bg-primary/[0.04] scale-[1.005]" : "border-border"}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 const KanbanPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: pipelines = [] } = usePipelines();
   const [search, setSearch] = useState("");
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [optimisticStages, setOptimisticStages] = useState<Record<string, string>>({});
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 160, tolerance: 8 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const activePipelineId = useMemo(() => {
     const fromUrl = searchParams.get("pipeline");
@@ -131,12 +232,10 @@ const KanbanPage = () => {
     enabled: leadIds.length > 0,
   });
   const updateStage = useUpdateLeadStage();
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [pendingMove, setPendingMove] = useState<PendingMove>(null);
 
   const { data: members = [] } = useOrgMembers();
   const ownerMap = useMemo(() => {
-    const m = new Map<string, { display_name: string | null; email: string | null }>();
+    const m = new Map<string, OwnerInfo>();
     members.forEach((u) => m.set(u.id, { display_name: u.display_name, email: u.email }));
     return m;
   }, [members]);
@@ -158,6 +257,21 @@ const KanbanPage = () => {
     return map;
   }, [proposals]);
 
+  useEffect(() => {
+    setOptimisticStages((current) => {
+      let changed = false;
+      const next = { ...current };
+      Object.entries(current).forEach(([leadId, stageId]) => {
+        const lead = leads.find((item) => item.id === leadId);
+        if (!lead || lead.stage_id === stageId) {
+          delete next[leadId];
+          changed = true;
+        }
+      });
+      return changed ? next : current;
+    });
+  }, [leads]);
+
   const filteredLeads = useMemo(() => {
     const q = normalize(search.trim());
     if (!q) return leads;
@@ -170,27 +284,40 @@ const KanbanPage = () => {
   const grouped = useMemo(() => {
     const g: Record<string, LeadRow[]> = {};
     stages.forEach((s) => { g[s.id] = []; });
-    filteredLeads.forEach((l) => { if (l.stage_id && g[l.stage_id]) g[l.stage_id].push(l); });
+    filteredLeads.forEach((lead) => {
+      const effectiveStageId = optimisticStages[lead.id] ?? lead.stage_id;
+      if (effectiveStageId && g[effectiveStageId]) g[effectiveStageId].push(lead);
+    });
     return g;
-  }, [stages, filteredLeads]);
+  }, [stages, filteredLeads, optimisticStages]);
 
-  const handleDrop = (stageId: string) => {
-    if (!dragId || !activePipelineId) return;
-    const lead = leads.find((item) => item.id === dragId);
-    const stage = stages.find((item) => item.id === stageId);
-    setDragId(null);
-    if (!lead || !stage || lead.stage_id === stageId) return;
-    if (isAcelera) {
-      setPendingMove({ lead, stageId, stageName: stage.nome });
-      return;
-    }
-    updateStage.mutate({ leadId: lead.id, stageId, pipelineId: activePipelineId });
+  const activeLead = useMemo(() => leads.find((lead) => lead.id === activeDragId) ?? null, [leads, activeDragId]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
   };
 
-  const confirmAceleraMove = async () => {
-    if (!pendingMove || !activePipelineId) return;
-    await updateStage.mutateAsync({ leadId: pendingMove.lead.id, stageId: pendingMove.stageId, pipelineId: activePipelineId });
-    setPendingMove(null);
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const leadId = String(event.active.id);
+    const targetStageId = event.over ? String(event.over.id) : null;
+    setActiveDragId(null);
+    if (!targetStageId || !activePipelineId) return;
+
+    const lead = leads.find((item) => item.id === leadId);
+    if (!lead) return;
+    const currentStageId = optimisticStages[lead.id] ?? lead.stage_id;
+    if (currentStageId === targetStageId) return;
+
+    setOptimisticStages((current) => ({ ...current, [lead.id]: targetStageId }));
+    try {
+      await updateStage.mutateAsync({ leadId: lead.id, stageId: targetStageId, pipelineId: activePipelineId });
+    } catch {
+      setOptimisticStages((current) => {
+        const next = { ...current };
+        delete next[lead.id];
+        return next;
+      });
+    }
   };
 
   const selectPipeline = (id: string) => {
@@ -199,12 +326,16 @@ const KanbanPage = () => {
     setSearchParams(next);
   };
 
+  const overlayOwner = activeLead ? ownerMap.get(activeLead.owner_id ?? "") : undefined;
+  const overlayActivity = activeLead ? nextActivityMap.get(activeLead.id) : undefined;
+  const overlayProposal = activeLead ? latestProposalMap.get(activeLead.id) : undefined;
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Pipelines</h1>
-          <p className="text-sm text-muted-foreground">{isAcelera ? "Arraste os cards entre etapas. O formulário da nova etapa será aberto antes da movimentação." : "Arraste os cards entre etapas para movê-los."}</p>
+          <p className="text-sm text-muted-foreground">Arraste os cards livremente entre as etapas. Nenhum preenchimento é obrigatório para movimentar um lead.</p>
         </div>
         {isAcelera && (
           <div className="relative w-full xl:w-80">
@@ -217,49 +348,48 @@ const KanbanPage = () => {
       <PipelineTabs pipelines={pipelines} activeId={activePipelineId} onSelect={selectPipeline} />
 
       {!activePipelineId ? <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p> : loadingLeads ? <p className="text-sm text-muted-foreground">Carregando leads…</p> : stages.length === 0 ? <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p> : (
-        <div className="grid gap-3 overflow-x-auto pb-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))` }}>
-          {stages.map((col) => {
-            const cards = grouped[col.id] ?? [];
-            const overWip = col.wip_limit != null && cards.length > col.wip_limit;
-            return (
-              <div key={col.id} onDragOver={(e) => e.preventDefault()} onDrop={() => handleDrop(col.id)} className="bg-card/50 rounded-lg p-3 min-h-[400px] border border-border">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: col.cor ?? "#64748b" }} />{col.nome}{col.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}</h3>
-                  <Badge variant={overWip ? "destructive" : "secondary"} className="text-xs">{cards.length}{col.wip_limit != null ? `/${col.wip_limit}` : ""}</Badge>
-                </div>
-                <div className="space-y-2">
-                  {cards.map((lead) => {
-                    const owner = ownerMap.get(lead.owner_id ?? "");
-                    const wa = lead.telefone ? lead.telefone.replace(/\D/g, "") : "";
-                    const nextActivity = nextActivityMap.get(lead.id);
-                    const activityStatus = nextActivity ? activityState(nextActivity.scheduled_at) : null;
-                    const proposal = latestProposalMap.get(lead.id);
-                    const amount = formatMoney(proposal?.negotiated_value ?? lead.custom_fields?.valor_apresentado ?? lead.custom_fields?.valor_fechado ?? lead.custom_fields?.valor_final_fechado);
-                    return (
-                      <Card key={lead.id} draggable onDragStart={() => setDragId(lead.id)} className="p-3 cursor-move hover:border-primary/50 transition-colors space-y-2">
-                        <Link to={`/admin/lead/${lead.id}`} className="block space-y-1.5">
-                          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-sm font-semibold truncate uppercase">{lead.empresa || lead.nome}</p><p className="text-xs text-muted-foreground truncate">{lead.nome}</p></div>{activityStatus && <span title={activityLabel[activityStatus]} className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${activityDotClass[activityStatus]}`} />}</div>
-                          {amount && <div className="flex items-center gap-1.5 text-xs font-medium text-foreground"><CircleDollarSign className="w-3.5 h-3.5" /><span>{amount}</span></div>}
-                          {proposal && <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" /><div className="min-w-0"><p className="font-medium text-foreground truncate">{proposal.products?.name || "Proposta comercial"}</p><p className="truncate">{proposalStatusLabel[proposal.status]}{proposal.products?.insurer_name ? ` · ${proposal.products.insurer_name}` : ""}</p></div></div>}
-                        </Link>
-                        <div className="pt-2 border-t border-border/50 space-y-1.5">
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><User className="w-3 h-3 shrink-0" /><span className="truncate">{owner ? capitalizeWords(owner.display_name || owner.email || "Usuário") : "Sem responsável comercial"}</span></div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Clock3 className="w-3 h-3 shrink-0" /><span>{stageAge(lead.stage_entered_at || lead.created_at)} nesta etapa</span></div>
-                          {nextActivity ? <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0 mt-0.5" /><span className="line-clamp-2">{nextActivity.type} · {new Date(nextActivity.scheduled_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div> : <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0" /><span>Sem próxima atividade</span></div>}
-                          {lead.email && <a href={`mailto:${lead.email}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></a>}
-                          {wa && <a href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors"><MessageCircle className="w-3 h-3 shrink-0" /><span className="truncate">{lead.telefone}</span></a>}
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveDragId(null)}
+        >
+          <div className="grid gap-3 overflow-x-auto pb-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))` }}>
+            {stages.map((col) => {
+              const cards = grouped[col.id] ?? [];
+              const overWip = col.wip_limit != null && cards.length > col.wip_limit;
+              return (
+                <DroppableStageColumn key={col.id} id={col.id}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: col.cor ?? "#64748b" }} />{col.nome}{col.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}</h3>
+                    <Badge variant={overWip ? "destructive" : "secondary"} className="text-xs">{cards.length}{col.wip_limit != null ? `/${col.wip_limit}` : ""}</Badge>
+                  </div>
+                  <div className="space-y-2 min-h-[320px]">
+                    {cards.map((lead) => (
+                      <DraggableLeadCard
+                        key={lead.id}
+                        lead={lead}
+                        owner={ownerMap.get(lead.owner_id ?? "")}
+                        nextActivity={nextActivityMap.get(lead.id)}
+                        proposal={latestProposalMap.get(lead.id)}
+                      />
+                    ))}
+                  </div>
+                </DroppableStageColumn>
+              );
+            })}
+          </div>
 
-      <StageTransitionDialog open={!!pendingMove} onOpenChange={(open) => { if (!open) setPendingMove(null); }} lead={pendingMove?.lead ?? null} stageId={pendingMove?.stageId ?? null} stageName={pendingMove?.stageName ?? "etapa"} onConfirm={confirmAceleraMove} />
+          <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }}>
+            {activeLead ? (
+              <div className="w-[245px] rotate-[1.5deg] scale-[1.03] cursor-grabbing pointer-events-none">
+                <LeadCardVisual lead={activeLead} owner={overlayOwner} nextActivity={overlayActivity} proposal={overlayProposal} overlay />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
     </div>
   );
 };
