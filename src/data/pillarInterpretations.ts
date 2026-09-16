@@ -1724,7 +1724,7 @@ export const getPillarInterpretation = (
   
   // Enriquecer a interpretação com contexto do departamento quando relevante
   const deptContext = departmentContexts[leadData.departamento] || "na sua área";
-  let enrichedInterpretation = interpretation.interpretation;
+  const enrichedInterpretation = interpretation.interpretation;
   
   // Adicionar contexto do departamento de forma natural quando apropriado
   if (!enrichedInterpretation.toLowerCase().includes(leadData.departamento.toLowerCase())) {
