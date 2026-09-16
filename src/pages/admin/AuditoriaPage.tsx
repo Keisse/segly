@@ -26,7 +26,7 @@ type LabelRow = { field_key: string; label: string };
 type StageRow = { id: string; nome: string };
 
 const entityLabels: Record<string, string> = {
-  lead: "Lead",
+  lead: "Vida",
   activity: "Atividade",
   commission: "Comissão",
   payment_batch: "Fechamento financeiro",
@@ -75,7 +75,7 @@ const fieldLabels: Record<string, string> = {
   type: "Tipo",
   notes: "Observações",
   user_id: "Usuário",
-  lead_id: "Lead",
+  lead_id: "Vida",
   product_id: "Produto",
   insurer_id: "Operadora",
   amount: "Comissão",
