@@ -44,7 +44,7 @@ const mainItems: Item[] = [
   { title: "Standby", url: "/admin/standby", icon: PauseCircle },
   { title: "Agenda", url: "/admin/atividades", icon: CalendarCheck2 },
   { title: "Produtos", url: "/admin/produtos", icon: Package, adminOnly: true },
-  { title: "Desempenho", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
+  { title: "Desempenho e Comissões", url: "/admin/produtividade", icon: Gauge, leaderOnly: true },
   { title: "Meu Perfil", url: "/admin/meu-perfil", icon: UserCircle },
 ];
 
