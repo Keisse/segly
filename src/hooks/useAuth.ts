@@ -1,62 +1,69 @@
-import { useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
-export function useAuth() {
+type AuthContextValue = {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => ReturnType<typeof supabase.auth.signInWithPassword>;
+  signUp: (email: string, password: string) => ReturnType<typeof supabase.auth.signUp>;
+  signOut: () => Promise<void>;
+  isAuthenticated: boolean;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!mounted) return;
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
       setLoading(false);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!mounted) return;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-    return data;
-  };
-
-  const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (error) throw error;
-    return data;
-  };
-
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-  };
-
-  return {
+  const value = useMemo<AuthContextValue>(() => ({
     user,
     session,
     loading,
-    signIn,
-    signUp,
-    signOut,
+    signIn: (email: string, password: string) => supabase.auth.signInWithPassword({ email, password }),
+    signUp: (email: string, password: string) => supabase.auth.signUp({ email, password }),
+    signOut: async () => {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    },
     isAuthenticated: !!session,
-  };
+  }), [user, session, loading]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth deve ser usado dentro de AuthProvider");
+  }
+  return context;
 }
