@@ -30,6 +30,7 @@ import ProdutividadePage from "./pages/admin/ProdutividadePage";
 import StandbyPage from "./pages/admin/StandbyPage";
 import AuditoriaPage from "./pages/admin/AuditoriaPage";
 import ProdutosPage from "./pages/admin/ProdutosPage";
+import SobreSistemaPage from "./pages/admin/SobreSistemaPage";
 import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -88,6 +89,7 @@ const App = () => (
               <Route path="leads/novo" element={<NovoLeadPage />} />
               <Route path="clientes" element={<ClientesPage />} />
               <Route path="meu-perfil" element={<MeuPerfilPage />} />
+              <Route path="sobre-o-sistema" element={<SobreSistemaPage />} />
               <Route
                 path="produtos"
                 element={
