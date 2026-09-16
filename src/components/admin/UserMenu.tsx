@@ -17,9 +17,11 @@ import {
   Tag,
   ShieldCheck,
   Sparkles,
+  Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PrincipioDoDiaDialog } from "@/components/admin/PrincipioDoDiaDialog";
+import { NossoPropositoDialog } from "@/components/admin/NossoPropositoDialog";
 
 const APP_VERSION = "1.0.0";
 
@@ -36,6 +38,7 @@ export function UserMenu() {
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string>("");
   const [principleOpen, setPrincipleOpen] = useState(false);
+  const [purposeOpen, setPurposeOpen] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -77,16 +80,16 @@ export function UserMenu() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="relative flex items-center justify-center h-11 w-11 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold text-base shadow-lg shadow-primary/30 ring-2 ring-primary/40 hover:ring-primary/60 hover:scale-105 transition-all"
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 ring-2 ring-primary/40 transition-all hover:scale-105 hover:ring-primary/60"
           aria-label="Menu do usuário"
         >
           {initials}
           <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-background" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="p-4 space-y-1">
-          <p className="font-semibold text-base leading-tight">
+      <PopoverContent align="end" className="w-[min(20rem,calc(100vw-1rem))] p-0">
+        <div className="p-4 space-y-1 min-w-0">
+          <p className="font-semibold text-base leading-tight break-words">
             {displayName || user?.email?.split("@")[0] || "Usuário"}
           </p>
           <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
@@ -99,12 +102,12 @@ export function UserMenu() {
         <Separator />
         <div className="p-4 space-y-2 text-sm">
           <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4 text-muted-foreground" />
+            <Tag className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="text-muted-foreground">Versão:</span>
             <span className="font-semibold">{APP_VERSION}</span>
           </div>
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-emerald-500" />
+            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" />
             <span className="text-muted-foreground">Licença:</span>
             <span className="font-semibold text-emerald-500">Ativa</span>
           </div>
@@ -117,16 +120,13 @@ export function UserMenu() {
           }}
           className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent transition text-left"
         >
-          <Sparkles className="h-4 w-4 text-primary" />
-          <div className="flex-1">
+          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1">
             <p className="font-medium leading-tight">Princípio do dia</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Abra o princípio de hoje.
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">Abra o princípio de hoje.</p>
           </div>
         </button>
         <Separator />
-
         <button
           onClick={() => {
             setOpen(false);
@@ -134,7 +134,7 @@ export function UserMenu() {
           }}
           className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent transition text-left"
         >
-          <UserIcon className="h-4 w-4" />
+          <UserIcon className="h-4 w-4 shrink-0" />
           Meu Perfil
         </button>
         <Separator />
@@ -142,19 +142,31 @@ export function UserMenu() {
           onClick={handleClearCookies}
           className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent transition text-left"
         >
-          <Cookie className="h-4 w-4" />
+          <Cookie className="h-4 w-4 shrink-0" />
           Limpar cookies
+        </button>
+        <Separator />
+        <button
+          onClick={() => {
+            setOpen(false);
+            setPurposeOpen(true);
+          }}
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent transition text-left"
+        >
+          <Compass className="h-4 w-4 shrink-0 text-primary" />
+          Nosso Propósito
         </button>
         <Separator />
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-accent transition text-left"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-4 w-4 shrink-0" />
           Sair
         </button>
       </PopoverContent>
       <PrincipioDoDiaDialog open={principleOpen} onOpenChange={setPrincipleOpen} />
+      <NossoPropositoDialog open={purposeOpen} onOpenChange={setPurposeOpen} />
     </Popover>
   );
 }
