@@ -284,7 +284,7 @@ export default function ProdutividadePage() {
   const performanceChart = useMemo(() => [
     { name: "Atividades", atual: performance.completed, anterior: performance.previousCompleted },
     { name: "Contatos", atual: performance.contacts, anterior: performance.previousContacts },
-    { name: "Novos leads", atual: performance.newLeads, anterior: performance.previousNewLeads },
+    { name: "Novas vidas", atual: performance.newLeads, anterior: performance.previousNewLeads },
   ], [performance]);
 
   const periodEntries = useMemo(() => {
@@ -408,8 +408,8 @@ export default function ProdutividadePage() {
           <MetricCard icon={PhoneCall} title="Contatos realizados" value={String(performance.contacts)} detail={changeText(performance.contacts, performance.previousContacts)} />
           <MetricCard icon={Target} title="OnTime" value={`${performance.onTime}%`} detail={changeText(performance.onTime, performance.previousOnTime, " p.p.")} />
           <MetricCard icon={TrendingUp} title="Execução da agenda" value={`${performance.execution}%`} detail={changeText(performance.execution, performance.previousExecution, " p.p.")} />
-          <MetricCard icon={Users} title="Novos leads" value={String(performance.newLeads)} detail={changeText(performance.newLeads, performance.previousNewLeads)} />
-          <MetricCard icon={AlarmClock} title="Leads parados >48h" value={String(performance.stopped)} detail={`${performance.overdue} atividades atrasadas no período`} />
+          <MetricCard icon={Users} title="Novas vidas" value={String(performance.newLeads)} detail={changeText(performance.newLeads, performance.previousNewLeads)} />
+          <MetricCard icon={AlarmClock} title="Vidas paradas >48h" value={String(performance.stopped)} detail={`${performance.overdue} atividades atrasadas no período`} />
         </div>
 
         <Card className="min-w-0">
@@ -437,7 +437,7 @@ export default function ProdutividadePage() {
             <CardContent className="overflow-x-auto p-0 sm:p-6 sm:pt-0">
               <div className="min-w-[760px] divide-y">
                 <div className="grid grid-cols-[60px_1.5fr_repeat(4,minmax(100px,1fr))] gap-3 px-4 py-3 text-xs font-medium text-muted-foreground sm:px-0">
-                  <span>#</span><span>Colaborador</span><span>Atividades</span><span>Contatos</span><span>OnTime</span><span>Novos leads</span>
+                  <span>#</span><span>Colaborador</span><span>Atividades</span><span>Contatos</span><span>OnTime</span><span>Novas vidas</span>
                 </div>
                 {ranking.map((row, index) => <div key={row.person.id} className="grid grid-cols-[60px_1.5fr_repeat(4,minmax(100px,1fr))] gap-3 px-4 py-3 text-sm sm:px-0"><span className="font-semibold">{index + 1}º</span><span className="font-medium">{row.person.display_name || "Usuário"}</span><span>{row.completed}</span><span>{row.contacts}</span><span>{row.onTime}%</span><span>{row.newLeads}</span></div>)}
               </div>
