@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, CircleDollarSign, Search, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, CircleDollarSign, Search, TrendingUp, Users } from "lucide-react";
 import { format, startOfDay, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 type HistoryItem = {
   data?: string;
@@ -49,7 +49,12 @@ type ProposalSnapshot = {
   created_at: string;
 };
 
-type Period = "30" | "90" | "all";
+type Period = "7" | "30" | "90" | "all" | "custom";
+
+type DateRange = {
+  start: Date | null;
+  end: Date | null;
+};
 
 const clientStatusLabel: Record<string, string> = {
   ativo: "Ativo",
@@ -57,6 +62,14 @@ const clientStatusLabel: Record<string, string> = {
 };
 
 const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0);
+
+const dateInputValue = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+const endOfDay = (date: Date) => {
+  const next = new Date(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
+};
 
 const asNumber = (value: unknown) => {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -85,9 +98,34 @@ const ClientesPage = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState<Period>("30");
+  const [customStart, setCustomStart] = useState(() => dateInputValue(subDays(new Date(), 29)));
+  const [customEnd, setCustomEnd] = useState(() => dateInputValue(new Date()));
+
+  const range = useMemo<DateRange>(() => {
+    if (period === "all") return { start: null, end: null };
+
+    if (period === "custom") {
+      const first = new Date(`${customStart}T00:00:00`);
+      const second = new Date(`${customEnd}T23:59:59.999`);
+      if (Number.isNaN(first.getTime()) || Number.isNaN(second.getTime())) return { start: null, end: null };
+      if (first <= second) return { start: first, end: second };
+      return { start: startOfDay(second), end: endOfDay(first) };
+    }
+
+    return {
+      start: startOfDay(subDays(new Date(), Number(period) - 1)),
+      end: endOfDay(new Date()),
+    };
+  }, [period, customStart, customEnd]);
+
+  const periodLabel = useMemo(() => {
+    if (period === "all") return "Todo o período";
+    if (period === "custom" && range.start && range.end) return `${format(range.start, "dd/MM/yyyy")} a ${format(range.end, "dd/MM/yyyy")}`;
+    return `Últimos ${period} dias`;
+  }, [period, range]);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["clientes-page-complete-v2"],
+    queryKey: ["clientes-page-complete-v3"],
     queryFn: async () => {
       const { data: clientesData, error: clientesError } = await supabase
         .from("clientes" as never)
@@ -224,35 +262,56 @@ const ClientesPage = () => {
     );
   }, [enrichedClients, search]);
 
-  const periodClients = useMemo(() => {
-    if (period === "all") return enrichedClients;
-    const cutoff = startOfDay(subDays(new Date(), Number(period) - 1));
-    return enrichedClients.filter((cliente) => {
-      const date = new Date(cliente.gainDate);
-      return !Number.isNaN(date.getTime()) && date >= cutoff;
-    });
-  }, [enrichedClients, period]);
+  const periodClients = useMemo(() => enrichedClients.filter((cliente) => {
+    const date = new Date(cliente.gainDate);
+    if (Number.isNaN(date.getTime())) return false;
+    if (range.start && date < range.start) return false;
+    if (range.end && date > range.end) return false;
+    return true;
+  }), [enrichedClients, range]);
 
   const chartData = useMemo(() => {
-    const buckets = new Map<string, { label: string; ganhos: number }>();
-    periodClients.forEach((cliente) => {
-      const date = new Date(cliente.gainDate);
-      if (Number.isNaN(date.getTime())) return;
-      const key = format(date, "yyyy-MM-dd");
-      const current = buckets.get(key) ?? { label: format(date, "dd/MM"), ganhos: 0 };
-      current.ganhos += 1;
-      buckets.set(key, current);
-    });
-    return [...buckets.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([, value]) => value);
-  }, [periodClients]);
+    if (!periodClients.length) return [];
 
-  const periodTotals = useMemo(() => ({
-    gains: periodClients.length,
-    lives: periodClients.reduce((sum, cliente) => sum + cliente.lives, 0),
-    value: periodClients.reduce((sum, cliente) => sum + cliente.totalValue, 0),
-  }), [periodClients]);
+    const counts = new Map<string, number>();
+    periodClients.forEach((cliente) => {
+      const date = startOfDay(new Date(cliente.gainDate));
+      const key = format(date, "yyyy-MM-dd");
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+
+    const earliest = periodClients.reduce((current, cliente) => {
+      const date = startOfDay(new Date(cliente.gainDate));
+      return date < current ? date : current;
+    }, startOfDay(new Date(periodClients[0].gainDate)));
+
+    const latest = periodClients.reduce((current, cliente) => {
+      const date = startOfDay(new Date(cliente.gainDate));
+      return date > current ? date : current;
+    }, startOfDay(new Date(periodClients[0].gainDate)));
+
+    const chartStart = range.start ? startOfDay(range.start) : earliest;
+    const chartEnd = range.end ? startOfDay(range.end) : latest;
+    const points: { date: string; label: string; ganhos: number }[] = [];
+
+    for (let cursor = new Date(chartStart); cursor <= chartEnd; cursor.setDate(cursor.getDate() + 1)) {
+      const key = format(cursor, "yyyy-MM-dd");
+      points.push({ date: key, label: format(cursor, "dd/MM"), ganhos: counts.get(key) ?? 0 });
+    }
+
+    return points;
+  }, [periodClients, range]);
+
+  const periodTotals = useMemo(() => {
+    const implanted = periodClients.filter((cliente) => cliente.status === "ativo").length;
+    return {
+      gains: periodClients.length,
+      lives: periodClients.reduce((sum, cliente) => sum + cliente.lives, 0),
+      value: periodClients.reduce((sum, cliente) => sum + cliente.totalValue, 0),
+      implanted,
+      implementing: Math.max(0, periodClients.length - implanted),
+    };
+  }, [periodClients]);
 
   const openClient = (cliente: Cliente) => {
     if (!cliente.lead_id) return;
@@ -261,54 +320,71 @@ const ClientesPage = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Clientes</h1>
-          <p className="text-sm text-muted-foreground">Acompanhe os clientes ganhos, vidas contratadas e valor total de cada venda.</p>
+          <p className="text-sm text-muted-foreground">Acompanhe os clientes ganhos, vidas contratadas, valor total e implantação.</p>
         </div>
-        <Select value={period} onValueChange={(value) => setPeriod(value as Period)}>
-          <SelectTrigger className="w-full sm:w-[190px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="30">Últimos 30 dias</SelectItem>
-            <SelectItem value="90">Últimos 90 dias</SelectItem>
-            <SelectItem value="all">Todo o período</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="grid w-full gap-2 sm:grid-cols-2 xl:w-auto">
+          <Select value={period} onValueChange={(value) => setPeriod(value as Period)}>
+            <SelectTrigger className="w-full xl:w-[220px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+              <SelectItem value="all">Todo o período</SelectItem>
+              <SelectItem value="custom">Período personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+          {period === "custom" && (
+            <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
+              <div className="space-y-1">
+                <span className="text-[11px] text-muted-foreground">Data inicial</span>
+                <Input type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[11px] text-muted-foreground">Data final</span>
+                <Input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <Card className="border-primary/20">
         <CardHeader className="pb-2">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="text-base">Gráfico de ganhos no período</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">Quantidade de clientes ganhos por data.</p>
+              <CardTitle className="text-lg">Ganhos no período</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Quantidade de clientes ganhos por dia.</p>
             </div>
-            <Badge variant="secondary">{period === "all" ? "Todo o período" : `Últimos ${period} dias`}</Badge>
+            <Badge variant="secondary">{periodLabel}</Badge>
           </div>
         </CardHeader>
         <CardContent>
           {chartData.length === 0 ? (
-            <div className="h-[260px] flex items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">Nenhum ganho encontrado neste período.</div>
+            <div className="h-[300px] flex items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">Nenhum ganho encontrado neste período.</div>
           ) : (
-            <div className="h-[300px] w-full">
+            <div className="h-[330px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                <LineChart data={chartData} margin={{ top: 12, right: 16, left: -16, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={22} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(value) => [Number(value), "Ganhos"]} />
-                  <Bar dataKey="ganhos" name="Ganhos" fill="hsl(var(--primary))" radius={[5, 5, 0, 0]} />
-                </BarChart>
+                  <Tooltip labelFormatter={(label) => String(label)} formatter={(value) => [Number(value), "Ganhos"]} />
+                  <Line type="monotone" dataKey="ganhos" name="Ganhos" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Clientes ganhos</p><TrendingUp className="h-4 w-4 text-muted-foreground" /></div><p className="mt-2 text-2xl font-bold">{periodTotals.gains}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Vidas ganhas</p><Users className="h-4 w-4 text-muted-foreground" /></div><p className="mt-2 text-2xl font-bold">{periodTotals.lives}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Valor total ganho</p><CircleDollarSign className="h-4 w-4 text-muted-foreground" /></div><p className="mt-2 text-2xl font-bold">{money(periodTotals.value)}</p></CardContent></Card>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Card><CardContent className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-sm text-muted-foreground">Clientes ganhos</p><p className="mt-2 text-3xl font-bold">{periodTotals.gains}</p><p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p></div><div className="rounded-xl bg-primary/10 p-2.5 text-primary"><TrendingUp className="h-5 w-5" /></div></div></CardContent></Card>
+        <Card><CardContent className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-sm text-muted-foreground">Vidas ganhas</p><p className="mt-2 text-3xl font-bold">{periodTotals.lives}</p><p className="mt-1 text-xs text-muted-foreground">Somatório das vidas informadas</p></div><div className="rounded-xl bg-primary/10 p-2.5 text-primary"><Users className="h-5 w-5" /></div></div></CardContent></Card>
+        <Card><CardContent className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-sm text-muted-foreground">Valor total ganho</p><p className="mt-2 text-2xl font-bold">{money(periodTotals.value)}</p><p className="mt-1 text-xs text-muted-foreground">Valor contratado no período</p></div><div className="rounded-xl bg-primary/10 p-2.5 text-primary"><CircleDollarSign className="h-5 w-5" /></div></div></CardContent></Card>
+        <Card><CardContent className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-sm text-muted-foreground">Já implantados</p><p className="mt-2 text-3xl font-bold">{periodTotals.implanted}</p><p className="mt-1 text-xs text-muted-foreground">{periodTotals.implementing} ainda em implantação</p></div><div className="rounded-xl bg-primary/10 p-2.5 text-primary"><CheckCircle2 className="h-5 w-5" /></div></div></CardContent></Card>
       </div>
 
       <div className="space-y-3">
@@ -318,8 +394,8 @@ const ClientesPage = () => {
             <p className="text-xs text-muted-foreground">Clique no cliente ou use o botão “Abrir cliente” para voltar ao cadastro completo.</p>
           </div>
           <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nome, empresa ou e-mail..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input placeholder="Buscar por nome, empresa ou e-mail..." className="pl-9" value={search} onChange={(event) => setSearch(event.target.value)} />
           </div>
         </div>
 
