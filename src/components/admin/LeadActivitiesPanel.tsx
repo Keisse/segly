@@ -268,7 +268,7 @@ export function LeadActivitiesPanel({ leadId, ownerId }: Props) {
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Clock3 className="h-5 w-5 text-primary" /> Atividades
           </h2>
-          <p className="text-sm text-muted-foreground">Crie, edite, conclua ou reagende atividades deste lead.</p>
+          <p className="text-sm text-muted-foreground">Crie, edite, conclua ou reagende atividades desta vida.</p>
         </div>
         <Button size="sm" onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" />Nova atividade
@@ -302,7 +302,7 @@ export function LeadActivitiesPanel({ leadId, ownerId }: Props) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editing ? "Editar atividade" : "Nova atividade"}</DialogTitle>
-            <DialogDescription>{editing ? "Altere os dados ou reagende esta atividade." : "Adicione uma nova atividade vinculada a este lead."}</DialogDescription>
+            <DialogDescription>{editing ? "Altere os dados ou reagende esta atividade." : "Adicione uma nova atividade vinculada a esta vida."}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
