@@ -52,7 +52,12 @@ type SettingsRow = {
   inactive_lead_reminder_days: number;
 };
 
-type ProfileOption = { id: string; display_name: string | null };
+type ActiveUserOption = {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  role: "admin" | "lider" | "user";
+};
 
 const useOrganization = () =>
   useQuery({
@@ -71,11 +76,18 @@ const useOrganization = () =>
       const orgId = (profile as { organization_id: string | null } | null)?.organization_id;
       if (!orgId) throw new Error("Organização não encontrada.");
 
-      const [{ data: org }, { data: settings }, { data: members }] = await Promise.all([
+      const [{ data: org }, { data: settings }, usersResult] = await Promise.all([
         supabase.from("organizations" as never).select("*").eq("id", orgId).maybeSingle(),
         supabase.from("organization_settings" as never).select("*").eq("organization_id", orgId).maybeSingle(),
-        supabase.from("profiles").select("id, display_name").eq("organization_id", orgId),
+        supabase.functions.invoke("manage-admins", { body: { action: "list" } }),
       ]);
+
+      if (usersResult.error) throw usersResult.error;
+      if (usersResult.data?.error) throw new Error(usersResult.data.error);
+
+      const members = ((usersResult.data?.admins ?? []) as ActiveUserOption[]).sort((a, b) =>
+        (a.display_name || a.email || "").localeCompare(b.display_name || b.email || "", "pt-BR"),
+      );
 
       return {
         org: org as unknown as OrgRow,
@@ -87,7 +99,7 @@ const useOrganization = () =>
           email_notifications: true,
           inactive_lead_reminder_days: 7,
         },
-        members: (members ?? []) as ProfileOption[],
+        members,
       };
     },
   });
@@ -100,6 +112,7 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingOwner, setSavingOwner] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const initial = useRef("");
 
@@ -132,6 +145,40 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
     if (file.size > 2 * 1024 * 1024) return toast.error("Tamanho máximo do logo: 2MB.");
     setPendingFile(file);
     setLogoPreview(URL.createObjectURL(file));
+  };
+
+  const saveDefaultOwner = async (value: string) => {
+    const nextOwner = value === "__none__" ? null : value;
+    const previousOwner = settings.default_lead_owner;
+
+    setSettings({ ...settings, default_lead_owner: nextOwner });
+    setSavingOwner(true);
+
+    try {
+      const { data: saved, error } = await supabase
+        .from("organization_settings" as never)
+        .update({ default_lead_owner: nextOwner, updated_at: new Date().toISOString() } as never)
+        .eq("organization_id", form.id)
+        .select("default_lead_owner")
+        .single();
+
+      if (error) throw error;
+
+      const confirmedOwner = (saved as unknown as { default_lead_owner: string | null }).default_lead_owner;
+      if (confirmedOwner !== nextOwner) throw new Error("O responsável padrão não foi confirmado no banco de dados.");
+
+      const snapshot = initial.current ? JSON.parse(initial.current) : { org: form, settings };
+      snapshot.settings = { ...snapshot.settings, default_lead_owner: nextOwner };
+      initial.current = JSON.stringify(snapshot);
+
+      await qc.invalidateQueries({ queryKey: ["organization"] });
+      toast.success(nextOwner ? "Responsável padrão salvo." : "Responsável padrão removido.");
+    } catch (error) {
+      setSettings({ ...settings, default_lead_owner: previousOwner });
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o responsável padrão.");
+    } finally {
+      setSavingOwner(false);
+    }
   };
 
   const save = async () => {
@@ -283,16 +330,20 @@ const GeralTab = ({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }
             <Label>Responsável padrão para leads sem atribuição</Label>
             <Select
               value={settings.default_lead_owner ?? "__none__"}
-              onValueChange={(value) => setSettings({ ...settings, default_lead_owner: value === "__none__" ? null : value })}
+              disabled={savingOwner}
+              onValueChange={saveDefaultOwner}
             >
               <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">Nenhum</SelectItem>
                 {data?.members.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>{member.display_name ?? member.id.slice(0, 8)}</SelectItem>
+                  <SelectItem key={member.id} value={member.id}>{member.display_name || member.email || member.id.slice(0, 8)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              {savingOwner ? "Salvando responsável padrão…" : "A alteração é salva automaticamente ao selecionar."}
+            </p>
           </div>
 
           <Separator />
