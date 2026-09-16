@@ -1,0 +1,62 @@
+name: Segly One Shot Autofix
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/one-shot-autofix.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply dependency security fixes
+        run: npm audit fix
+
+      - name: Apply safe ESLint auto-fixes
+        run: npx eslint . --fix || true
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Tests
+        run: npm run test -- --passWithNoTests
+
+      - name: Production build
+        run: npm run build
+
+      - name: Show remaining high severity vulnerabilities
+        run: npm audit --audit-level=high || true
+
+      - name: Commit validated fixes
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "Segly Audit Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add package.json package-lock.json src supabase tailwind.config.ts
+          if git diff --cached --quiet; then
+            echo "No tracked autofixes to commit"
+            exit 0
+          fi
+          git commit -m "Autofix dependencias e lint da auditoria final"
+          git push origin HEAD:main
