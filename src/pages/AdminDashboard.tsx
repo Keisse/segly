@@ -226,16 +226,16 @@ export default function AdminDashboard() {
               </SelectContent>
             </Select>
           )}
-          <Button asChild className="w-full sm:col-span-2 lg:w-auto lg:col-span-1"><Link to="/admin/leads/novo"><Plus className="h-4 w-4 mr-2" />Cadastrar lead</Link></Button>
+          <Button asChild className="w-full sm:col-span-2 lg:w-auto lg:col-span-1"><Link to="/admin/leads/novo"><Plus className="h-4 w-4 mr-2" />+Vidas</Link></Button>
         </div>
       </div>
 
       <div className="min-w-0 w-full overflow-hidden">
-        <LeadsChart data={chartData} title="Leads por período" description={chartDescription} />
+        <LeadsChart data={chartData} title="Vidas por período" description={chartDescription} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard title="Leads no período" value={filteredLeads.length} detail={periodLabel} icon={Users} />
+        <KpiCard title="Vidas no período" value={filteredLeads.length} detail={periodLabel} icon={Users} />
         <KpiCard title="Em andamento" value={activeLeads.length} detail={`${wonLeads.length} ganhos · ${lostLeads.length} perdidos`} icon={KanbanSquare} />
         <KpiCard title="Clientes convertidos" value={conversionCount} detail={`${conversionRate}% de conversão no período`} icon={UserCheck} />
         <KpiCard title="Execução no prazo" value={`${onTimeRate}%`} detail={`${onTimeContacts} de ${filteredContacts.length} contatos concluídos no prazo`} icon={Target} />
@@ -253,7 +253,7 @@ export default function AdminDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" />Funil atual</CardTitle></CardHeader>
           <CardContent>
             {pipelineBreakdown.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">Ainda não há leads nas etapas do pipeline para o filtro selecionado.</p>
+              <p className="text-sm text-muted-foreground py-6 text-center">Ainda não há vidas nas etapas do pipeline para o filtro selecionado.</p>
             ) : (
               <div className="space-y-3">
                 {pipelineBreakdown.map((stage) => {
@@ -283,14 +283,14 @@ export default function AdminDashboard() {
               <div className="min-w-0"><p className="font-medium">A fazer hoje</p><p className="text-xs text-muted-foreground leading-snug">Atividades programadas para hoje</p></div><Badge className="shrink-0" variant="secondary">{todayActivities.length}</Badge>
             </Link>
             <Link to="/admin/kanban" className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/30 min-w-0">
-              <div className="min-w-0"><p className="font-medium">Leads em andamento</p><p className="text-xs text-muted-foreground leading-snug">Carteira comercial ativa</p></div><Badge className="shrink-0" variant="secondary">{activeLeads.length}</Badge>
+              <div className="min-w-0"><p className="font-medium">Vidas em andamento</p><p className="text-xs text-muted-foreground leading-snug">Carteira comercial ativa</p></div><Badge className="shrink-0" variant="secondary">{activeLeads.length}</Badge>
             </Link>
           </CardContent>
         </Card>
       </div>
 
       <Card className="min-w-0 w-full overflow-hidden">
-        <CardHeader className="pb-3"><CardTitle className="text-base">Leads recentes ({filteredLeads.length})</CardTitle></CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="text-base">Vidas recentes ({filteredLeads.length})</CardTitle></CardHeader>
         <CardContent className="p-0 min-w-0">
           <LeadsTable leads={filteredLeads.slice(0, 20)} isLoading={leadsLoading} />
         </CardContent>
