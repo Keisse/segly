@@ -73,7 +73,7 @@ export function DynamicLeadFormFields({
                 </SelectContent>
               </Select>
             ) : field.type === "multiselect" ? (
-              <div id={id} className="rounded-md border border-border p-3 space-y-2">
+              <div id={id} className="rounded-md border border-border px-4 py-3 min-h-14 flex items-center">
                 {(field.options ?? []).length === 0 ? (
                   <Input
                     value={String(value ?? "")}
@@ -81,26 +81,30 @@ export function DynamicLeadFormFields({
                     disabled={disabled}
                     onChange={(event) => onChange(field.field_key, event.target.value)}
                   />
-                ) : (field.options ?? []).map((option) => {
-                  const current = Array.isArray(value) ? value.map(String) : [];
-                  const checked = current.includes(option);
-                  return (
-                    <label key={option} className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={disabled}
-                        onChange={(event) => {
-                          const next = event.target.checked
-                            ? [...current, option]
-                            : current.filter((item) => item !== option);
-                          onChange(field.field_key, next);
-                        }}
-                      />
-                      <span>{option}</span>
-                    </label>
-                  );
-                })}
+                ) : (
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    {(field.options ?? []).map((option) => {
+                      const current = Array.isArray(value)
+                        ? String(value[0] ?? "")
+                        : String(value ?? field.default_value ?? "");
+                      const checked = current === option;
+                      return (
+                        <label key={option} className="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
+                          <input
+                            type="radio"
+                            name={`choice-${field.id}`}
+                            value={option}
+                            checked={checked}
+                            disabled={disabled}
+                            className="h-4 w-4 shrink-0 accent-primary cursor-pointer"
+                            onChange={() => onChange(field.field_key, option)}
+                          />
+                          <span>{option}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ) : field.type === "checkbox" ? (
               <label id={id} className="flex items-center gap-2 h-10">
