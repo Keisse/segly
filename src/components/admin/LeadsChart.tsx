@@ -22,7 +22,7 @@ interface LeadsChartProps {
   description?: string;
 }
 
-const LeadsChart = ({ data, title = "Leads por período", description }: LeadsChartProps) => {
+const LeadsChart = ({ data, title = "Vidas por período", description }: LeadsChartProps) => {
   const formattedData = data.map((item) => ({
     ...item,
     dateFormatted: format(new Date(`${item.date}T12:00:00`), "dd/MM", { locale: ptBR }),
@@ -66,7 +66,7 @@ const LeadsChart = ({ data, title = "Leads por período", description }: LeadsCh
               }}
               labelStyle={{ color: "hsl(var(--foreground))" }}
               itemStyle={{ color: "hsl(var(--primary))" }}
-              formatter={(value: number) => [`${value} lead${value === 1 ? "" : "s"}`, "Leads"]}
+              formatter={(value: number) => [`${value} vida${value === 1 ? "" : "s"}`, "Vidas"]}
             />
             <Line
               type="monotone"
