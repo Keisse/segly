@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { getTheme, setTheme, type ThemeMode } from "@/lib/theme";
 
 export function ThemePreference() {
@@ -25,21 +25,30 @@ export function ThemePreference() {
   return (
     <div className="space-y-2">
       <Label>Tema do sistema</Label>
-      <Select value={theme} onValueChange={(value) => changeTheme(value as ThemeMode)}>
-        <SelectTrigger className="max-w-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="dark">
-            <span className="flex items-center gap-2"><Moon className="h-4 w-4" /> Escuro</span>
-          </SelectItem>
-          <SelectItem value="light">
-            <span className="flex items-center gap-2"><Sun className="h-4 w-4" /> Claro</span>
-          </SelectItem>
-        </SelectContent>
-      </Select>
+      <div className="grid max-w-sm grid-cols-2 gap-2" role="group" aria-label="Tema do sistema">
+        <Button
+          type="button"
+          variant={theme === "light" ? "default" : "outline"}
+          className="justify-center gap-2"
+          aria-pressed={theme === "light"}
+          onClick={() => changeTheme("light")}
+        >
+          <Sun className="h-4 w-4" />
+          Claro
+        </Button>
+        <Button
+          type="button"
+          variant={theme === "dark" ? "default" : "outline"}
+          className="justify-center gap-2"
+          aria-pressed={theme === "dark"}
+          onClick={() => changeTheme("dark")}
+        >
+          <Moon className="h-4 w-4" />
+          Escuro
+        </Button>
+      </div>
       <p className="text-xs text-muted-foreground">
-        A preferência fica salva neste dispositivo e é aplicada imediatamente.
+        Um clique aplica o tema imediatamente e salva a preferência neste dispositivo.
       </p>
     </div>
   );
