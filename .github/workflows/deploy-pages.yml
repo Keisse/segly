@@ -31,8 +31,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Add direct route entry for Segly Future
+      - name: Add direct route entries
         run: |
+          mkdir -p dist/segly-decisor
+          cp dist/index.html dist/segly-decisor/index.html
           mkdir -p dist/segly-future
           cp dist/index.html dist/segly-future/index.html
 
