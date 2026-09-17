@@ -21,7 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { PartyPopper, Mail, MessageCircle, User, Clock3, Search, CalendarClock, CircleDollarSign, FileText } from "lucide-react";
+import { PartyPopper, Mail, MessageCircle, User, Clock3, Search, CalendarClock, CircleDollarSign, FileText, UsersRound } from "lucide-react";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { capitalizeWords } from "@/lib/formatName";
 import { PipelineTabs } from "@/components/admin/PipelineTabs";
@@ -56,6 +56,7 @@ type ProposalRow = {
 type OwnerInfo = { display_name: string | null; email: string | null };
 type ActivityInfo = { type: string; scheduled_at: string };
 type PendingMove = { lead: LeadRow; stageId: string; stageName: string; previousStageId: string | null } | null;
+type AgeDistribution = { total: number; faixas: Array<{ label: string; count: number }> };
 
 const proposalStatusLabel: Record<ProposalRow["status"], string> = {
   draft: "Proposta em rascunho",
@@ -98,6 +99,22 @@ function activityState(date: string) {
   return "future" as const;
 }
 
+function getAgeDistribution(lead: LeadRow): AgeDistribution | null {
+  const raw = lead.custom_fields?.distribuicao_faixa_etaria;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const value = raw as Record<string, unknown>;
+  if (!Array.isArray(value.faixas)) return null;
+  const faixas = value.faixas
+    .map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      const row = item as Record<string, unknown>;
+      return { label: String(row.label ?? ""), count: Number(row.count ?? 0) || 0 };
+    })
+    .filter((item): item is { label: string; count: number } => !!item?.label);
+  if (!faixas.length) return null;
+  return { total: Number(value.total ?? 0) || 0, faixas };
+}
+
 const activityDotClass = { overdue: "bg-red-500", today: "bg-amber-400", future: "bg-emerald-500" };
 const activityLabel = { overdue: "Atividade atrasada", today: "Atividade para hoje", future: "Atividade futura" };
 
@@ -105,10 +122,17 @@ function LeadCardVisual({ lead, owner, nextActivity, proposal, overlay = false }
   const wa = lead.telefone ? lead.telefone.replace(/\D/g, "") : "";
   const activityStatus = nextActivity ? activityState(nextActivity.scheduled_at) : null;
   const amount = formatMoney(proposal?.negotiated_value ?? lead.custom_fields?.valor_apresentado ?? lead.custom_fields?.valor_fechado ?? lead.custom_fields?.valor_final_fechado);
+  const ageDistribution = getAgeDistribution(lead);
   const mainContent = <>
     <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-sm font-semibold truncate uppercase">{lead.empresa || lead.nome}</p><p className="text-xs text-muted-foreground truncate">{lead.nome}</p></div>{activityStatus && <span title={activityLabel[activityStatus]} className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${activityDotClass[activityStatus]}`} />}</div>
     {amount && <div className="flex items-center gap-1.5 text-xs font-medium text-foreground"><CircleDollarSign className="w-3.5 h-3.5" /><span>{amount}</span></div>}
     {proposal && <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" /><div className="min-w-0"><p className="font-medium text-foreground truncate">{proposal.products?.name || "Proposta comercial"}</p><p className="truncate">{proposalStatusLabel[proposal.status]}{proposal.products?.insurer_name ? ` · ${proposal.products.insurer_name}` : ""}</p></div></div>}
+    {ageDistribution && <div className="rounded-md border bg-muted/20 p-2 space-y-1.5">
+      <div className="flex items-center justify-between gap-2 text-[11px] font-medium"><span className="inline-flex items-center gap-1.5"><UsersRound className="h-3.5 w-3.5" />Faixas etárias</span><span>{ageDistribution.total} {ageDistribution.total === 1 ? "vida" : "vidas"}</span></div>
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+        {ageDistribution.faixas.map((row) => <div key={row.label} className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground"><span className="truncate">{row.label.replace(" anos de idade", "").replace(" de idade", "")}</span><span className="font-semibold tabular-nums text-foreground">{row.count}</span></div>)}
+      </div>
+    </div>}
   </>;
 
   return <Card className={`p-3 space-y-2 ${overlay ? "border-primary/60 shadow-2xl ring-1 ring-primary/20" : "hover:border-primary/50"}`}>
