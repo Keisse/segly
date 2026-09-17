@@ -176,6 +176,13 @@ const NovoLeadPage = () => {
         }
       });
 
+      if (ageDistribution.rows.length > 0) {
+        customFields.distribuicao_faixa_etaria = {
+          total: ageDistribution.total,
+          faixas: ageDistribution.rows,
+        };
+      }
+
       const { data: inserted, error } = await supabase
         .from("leads")
         .insert({
