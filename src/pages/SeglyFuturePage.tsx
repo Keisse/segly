@@ -55,7 +55,7 @@ const SeglyFuturePage = () => {
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-sky-200">
-              <Sparkles className="h-3.5 w-3.5" /> Segly Future Lab
+              <Sparkles className="h-3.5 w-3.5" /> Segly Decisor
             </div>
             <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Multicálculo como infraestrutura. Inteligência como diferencial.</h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300 md:text-base">
@@ -189,7 +189,7 @@ const SeglyFuturePage = () => {
                   <ProviderRow name="SeglyTableProvider" status="Ativo no laboratório" active />
                   <ProviderRow name="ApprovitaProvider" status="Futuro" />
                   <ProviderRow name="OperadoraAPIProvider" status="Futuro" />
-                  <ProviderRow name="FutureProvider" status="Preparado" />
+                  <ProviderRow name="NovoProvider" status="Preparado" />
                 </div>
                 <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
                   Trocar a fonte de preços no futuro não exige reconstruir leads, vidas, proposta ou pipeline.
