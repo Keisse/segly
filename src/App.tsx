@@ -17,6 +17,7 @@ import TrackingTemplatePage from "./pages/TrackingTemplatePage";
 import OutboundCadastro from "./pages/OutboundCadastro";
 import ObrigadaPage from "./pages/ObrigadaPage";
 import PublicLeadFormPage from "./pages/PublicLeadFormPage";
+import SeglyFuturePage from "./pages/SeglyFuturePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminOnlyRoute from "./components/AdminOnlyRoute";
 import LeaderOnlyRoute from "./components/LeaderOnlyRoute";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/obrigada" element={<ObrigadaPage />} />
             <Route path="/formulario/:formId" element={<PublicLeadFormPage />} />
             <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/segly-future" element={<SeglyFuturePage />} />
 
             <Route
               path="/admin"
