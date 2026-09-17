@@ -26,8 +26,27 @@ type StageField = {
 };
 type LeadSnapshot = { id: string; organization_id: string; pipeline_id: string | null; stage_id: string | null; custom_fields: Record<string, unknown> | null; [key: string]: unknown };
 type StageDataRow = { id: string; stage_id: string; data: Record<string, unknown> | null; updated_at?: string | null };
+type AgeRangeRow = { label: string; count: number };
+
+type SavedAgeDistribution = {
+  total?: number;
+  faixas?: AgeRangeRow[];
+};
 
 const BLANK_VALUE = "__segly_blank__";
+
+const AGE_RANGES = [
+  { label: "0 a 18 anos de idade", min: 0, max: 18 },
+  { label: "19 a 23 anos de idade", min: 19, max: 23 },
+  { label: "24 a 28 anos de idade", min: 24, max: 28 },
+  { label: "29 a 33 anos de idade", min: 29, max: 33 },
+  { label: "34 a 38 anos de idade", min: 34, max: 38 },
+  { label: "39 a 43 anos de idade", min: 39, max: 43 },
+  { label: "44 a 48 anos de idade", min: 44, max: 48 },
+  { label: "49 a 53 anos de idade", min: 49, max: 53 },
+  { label: "54 a 58 anos de idade", min: 54, max: 58 },
+  { label: "59 anos de idade e acima", min: 59, max: Number.POSITIVE_INFINITY },
+];
 
 const formatCpfCnpj = (value: string) => {
   const digits = value.replace(/\D/g, "").slice(0, 14);
@@ -36,6 +55,50 @@ const formatCpfCnpj = (value: string) => {
 };
 
 function normalizeOptions(value: unknown): string[] { return Array.isArray(value) ? value.map(String) : []; }
+
+function calculateAge(value: string) {
+  if (!value) return null;
+  const birth = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age -= 1;
+  if (age < 0 || age > 130) return null;
+  return age;
+}
+
+function normalizeBirthDates(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => String(item ?? "").trim()).filter(Boolean);
+  return String(value ?? "").split(/[;,\n]+/).map((item) => item.trim()).filter(Boolean);
+}
+
+function getAgeDistribution(customFields: Record<string, unknown> | null) {
+  const saved = customFields?.distribuicao_faixa_etaria as SavedAgeDistribution | undefined;
+  if (saved && Array.isArray(saved.faixas)) {
+    const rows = AGE_RANGES.map((range) => {
+      const found = saved.faixas?.find((item) => item.label === range.label);
+      return { label: range.label, count: Number(found?.count ?? 0) || 0 };
+    });
+    const total = Number(saved.total ?? rows.reduce((sum, row) => sum + row.count, 0)) || 0;
+    return { total, rows };
+  }
+
+  const rawDates = customFields?.datas_nascimento ?? customFields?.data_nascimento_todos ?? customFields?.datas_nascimento_todos;
+  const ages = normalizeBirthDates(rawDates)
+    .map(calculateAge)
+    .filter((age): age is number => age !== null);
+
+  if (ages.length === 0) return null;
+
+  return {
+    total: ages.length,
+    rows: AGE_RANGES.map((range) => ({
+      label: range.label,
+      count: ages.filter((age) => age >= range.min && age <= range.max).length,
+    })),
+  };
+}
 
 export function LeadStageInformation({ leadId }: { leadId: string }) {
   const queryClient = useQueryClient();
@@ -76,6 +139,7 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
   const fields = data?.fields ?? [];
   const savedRows = data?.savedRows ?? [];
   const currentStage = stages.find((stage) => stage.id === lead?.stage_id) ?? null;
+  const ageDistribution = getAgeDistribution(lead?.custom_fields ?? null);
 
   const visibleStages = stages.filter((stage) => {
     const hasFields = fields.some((field) => field.stage_id === stage.id);
@@ -149,10 +213,31 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
   };
 
   if (isLoading) return <div className="glass-card p-6 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
-  if (!lead || visibleStages.length === 0) return null;
+  if (!lead) return null;
+  if (!ageDistribution && visibleStages.length === 0) return null;
 
   return (
     <div className="space-y-4">
+      {ageDistribution && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex flex-col gap-1 border-b border-border/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Distribuição por faixa etária</h2>
+              <p className="text-sm text-muted-foreground">Calculada a partir das datas de nascimento informadas no cadastro inicial.</p>
+            </div>
+            <Badge variant="secondary" className="w-fit">{ageDistribution.total} {ageDistribution.total === 1 ? "vida" : "vidas"}</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {ageDistribution.rows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between gap-4 border-b border-border/40 px-4 py-3 last:border-b-0 md:px-6 md:[&:nth-last-child(-n+2)]:border-b-0">
+                <span className="text-sm text-foreground">{row.label}</span>
+                <span className="inline-flex min-w-9 items-center justify-center rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-sm font-bold tabular-nums text-foreground">{row.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {visibleStages.map((stage) => {
         const stageFields = fields.filter((field) => field.stage_id === stage.id).sort((a, b) => a.ordem - b.ordem);
         const answered = stageFields.filter((field) => !!valueFor(stage.id, field).trim()).length;
