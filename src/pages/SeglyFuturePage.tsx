@@ -46,6 +46,10 @@ const SeglyFuturePage = () => {
     return summary;
   }, [profile.ages, quotes]);
 
+  const ageTotal = profile.ages.length;
+  const dominantAgeBand = AGE_BANDS.reduce((best, band) => ageSummary[band] > ageSummary[best] ? band : best, AGE_BANDS[0]);
+  const maxAgeBandCount = Math.max(1, ...AGE_BANDS.map((band) => ageSummary[band]));
+
   const topQuote = quotes[0];
   const cheapest = [...quotes].sort((a, b) => a.monthlyTotal - b.monthlyTotal)[0];
 
@@ -117,14 +121,40 @@ const SeglyFuturePage = () => {
               </Field>
             </div>
 
-            <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Faixas etárias</div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {AGE_BANDS.map((band) => (
-                  <div key={band} className="flex items-center justify-between rounded-lg bg-white px-2.5 py-2">
-                    <span className="text-slate-500">{band}</span><strong>{ageSummary[band]}</strong>
-                  </div>
-                ))}
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Distribuição por faixa etária</div>
+                  <div className="mt-1 text-xs text-slate-400">Visualização rápida das vidas da cotação</div>
+                </div>
+                <div className="rounded-xl bg-white px-3 py-2 text-right shadow-sm ring-1 ring-slate-200">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Total</div>
+                  <div className="text-lg font-bold text-slate-900">{ageTotal}</div>
+                </div>
+              </div>
+
+              <div className="mt-3 rounded-xl bg-sky-50 px-3 py-2.5 text-xs text-sky-900 ring-1 ring-sky-100">
+                <span className="font-medium text-sky-700">Maior concentração:</span>{" "}
+                <strong>{ageTotal > 0 ? dominantAgeBand : "—"}</strong>
+              </div>
+
+              <div className="mt-4 space-y-2.5">
+                {AGE_BANDS.map((band) => {
+                  const count = ageSummary[band];
+                  const active = count > 0;
+                  const width = `${Math.max(active ? 12 : 0, (count / maxAgeBandCount) * 100)}%`;
+                  return (
+                    <div key={band} className={`rounded-xl border px-3 py-2.5 transition ${active ? "border-sky-200 bg-white shadow-sm" : "border-slate-200/70 bg-slate-50/70"}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className={`text-xs font-medium ${active ? "text-slate-700" : "text-slate-400"}`}>{band}</span>
+                        <span className={`min-w-7 rounded-lg px-2 py-1 text-center text-xs font-bold ${active ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-400"}`}>{count}</span>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div className={`h-full rounded-full transition-all ${active ? "bg-sky-500" : "bg-slate-200"}`} style={{ width }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
