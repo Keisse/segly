@@ -53,7 +53,8 @@ const App = () => (
             <Route path="/obrigada" element={<ObrigadaPage />} />
             <Route path="/formulario/:formId" element={<PublicLeadFormPage />} />
             <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/segly-future" element={<SeglyFuturePage />} />
+            <Route path="/segly-decisor" element={<SeglyFuturePage />} />
+            <Route path="/segly-future" element={<Navigate to="/segly-decisor" replace />} />
 
             <Route
               path="/admin"
