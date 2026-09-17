@@ -18,6 +18,32 @@ import { toast } from "sonner";
 
 const CORE_KEYS = new Set(["empresa", "cnpj", "nome", "telefone", "email"]);
 
+const AGE_RANGES = [
+  { label: "0 a 18 anos de idade", min: 0, max: 18 },
+  { label: "19 a 23 anos de idade", min: 19, max: 23 },
+  { label: "24 a 28 anos de idade", min: 24, max: 28 },
+  { label: "29 a 33 anos de idade", min: 29, max: 33 },
+  { label: "34 a 38 anos de idade", min: 34, max: 38 },
+  { label: "39 a 43 anos de idade", min: 39, max: 43 },
+  { label: "44 a 48 anos de idade", min: 44, max: 48 },
+  { label: "49 a 53 anos de idade", min: 49, max: 53 },
+  { label: "54 a 58 anos de idade", min: 54, max: 58 },
+  { label: "59 anos de idade e acima", min: 59, max: Number.POSITIVE_INFINITY },
+];
+
+const calculateAgeFromBirthDate = (value: string) => {
+  if (!value) return null;
+  const birth = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age -= 1;
+  if (age < 0 || age > 130) return null;
+  return age;
+};
+
 const NovoLeadPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -28,6 +54,29 @@ const NovoLeadPage = () => {
   const [saving, setSaving] = useState(false);
 
   const publicUrl = defaultForm ? `${window.location.origin}/formulario/${defaultForm.id}` : "";
+
+  const ageDistribution = useMemo(() => {
+    const peopleField = fields.find(isPeopleCountField);
+    const birthField = fields.find(isBirthDatesField);
+    if (!peopleField || !birthField) return { total: 0, rows: [] as Array<{ label: string; count: number }> };
+
+    const peopleCount = Math.min(
+      100,
+      Math.max(0, Math.trunc(Number(values[peopleField.field_key] ?? peopleField.default_value ?? 0) || 0)),
+    );
+    const dates = birthDateValues(values[birthField.field_key], peopleCount);
+    const ages = dates
+      .map(calculateAgeFromBirthDate)
+      .filter((age): age is number => age !== null);
+
+    return {
+      total: ages.length,
+      rows: AGE_RANGES.map((range) => ({
+        label: range.label,
+        count: ages.filter((age) => age >= range.min && age <= range.max).length,
+      })),
+    };
+  }, [fields, values]);
 
   const validate = () => {
     const peopleField = fields.find(isPeopleCountField);
@@ -216,6 +265,32 @@ const NovoLeadPage = () => {
               disabled={saving}
               expandBirthDatesByPeople
             />
+
+            {ageDistribution.total > 0 && (
+              <div className="overflow-hidden rounded-xl border bg-background">
+                <div className="flex flex-col gap-1 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="font-semibold text-foreground">Distribuição por faixa etária</h3>
+                    <p className="text-sm text-muted-foreground">Atualizada automaticamente conforme as datas de nascimento.</p>
+                  </div>
+                  <div className="text-sm font-medium text-muted-foreground">
+                    {ageDistribution.total} {ageDistribution.total === 1 ? "vida calculada" : "vidas calculadas"}
+                  </div>
+                </div>
+
+                <div className="divide-y">
+                  {ageDistribution.rows.map((row) => (
+                    <div key={row.label} className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-3">
+                      <span className="text-sm font-medium text-foreground sm:text-base">{row.label}</span>
+                      <span className="inline-flex min-w-10 items-center justify-center rounded-full border bg-muted/40 px-3 py-1 text-base font-bold tabular-nums text-foreground">
+                        {row.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => navigate("/admin/leads")}>Cancelar</Button>
               <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}Cadastrar Vidas</Button>
