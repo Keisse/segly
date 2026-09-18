@@ -6,7 +6,6 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  TouchSensor,
   closestCenter,
   useDraggable,
   useDroppable,
@@ -199,20 +198,31 @@ function LeadCardVisual({ lead, owner, nextActivity, proposal, overlay = false }
   </>;
 
   return <Card className={`p-3 space-y-2 ${overlay ? "border-primary/60 shadow-2xl ring-1 ring-primary/20" : "hover:border-primary/50"}`}>
-    {overlay ? <div className="block space-y-1.5">{mainContent}</div> : <Link to={`/admin/lead/${lead.id}`} className="block space-y-1.5">{mainContent}</Link>}
+    {overlay ? <div className="block space-y-1.5">{mainContent}</div> : <Link to={`/admin/lead/${lead.id}`} draggable={false} className="block space-y-1.5">{mainContent}</Link>}
     <div className="pt-2 border-t border-border/50 space-y-1.5">
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><User className="w-3 h-3 shrink-0" /><span className="truncate">{owner ? capitalizeWords(owner.display_name || owner.email || "Usuário") : "Sem responsável comercial"}</span></div>
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Clock3 className="w-3 h-3 shrink-0" /><span>{stageAge(lead.stage_entered_at || lead.created_at)} nesta etapa</span></div>
       {nextActivity ? <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0 mt-0.5" /><span className="line-clamp-2">{nextActivity.type} · {new Date(nextActivity.scheduled_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div> : <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0" /><span>Sem próxima atividade</span></div>}
-      {!overlay && lead.email && <a href={`mailto:${lead.email}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></a>}
-      {!overlay && wa && <a href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors"><MessageCircle className="w-3 h-3 shrink-0" /><span className="truncate">{lead.telefone}</span></a>}
+      {!overlay && lead.email && <a href={`mailto:${lead.email}`} draggable={false} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></a>}
+      {!overlay && wa && <a href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`} target="_blank" rel="noreferrer" draggable={false} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors"><MessageCircle className="w-3 h-3 shrink-0" /><span className="truncate">{lead.telefone}</span></a>}
     </div>
   </Card>;
 }
 
 function DraggableLeadCard({ lead, owner, nextActivity, proposal }: { lead: LeadRow; owner?: OwnerInfo; nextActivity?: ActivityInfo; proposal?: ProposalRow }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: lead.id });
-  return <div ref={setNodeRef} {...listeners} {...attributes} className={`cursor-grab active:cursor-grabbing transition-[opacity,transform] duration-150 ${isDragging ? "opacity-25 scale-[0.98]" : "opacity-100 scale-100"}`} style={{ touchAction: "manipulation" }}><LeadCardVisual lead={lead} owner={owner} nextActivity={nextActivity} proposal={proposal} /></div>;
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={`select-none cursor-grab active:cursor-grabbing transition-[opacity,transform] duration-150 ${isDragging ? "opacity-25 scale-[0.98]" : "opacity-100 scale-100"}`}
+      style={{ touchAction: "none" }}
+      onDragStart={(event) => event.preventDefault()}
+    >
+      <LeadCardVisual lead={lead} owner={owner} nextActivity={nextActivity} proposal={proposal} />
+    </div>
+  );
 }
 
 function DroppableStageColumn({ id, children }: { id: string; children: ReactNode }) {
@@ -229,7 +239,10 @@ const KanbanPageEnhanced = () => {
   const [pendingMove, setPendingMove] = useState<PendingMove>(null);
   const moveConfirmedRef = useRef(false);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 160, tolerance: 8 } }), useSensor(KeyboardSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const activePipelineId = useMemo(() => {
     const fromUrl = searchParams.get("pipeline");
