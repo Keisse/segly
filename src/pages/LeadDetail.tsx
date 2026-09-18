@@ -15,6 +15,7 @@ import { LeadAuditTimeline } from "@/components/admin/LeadAuditTimeline";
 import { LeadEditDialog } from "@/components/admin/LeadEditDialog";
 import { LeadProposalsPanel } from "@/components/admin/LeadProposalsPanel";
 import { LeadStageInformation } from "@/components/admin/LeadStageInformation";
+import { birthDateValues, ExpandedBirthDateInputs } from "@/components/leads/DynamicLeadFormFields";
 import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors, type LeadStatus } from "@/types/lead";
 import { capitalizeWords } from "@/lib/formatName";
 import { formatPhone } from "@/lib/phone";
@@ -51,6 +52,31 @@ const infoFields: InfoField[] = [
 ];
 
 const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+const AGE_RANGES = [
+  { label: "0 a 18 anos de idade", min: 0, max: 18 },
+  { label: "19 a 23 anos de idade", min: 19, max: 23 },
+  { label: "24 a 28 anos de idade", min: 24, max: 28 },
+  { label: "29 a 33 anos de idade", min: 29, max: 33 },
+  { label: "34 a 38 anos de idade", min: 34, max: 38 },
+  { label: "39 a 43 anos de idade", min: 39, max: 43 },
+  { label: "44 a 48 anos de idade", min: 44, max: 48 },
+  { label: "49 a 53 anos de idade", min: 49, max: 53 },
+  { label: "54 a 58 anos de idade", min: 54, max: 58 },
+  { label: "59 anos de idade e acima", min: 59, max: Number.POSITIVE_INFINITY },
+];
+
+const calculateAgeFromBirthDate = (value: string) => {
+  if (!value) return null;
+  const birth = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age -= 1;
+  if (age < 0 || age > 130) return null;
+  return age;
+};
 
 const formatCpfCnpj = (value: string) => {
   const digits = value.replace(/\D/g, "").slice(0, 14);
@@ -97,6 +123,8 @@ const LeadDetail = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editingInfoKey, setEditingInfoKey] = useState<string | null>(null);
   const [editingInfoValue, setEditingInfoValue] = useState("");
+  const [editingBirthDates, setEditingBirthDates] = useState<string[]>([]);
+  const [originalPeopleCount, setOriginalPeopleCount] = useState(0);
   const [savingInfoKey, setSavingInfoKey] = useState<string | null>(null);
   const canViewAudit = role === "admin" || role === "lider";
   const displayName = currentProfile?.display_name?.trim() || user?.email?.split("@")[0] || "time";
@@ -121,13 +149,24 @@ const LeadDetail = () => {
   };
 
   const startInfoEdit = (field: InfoField) => {
+    if (field.key === "datas_nascimento") return;
+
     setEditingInfoKey(field.key);
     setEditingInfoValue(getInfoValue(field));
+
+    if (field.key === "quantidade_pessoas") {
+      const count = Math.min(100, Math.max(0, Math.trunc(Number(lead.custom_fields?.quantidade_pessoas ?? 0) || 0)));
+      setOriginalPeopleCount(count);
+      setEditingInfoValue(String(count || ""));
+      setEditingBirthDates(birthDateValues(lead.custom_fields?.datas_nascimento, count));
+    }
   };
 
   const cancelInfoEdit = () => {
     setEditingInfoKey(null);
     setEditingInfoValue("");
+    setEditingBirthDates([]);
+    setOriginalPeopleCount(0);
   };
 
   const saveInfoField = async (field: InfoField) => {
@@ -137,7 +176,45 @@ const LeadDetail = () => {
       if (field.format === "phone") value = formatPhone(value);
       if (field.format === "document") value = formatCpfCnpj(value);
 
-      if (field.source === "direct") {
+      if (field.key === "quantidade_pessoas") {
+        const nextCount = Math.min(100, Math.max(0, Math.trunc(Number(value) || 0)));
+        if (nextCount <= 0) throw new Error("Informe uma quantidade de vidas entre 1 e 100.");
+
+        const quantityChanged = nextCount !== originalPeopleCount;
+        const nextDates = birthDateValues(editingBirthDates, nextCount);
+
+        if (quantityChanged && nextDates.some((date) => !date)) {
+          throw new Error(`Preencha a data de nascimento das ${nextCount} pessoas antes de salvar.`);
+        }
+
+        const ages = nextDates
+          .map(calculateAgeFromBirthDate)
+          .filter((age): age is number => age !== null);
+
+        const { data: currentLead, error: fetchError } = await supabase.from("leads").select("custom_fields").eq("id", lead.id).single();
+        if (fetchError) throw fetchError;
+        const currentCustom = currentLead?.custom_fields && typeof currentLead.custom_fields === "object"
+          ? currentLead.custom_fields as Record<string, unknown>
+          : {};
+
+        const nextCustom = {
+          ...currentCustom,
+          quantidade_pessoas: String(nextCount),
+          datas_nascimento: quantityChanged ? nextDates : currentCustom.datas_nascimento,
+          distribuicao_faixa_etaria: quantityChanged
+            ? {
+                total: ages.length,
+                faixas: AGE_RANGES.map((range) => ({
+                  label: range.label,
+                  count: ages.filter((age) => age >= range.min && age <= range.max).length,
+                })),
+              }
+            : currentCustom.distribuicao_faixa_etaria,
+        };
+
+        const { error } = await supabase.from("leads").update({ custom_fields: nextCustom } as never).eq("id", lead.id);
+        if (error) throw error;
+      } else if (field.source === "direct") {
         const { error } = await supabase.from("leads").update({ [field.sourceKey]: value || null } as never).eq("id", lead.id);
         if (error) throw error;
       } else {
@@ -222,12 +299,57 @@ const LeadDetail = () => {
                 <div key={field.key} className={`bg-secondary/30 rounded-lg p-4 ${field.long ? "md:col-span-2" : ""}`}>
                   <div className="flex items-start justify-between gap-3 mb-1">
                     <p className="text-xs text-muted-foreground">{field.label}</p>
-                    {!editing && <Button variant="ghost" size="icon" className="h-7 w-7 -mt-1 -mr-1 shrink-0" onClick={() => startInfoEdit(field)} title={`Editar ${field.label}`} aria-label={`Editar ${field.label}`}><Pencil className="h-3.5 w-3.5" /></Button>}
+                    {!editing && field.key !== "datas_nascimento" && <Button variant="ghost" size="icon" className="h-7 w-7 -mt-1 -mr-1 shrink-0" onClick={() => startInfoEdit(field)} title={`Editar ${field.label}`} aria-label={`Editar ${field.label}`}><Pencil className="h-3.5 w-3.5" /></Button>}
                   </div>
                   {editing ? (
-                    <div className="space-y-2">
-                      {field.long ? <Textarea value={editingInfoValue} onChange={(e) => setEditingInfoValue(e.target.value)} rows={3} autoFocus disabled={saving} /> : <Input value={editingInfoValue} onChange={(e) => { let next = e.target.value; if (field.format === "phone") next = formatPhone(next); if (field.format === "document") next = formatCpfCnpj(next); setEditingInfoValue(next); }} onKeyDown={(e) => { if (e.key === "Enter") saveInfoField(field); if (e.key === "Escape") cancelInfoEdit(); }} autoFocus disabled={saving} />}
+                    <div className="space-y-3">
+                      {field.key === "quantidade_pessoas" ? (
+                        <>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={100}
+                            step={1}
+                            value={editingInfoValue}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              const nextCount = Math.min(100, Math.max(0, Math.trunc(Number(next) || 0)));
+                              setEditingInfoValue(next);
+                              setEditingBirthDates((current) => birthDateValues(current, nextCount));
+                            }}
+                            autoFocus
+                            disabled={saving}
+                          />
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              {Math.trunc(Number(editingInfoValue) || 0) === originalPeopleCount
+                                ? "Altere primeiro a quantidade de vidas para liberar a edição das datas de nascimento."
+                                : "Preencha novamente as datas de nascimento conforme a nova quantidade de vidas."}
+                            </p>
+                            <ExpandedBirthDateInputs
+                              fieldId="lead-detail-birth-dates"
+                              count={Math.min(100, Math.max(0, Math.trunc(Number(editingInfoValue) || 0)))}
+                              value={editingBirthDates}
+                              disabled={saving || Math.trunc(Number(editingInfoValue) || 0) === originalPeopleCount}
+                              onChange={setEditingBirthDates}
+                            />
+                          </div>
+                        </>
+                      ) : field.long ? (
+                        <Textarea value={editingInfoValue} onChange={(e) => setEditingInfoValue(e.target.value)} rows={3} autoFocus disabled={saving} />
+                      ) : (
+                        <Input value={editingInfoValue} onChange={(e) => { let next = e.target.value; if (field.format === "phone") next = formatPhone(next); if (field.format === "document") next = formatCpfCnpj(next); setEditingInfoValue(next); }} onKeyDown={(e) => { if (e.key === "Enter") saveInfoField(field); if (e.key === "Escape") cancelInfoEdit(); }} autoFocus disabled={saving} />
+                      )}
                       <div className="flex justify-end gap-1"><Button variant="ghost" size="icon" className="h-8 w-8" onClick={cancelInfoEdit} disabled={saving} title="Cancelar"><X className="h-4 w-4" /></Button><Button size="icon" className="h-8 w-8" onClick={() => saveInfoField(field)} disabled={saving} title="Salvar">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}</Button></div>
+                    </div>
+                  ) : field.key === "datas_nascimento" ? (
+                    <div className="space-y-2">
+                      <p className={value ? "text-sm text-foreground font-medium whitespace-pre-wrap break-words" : "text-sm text-muted-foreground italic"}>
+                        {Array.isArray(lead.custom_fields?.datas_nascimento)
+                          ? (lead.custom_fields?.datas_nascimento as unknown[]).map((date) => String(date)).join(", ")
+                          : value || "Não informado"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">As datas só podem ser alteradas ao editar a quantidade de vidas.</p>
                     </div>
                   ) : <p className={value ? "text-sm text-foreground font-medium whitespace-pre-wrap break-words" : "text-sm text-muted-foreground italic"}>{value || "Não informado"}</p>}
                 </div>
