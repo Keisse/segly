@@ -79,6 +79,14 @@ const calculateAge = (value: string) => {
   return age;
 };
 
+const localToday = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export function ExpandedBirthDateInputs({
   fieldId,
   count,
@@ -93,6 +101,7 @@ export function ExpandedBirthDateInputs({
   onChange: (dates: string[]) => void;
 }) {
   const dates = birthDateValues(value, count);
+  const maxBirthDate = localToday();
 
   if (count <= 0) {
     return (
@@ -112,11 +121,14 @@ export function ExpandedBirthDateInputs({
             <Input
               type="date"
               value={date}
+              max={maxBirthDate}
               disabled={disabled}
               aria-label={`Data de nascimento da pessoa ${index + 1}`}
               onChange={(event) => {
+                const selected = event.target.value;
+                if (selected && selected > maxBirthDate) return;
                 const next = [...dates];
-                next[index] = event.target.value;
+                next[index] = selected;
                 onChange(next);
               }}
             />
