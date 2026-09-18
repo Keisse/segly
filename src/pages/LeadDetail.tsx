@@ -228,16 +228,14 @@ const LeadDetail = () => {
         const nextCustom = {
           ...currentCustom,
           quantidade_pessoas: String(nextCount),
-          datas_nascimento: quantityChanged ? nextDates : currentCustom.datas_nascimento,
-          distribuicao_faixa_etaria: quantityChanged
-            ? {
-                total: ages.length,
-                faixas: AGE_RANGES.map((range) => ({
-                  label: range.label,
-                  count: ages.filter((age) => age >= range.min && age <= range.max).length,
-                })),
-              }
-            : currentCustom.distribuicao_faixa_etaria,
+          datas_nascimento: nextDates,
+          distribuicao_faixa_etaria: {
+            total: ages.length,
+            faixas: AGE_RANGES.map((range) => ({
+              label: range.label,
+              count: ages.filter((age) => age >= range.min && age <= range.max).length,
+            })),
+          },
         };
 
         const { error } = await supabase.from("leads").update({ custom_fields: nextCustom } as never).eq("id", lead.id);
@@ -261,7 +259,10 @@ const LeadDetail = () => {
         queryClient.invalidateQueries({ queryKey: ["lead-audit-timeline", lead.id] }),
         queryClient.invalidateQueries({ queryKey: ["audit-events"] }),
       ]);
-      await queryClient.refetchQueries({ queryKey: ["lead", lead.id], exact: true });
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["lead", lead.id], exact: true }),
+        queryClient.refetchQueries({ queryKey: ["leads-by-pipeline"], type: "all" }),
+      ]);
       toast.success(`${field.label} atualizado.`);
       cancelInfoEdit();
     } catch (error) {
@@ -282,22 +283,16 @@ const LeadDetail = () => {
     updateNote.mutate({ id: lead.id, noteId, texto: editingNoteText }, { onSuccess: () => { setEditingNoteId(null); setEditingNoteText(""); } });
   };
 
-  const storedDistribution = lead.custom_fields?.distribuicao_faixa_etaria;
-  const ageDistributionRows = storedDistribution && typeof storedDistribution === "object" && !Array.isArray(storedDistribution) && Array.isArray((storedDistribution as Record<string, unknown>).faixas)
-    ? ((storedDistribution as Record<string, unknown>).faixas as unknown[]).map((item) => {
-        const row = item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : {};
-        return { label: String(row.label ?? ""), count: Number(row.count ?? 0) || 0 };
-      }).filter((row) => row.label)
-    : (() => {
-        const count = Math.min(100, Math.max(0, Math.trunc(Number(lead.custom_fields?.quantidade_pessoas ?? 0) || 0)));
-        const dates = birthDateValues(lead.custom_fields?.datas_nascimento, count);
-        const ages = dates.map(calculateAgeFromBirthDate).filter((age): age is number => age !== null);
-        return AGE_RANGES.map((range) => ({
-          label: range.label,
-          count: ages.filter((age) => age >= range.min && age <= range.max).length,
-        }));
-      })();
-  const ageDistributionTotal = ageDistributionRows.reduce((sum, row) => sum + row.count, 0);
+  const peopleCount = Math.min(100, Math.max(0, Math.trunc(Number(lead.custom_fields?.quantidade_pessoas ?? 0) || 0)));
+  const currentBirthDates = birthDateValues(lead.custom_fields?.datas_nascimento, peopleCount);
+  const currentAges = currentBirthDates
+    .map(calculateAgeFromBirthDate)
+    .filter((age): age is number => age !== null);
+  const ageDistributionRows = AGE_RANGES.map((range) => ({
+    label: range.label,
+    count: currentAges.filter((age) => age >= range.min && age <= range.max).length,
+  }));
+  const ageDistributionTotal = currentAges.length;
 
   return (
     <div className="min-h-screen py-4 px-3 sm:py-6 sm:px-4">
