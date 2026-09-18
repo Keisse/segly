@@ -199,6 +199,7 @@ function LeadCardVisual({ lead, owner, nextActivity, proposal, overlay = false, 
   const ageDistribution = getAgeDistribution(lead);
   const mainContent = <>
     <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-sm font-semibold truncate uppercase">{lead.empresa || lead.nome}</p><p className="text-xs text-muted-foreground truncate">{lead.nome}</p></div>{activityStatus && <span title={activityLabel[activityStatus]} className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${activityDotClass[activityStatus]}`} />}</div>
+    {showNegotiatedValue && amount && <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><CircleDollarSign className="w-3.5 h-3.5" /><span>{amount}</span></div>}
     {proposal && <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" /><div className="min-w-0"><p className="font-medium text-foreground truncate">{proposal.products?.name || "Proposta comercial"}</p><p className="truncate">{proposalStatusLabel[proposal.status]}{proposal.products?.insurer_name ? ` · ${proposal.products.insurer_name}` : ""}</p></div></div>}
     {ageDistribution && <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
       <UsersRound className="h-3.5 w-3.5 shrink-0 mt-1" />
@@ -234,21 +235,11 @@ function LeadCardVisual({ lead, owner, nextActivity, proposal, overlay = false, 
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Clock3 className="w-3 h-3 shrink-0" /><span>{stageAge(lead.stage_entered_at || lead.created_at)} nesta etapa</span></div>
       {nextActivity ? <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0 mt-0.5" /><span className="line-clamp-2">{nextActivity.type} · {new Date(nextActivity.scheduled_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div> : <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0" /><span>Sem próxima atividade</span></div>}
       {!overlay && lead.email && <a href={`mailto:${lead.email}`} draggable={false} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></a>}
-      {!overlay && (wa || (showNegotiatedValue && amount)) && (
-        <div className="flex items-center justify-between gap-2 text-[11px]">
-          {wa ? (
-            <a href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`} target="_blank" rel="noreferrer" draggable={false} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="flex min-w-0 items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors">
-              <MessageCircle className="w-3 h-3 shrink-0" />
-              <span className="truncate">{lead.telefone}</span>
-            </a>
-          ) : <span />}
-          {showNegotiatedValue && amount && (
-            <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-foreground">
-              <CircleDollarSign className="h-3.5 w-3.5" />
-              {amount}
-            </span>
-          )}
-        </div>
+      {!overlay && wa && (
+        <a href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`} target="_blank" rel="noreferrer" draggable={false} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors">
+          <MessageCircle className="w-3 h-3 shrink-0" />
+          <span className="truncate">{lead.telefone}</span>
+        </a>
       )}
     </div>
   </Card>;
