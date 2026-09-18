@@ -238,6 +238,60 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
     return true;
   };
 
+  const saveDeferredStage = async () => {
+    if (!lead || !stageId) return;
+
+    const { data: leadMeta, error: leadMetaError } = await supabase
+      .from("leads")
+      .select("organization_id,custom_fields")
+      .eq("id", lead.id)
+      .single();
+    if (leadMetaError) throw leadMetaError;
+
+    const meta = leadMeta as unknown as {
+      organization_id: string;
+      custom_fields: Record<string, unknown> | null;
+    };
+
+    const saved: Record<string, string | boolean> = { __deferred: true };
+    const directPatch: Record<string, unknown> = {};
+    const custom = { ...(meta.custom_fields ?? {}) } as Record<string, unknown>;
+    let customChanged = false;
+
+    fields.forEach((field) => {
+      const value = String(values[field.field_key] ?? "").trim();
+      if (!value) return;
+      saved[field.field_key] = value;
+      if (field.maps_to) directPatch[field.maps_to] = value;
+      else {
+        custom[field.field_key] = value;
+        customChanged = true;
+      }
+    });
+
+    const { error: stageDataError } = await supabase
+      .from("lead_stage_data" as never)
+      .upsert(
+        {
+          organization_id: meta.organization_id,
+          lead_id: lead.id,
+          stage_id: stageId,
+          data: saved,
+        } as never,
+        { onConflict: "lead_id,stage_id" },
+      );
+    if (stageDataError) throw stageDataError;
+
+    const patch = {
+      ...directPatch,
+      ...(customChanged ? { custom_fields: custom } : {}),
+    };
+    if (Object.keys(patch).length > 0) {
+      const { error } = await supabase.from("leads").update(patch as never).eq("id", lead.id);
+      if (error) throw error;
+    }
+  };
+
   const saveStageAnswers = async () => {
     if (!lead || !stageId) return;
 
@@ -309,6 +363,22 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
     }
 
     await upsertStageActivity();
+  };
+
+  const handleDefer = async () => {
+    if (!lead || !stageId) return;
+    setSaving(true);
+    try {
+      await saveDeferredStage();
+      await onConfirm();
+      toast.success("Vida movida. Os dados desta etapa ficaram pendentes para responder depois.");
+      onOpenChange(false);
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Não foi possível mover a vida para responder depois.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleConfirm = async () => {
@@ -404,8 +474,11 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
           </div>
         )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+        <DialogFooter className="gap-2 sm:justify-between">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+            <Button variant="secondary" onClick={handleDefer} disabled={saving || isLoading}>Responder depois</Button>
+          </div>
           <Button onClick={handleConfirm} disabled={saving || isLoading}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar e mover</Button>
         </DialogFooter>
       </DialogContent>
