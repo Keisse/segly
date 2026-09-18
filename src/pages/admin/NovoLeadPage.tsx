@@ -287,10 +287,15 @@ const NovoLeadPage = () => {
 
                 <div className="divide-y">
                   {ageDistribution.rows.map((row) => (
-                    <div key={row.label} className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-3">
-                      <span className="text-sm font-medium text-foreground sm:text-base">{row.label}</span>
-                      <span className="inline-flex min-w-10 items-center justify-center rounded-full border bg-muted/40 px-3 py-1 text-base font-bold tabular-nums text-foreground">
+                    <div
+                      key={row.label}
+                      className={`grid grid-cols-[auto_1fr] items-center gap-3 px-4 py-3 transition-colors ${row.count > 0 ? "bg-primary/5" : ""}`}
+                    >
+                      <span className={`inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-2 text-sm font-bold tabular-nums ${row.count > 0 ? "border-primary bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground"}`}>
                         {row.count}
+                      </span>
+                      <span className={`text-sm font-medium sm:text-base ${row.count > 0 ? "text-primary" : "text-foreground"}`}>
+                        {row.label}
                       </span>
                     </div>
                   ))}
