@@ -99,20 +99,64 @@ function activityState(date: string) {
   return "future" as const;
 }
 
+const AGE_RANGES = [
+  { label: "0 a 18 anos de idade", min: 0, max: 18 },
+  { label: "19 a 23 anos de idade", min: 19, max: 23 },
+  { label: "24 a 28 anos de idade", min: 24, max: 28 },
+  { label: "29 a 33 anos de idade", min: 29, max: 33 },
+  { label: "34 a 38 anos de idade", min: 34, max: 38 },
+  { label: "39 a 43 anos de idade", min: 39, max: 43 },
+  { label: "44 a 48 anos de idade", min: 44, max: 48 },
+  { label: "49 a 53 anos de idade", min: 49, max: 53 },
+  { label: "54 a 58 anos de idade", min: 54, max: 58 },
+  { label: "59 anos de idade e acima", min: 59, max: Number.POSITIVE_INFINITY },
+];
+
+function normalizeBirthDate(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const br = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (!br) return "";
+  return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
+}
+
+function birthDateValues(value: unknown, count: number) {
+  const source = Array.isArray(value)
+    ? value
+    : String(value ?? "").split(/[;,\n]+/).map((item) => item.trim()).filter(Boolean);
+  return Array.from({ length: Math.max(0, count) }, (_, index) => normalizeBirthDate(source[index]));
+}
+
+function calculateAge(value: string) {
+  if (!value) return null;
+  const birth = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age -= 1;
+  if (age < 0 || age > 130) return null;
+  return age;
+}
+
 function getAgeDistribution(lead: LeadRow): AgeDistribution | null {
-  const raw = lead.custom_fields?.distribuicao_faixa_etaria;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const value = raw as Record<string, unknown>;
-  if (!Array.isArray(value.faixas)) return null;
-  const faixas = value.faixas
-    .map((item) => {
-      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
-      const row = item as Record<string, unknown>;
-      return { label: String(row.label ?? ""), count: Number(row.count ?? 0) || 0 };
-    })
-    .filter((item): item is { label: string; count: number } => !!item?.label);
-  if (!faixas.length) return null;
-  return { total: Number(value.total ?? 0) || 0, faixas };
+  const count = Math.min(100, Math.max(0, Math.trunc(Number(lead.custom_fields?.quantidade_pessoas ?? 0) || 0)));
+  if (!count) return null;
+
+  const ages = birthDateValues(lead.custom_fields?.datas_nascimento, count)
+    .map(calculateAge)
+    .filter((age): age is number => age !== null);
+
+  if (!ages.length) return null;
+
+  return {
+    total: ages.length,
+    faixas: AGE_RANGES.map((range) => ({
+      label: range.label,
+      count: ages.filter((age) => age >= range.min && age <= range.max).length,
+    })),
+  };
 }
 
 const activityDotClass = { overdue: "bg-red-500", today: "bg-amber-400", future: "bg-emerald-500" };
