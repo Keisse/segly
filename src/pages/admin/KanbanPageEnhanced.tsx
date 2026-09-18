@@ -128,23 +128,28 @@ function LeadCardVisual({ lead, owner, nextActivity, proposal, overlay = false }
     {amount && <div className="flex items-center gap-1.5 text-xs font-medium text-foreground"><CircleDollarSign className="w-3.5 h-3.5" /><span>{amount}</span></div>}
     {proposal && <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" /><div className="min-w-0"><p className="font-medium text-foreground truncate">{proposal.products?.name || "Proposta comercial"}</p><p className="truncate">{proposalStatusLabel[proposal.status]}{proposal.products?.insurer_name ? ` · ${proposal.products.insurer_name}` : ""}</p></div></div>}
     {ageDistribution && <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
-      <UsersRound className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-      <div className="min-w-0 leading-4">
-        <span className="font-medium text-foreground">Faixa etária: </span>
-        {ageDistribution.faixas.filter((row) => row.count > 0).map((row, index, rows) => (
-          <span key={row.label}>
-            <span className="whitespace-nowrap">
-              {row.label
-                .replace(" anos de idade", "")
-                .replace(" de idade", "")
-                .replace(/\s+a\s+/g, "–")
-                .replace(/acima de\s*/i, "")
-                .replace(/mais de\s*/i, "")}
-              {/(acima de|mais de)/i.test(row.label) ? "+" : ""}: <span className="font-semibold tabular-nums text-foreground">{row.count}</span>
-            </span>
-            {index < rows.length - 1 ? " · " : ""}
-          </span>
-        ))}
+      <UsersRound className="h-3.5 w-3.5 shrink-0 mt-1" />
+      <div className="min-w-0">
+        <span className="font-medium text-foreground">Faixas etárias</span>
+        <div className="mt-1 flex flex-wrap gap-1">
+          {ageDistribution.faixas.filter((row) => row.count > 0).map((row) => {
+            const label = row.label
+              .replace(" anos de idade", "")
+              .replace(" de idade", "")
+              .replace(/\s+a\s+/g, "–")
+              .replace(/acima de\s*/i, "")
+              .replace(/mais de\s*/i, "");
+            const suffix = /(acima de|mais de)/i.test(row.label) ? "+" : "";
+            return (
+              <span key={row.label} className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 py-0.5 pl-0.5 pr-2 font-medium text-primary">
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold tabular-nums text-primary-foreground">
+                  {row.count}
+                </span>
+                <span className="whitespace-nowrap">{label}{suffix}</span>
+              </span>
+            );
+          })}
+        </div>
       </div>
     </div>}
   </>;
