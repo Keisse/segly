@@ -16,6 +16,7 @@ import { LeadEditDialog } from "@/components/admin/LeadEditDialog";
 import { LeadProposalsPanel } from "@/components/admin/LeadProposalsPanel";
 import { LeadStageInformation } from "@/components/admin/LeadStageInformation";
 import { birthDateValues, ExpandedBirthDateInputs } from "@/components/leads/DynamicLeadFormFields";
+import { AgeDistributionTable } from "@/components/leads/AgeDistributionTable";
 import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors, type LeadStatus } from "@/types/lead";
 import { capitalizeWords } from "@/lib/formatName";
 import { formatPhone } from "@/lib/phone";
@@ -254,6 +255,23 @@ const LeadDetail = () => {
     updateNote.mutate({ id: lead.id, noteId, texto: editingNoteText }, { onSuccess: () => { setEditingNoteId(null); setEditingNoteText(""); } });
   };
 
+  const storedDistribution = lead.custom_fields?.distribuicao_faixa_etaria;
+  const ageDistributionRows = storedDistribution && typeof storedDistribution === "object" && !Array.isArray(storedDistribution) && Array.isArray((storedDistribution as Record<string, unknown>).faixas)
+    ? ((storedDistribution as Record<string, unknown>).faixas as unknown[]).map((item) => {
+        const row = item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : {};
+        return { label: String(row.label ?? ""), count: Number(row.count ?? 0) || 0 };
+      }).filter((row) => row.label)
+    : (() => {
+        const count = Math.min(100, Math.max(0, Math.trunc(Number(lead.custom_fields?.quantidade_pessoas ?? 0) || 0)));
+        const dates = birthDateValues(lead.custom_fields?.datas_nascimento, count);
+        const ages = dates.map(calculateAgeFromBirthDate).filter((age): age is number => age !== null);
+        return AGE_RANGES.map((range) => ({
+          label: range.label,
+          count: ages.filter((age) => age >= range.min && age <= range.max).length,
+        }));
+      })();
+  const ageDistributionTotal = ageDistributionRows.reduce((sum, row) => sum + row.count, 0);
+
   return (
     <div className="min-h-screen py-4 px-3 sm:py-6 sm:px-4">
       <div className="max-w-5xl mx-auto space-y-6 min-w-0">
@@ -355,6 +373,14 @@ const LeadDetail = () => {
                 </div>
               );
             })}
+          </div>
+
+          <div className="mt-4">
+            <AgeDistributionTable
+              total={ageDistributionTotal}
+              rows={ageDistributionRows}
+              description="Mesma distribuição calculada a partir das datas de nascimento cadastradas."
+            />
           </div>
         </motion.div>
 
