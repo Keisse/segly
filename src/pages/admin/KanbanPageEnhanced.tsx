@@ -20,11 +20,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PartyPopper, Mail, MessageCircle, User, Clock3, Search, CalendarClock, CircleDollarSign, FileText, UsersRound } from "lucide-react";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { capitalizeWords } from "@/lib/formatName";
 import { PipelineTabs } from "@/components/admin/PipelineTabs";
 import { StageTransitionDialog } from "@/components/admin/StageTransitionDialog";
+import { toast } from "sonner";
 
 type LeadRow = {
   id: string;
@@ -56,6 +58,7 @@ type OwnerInfo = { display_name: string | null; email: string | null };
 type ActivityInfo = { type: string; scheduled_at: string };
 type PendingMove = { lead: LeadRow; stageId: string; stageName: string; previousStageId: string | null } | null;
 type AgeDistribution = { total: number; faixas: Array<{ label: string; count: number }> };
+type ViewerPreferenceData = { userId: string | null; preferences: Record<string, unknown> };
 
 const proposalStatusLabel: Record<ProposalRow["status"], string> = {
   draft: "Proposta em rascunho",
@@ -279,6 +282,7 @@ const KanbanPageEnhanced = () => {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [optimisticStages, setOptimisticStages] = useState<Record<string, string>>({});
   const [pendingMove, setPendingMove] = useState<PendingMove>(null);
+  const [ownerFilterOverrides, setOwnerFilterOverrides] = useState<Record<string, string>>({});
   const moveConfirmedRef = useRef(false);
 
   const sensors = useSensors(
@@ -308,9 +312,85 @@ const KanbanPageEnhanced = () => {
   const { data: proposals = [] } = useQuery({ queryKey: ["pipeline-proposals", activePipelineId, leadIds.join(",")], queryFn: async () => { if (!leadIds.length) return []; const { data, error } = await supabase.from("proposals" as never).select("id,lead_id,status,negotiated_value,created_at,products(name,insurer_name)").in("lead_id", leadIds).order("created_at", { ascending: false }); if (error) throw error; return (data ?? []) as unknown as ProposalRow[]; }, enabled: leadIds.length > 0 });
   const updateStage = useUpdateLeadStage();
   const { data: members = [] } = useOrgMembers();
+  const { data: viewerPreferenceData } = useQuery<ViewerPreferenceData>({
+    queryKey: ["pipeline-view-preferences"],
+    queryFn: async () => {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      const userId = authData.user?.id ?? null;
+      if (!userId) return { userId: null, preferences: {} };
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("preferences")
+        .eq("id", userId)
+        .single();
+      if (error) throw error;
+
+      const preferences = data?.preferences && typeof data.preferences === "object" && !Array.isArray(data.preferences)
+        ? data.preferences as Record<string, unknown>
+        : {};
+      return { userId, preferences };
+    },
+    staleTime: 60_000,
+  });
   const ownerMap = useMemo(() => { const m = new Map<string, OwnerInfo>(); members.forEach((u) => m.set(u.id, { display_name: u.display_name, email: u.email })); return m; }, [members]);
   const nextActivityMap = useMemo(() => { const map = new Map<string, (typeof activities)[number]>(); activities.forEach((activity) => { const current = map.get(activity.lead_id); if (!current || new Date(activity.scheduled_at) < new Date(current.scheduled_at)) map.set(activity.lead_id, activity); }); return map; }, [activities]);
   const latestProposalMap = useMemo(() => { const map = new Map<string, ProposalRow>(); proposals.forEach((proposal) => { if (!map.has(proposal.lead_id)) map.set(proposal.lead_id, proposal); }); return map; }, [proposals]);
+
+  const savedOwnerFilters = useMemo(() => {
+    const raw = viewerPreferenceData?.preferences?.pipeline_owner_filters;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {} as Record<string, string>;
+    return raw as Record<string, string>;
+  }, [viewerPreferenceData]);
+
+  const ownerFilter = activePipelineId
+    ? ownerFilterOverrides[activePipelineId] ?? savedOwnerFilters[activePipelineId] ?? "all"
+    : "all";
+
+  const persistOwnerFilter = async (value: string) => {
+    if (!activePipelineId) return;
+    const pipelineId = activePipelineId;
+    const previous = ownerFilter;
+    setOwnerFilterOverrides((current) => ({ ...current, [pipelineId]: value }));
+
+    try {
+      const userId = viewerPreferenceData?.userId ?? (await supabase.auth.getUser()).data.user?.id ?? null;
+      if (!userId) throw new Error("Usuário não autenticado.");
+
+      const { data, error: readError } = await supabase
+        .from("profiles")
+        .select("preferences")
+        .eq("id", userId)
+        .single();
+      if (readError) throw readError;
+
+      const currentPreferences = data?.preferences && typeof data.preferences === "object" && !Array.isArray(data.preferences)
+        ? data.preferences as Record<string, unknown>
+        : {};
+      const rawFilters = currentPreferences.pipeline_owner_filters;
+      const currentFilters = rawFilters && typeof rawFilters === "object" && !Array.isArray(rawFilters)
+        ? rawFilters as Record<string, string>
+        : {};
+
+      const nextPreferences = {
+        ...currentPreferences,
+        pipeline_owner_filters: {
+          ...currentFilters,
+          [pipelineId]: value,
+        },
+      };
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ preferences: nextPreferences } as never)
+        .eq("id", userId);
+      if (updateError) throw updateError;
+    } catch (error) {
+      setOwnerFilterOverrides((current) => ({ ...current, [pipelineId]: previous }));
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o filtro do pipeline.");
+    }
+  };
 
   useEffect(() => {
     setOptimisticStages((current) => {
@@ -320,7 +400,17 @@ const KanbanPageEnhanced = () => {
     });
   }, [leads]);
 
-  const filteredLeads = useMemo(() => { const q = normalize(search.trim()); if (!q) return leads; return leads.filter((lead) => { const cnpj = lead.custom_fields?.cnpj; return [lead.empresa, lead.nome, lead.telefone, cnpj].some((value) => normalize(value).includes(q)); }); }, [leads, search]);
+  const filteredLeads = useMemo(() => {
+    const q = normalize(search.trim());
+    return leads.filter((lead) => {
+      const matchesOwner = ownerFilter === "all"
+        || (ownerFilter === "__unassigned__" ? !lead.owner_id : lead.owner_id === ownerFilter);
+      if (!matchesOwner) return false;
+      if (!q) return true;
+      const cnpj = lead.custom_fields?.cnpj;
+      return [lead.empresa, lead.nome, lead.telefone, cnpj].some((value) => normalize(value).includes(q));
+    });
+  }, [leads, search, ownerFilter]);
   const grouped = useMemo(() => { const g: Record<string, LeadRow[]> = {}; stages.forEach((s) => { g[s.id] = []; }); filteredLeads.forEach((lead) => { const effectiveStageId = optimisticStages[lead.id] ?? lead.stage_id; if (effectiveStageId && g[effectiveStageId]) g[effectiveStageId].push(lead); }); return g; }, [stages, filteredLeads, optimisticStages]);
   const activeLead = useMemo(() => leads.find((lead) => lead.id === activeDragId) ?? null, [leads, activeDragId]);
   const proposalStageOrder = useMemo(
@@ -368,7 +458,36 @@ const KanbanPageEnhanced = () => {
   const overlayProposal = activeLead ? latestProposalMap.get(activeLead.id) : undefined;
 
   return <div className="p-6 space-y-4">
-    <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"><div><h1 className="text-2xl font-display font-bold">Pipelines</h1><p className="text-sm text-muted-foreground">Arraste os cards livremente. Ao soltar, você pode preencher as informações da nova etapa agora ou responder depois.</p></div>{isAcelera && <div className="relative w-full xl:w-80"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar empresa, contato, telefone ou CNPJ" className="pl-9" /></div>}</div>
+    <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div>
+        <h1 className="text-2xl font-display font-bold">Pipelines</h1>
+        <p className="text-sm text-muted-foreground">Arraste os cards livremente. Ao soltar, você pode preencher as informações da nova etapa agora ou responder depois.</p>
+      </div>
+      <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto">
+        <div className="w-full sm:w-64">
+          <Select value={ownerFilter} onValueChange={persistOwnerFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar por usuário" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os usuários</SelectItem>
+              {members.map((member) => (
+                <SelectItem key={member.id} value={member.id}>
+                  {capitalizeWords(member.display_name || member.email || "Usuário")}
+                </SelectItem>
+              ))}
+              <SelectItem value="__unassigned__">Sem responsável</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {isAcelera && (
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar empresa, contato, telefone ou CNPJ" className="pl-9" />
+          </div>
+        )}
+      </div>
+    </div>
     <PipelineTabs pipelines={pipelines} activeId={activePipelineId} onSelect={selectPipeline} />
     {!activePipelineId ? <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p> : loadingLeads ? <p className="text-sm text-muted-foreground">Carregando vidas…</p> : stages.length === 0 ? <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p> : <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
       <div className="grid gap-3 overflow-x-auto pb-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))` }}>
