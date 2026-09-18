@@ -15,6 +15,7 @@ import { useLeadForms } from "@/hooks/useLeadForms";
 import { useLeadFormFields } from "@/hooks/useLeadFormFields";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AgeDistributionTable } from "@/components/leads/AgeDistributionTable";
 
 const CORE_KEYS = new Set(["empresa", "cnpj", "nome", "telefone", "email"]);
 
@@ -273,35 +274,11 @@ const NovoLeadPage = () => {
               expandBirthDatesByPeople
             />
 
-            {ageDistribution.total > 0 && (
-              <div className="overflow-hidden rounded-xl border bg-background">
-                <div className="flex flex-col gap-1 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="font-semibold text-foreground">Distribuição por faixa etária</h3>
-                    <p className="text-sm text-muted-foreground">Atualizada automaticamente conforme as datas de nascimento.</p>
-                  </div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    {ageDistribution.total} {ageDistribution.total === 1 ? "vida calculada" : "vidas calculadas"}
-                  </div>
-                </div>
-
-                <div className="divide-y">
-                  {ageDistribution.rows.map((row) => (
-                    <div
-                      key={row.label}
-                      className={`grid grid-cols-[auto_1fr] items-center gap-3 px-4 py-3 transition-colors ${row.count > 0 ? "bg-primary/5" : ""}`}
-                    >
-                      <span className={`inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-2 text-sm font-bold tabular-nums ${row.count > 0 ? "border-primary bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground"}`}>
-                        {row.count}
-                      </span>
-                      <span className={`text-sm font-medium sm:text-base ${row.count > 0 ? "text-primary" : "text-foreground"}`}>
-                        {row.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <AgeDistributionTable
+              total={ageDistribution.total}
+              rows={ageDistribution.rows}
+              description="Atualizada automaticamente conforme as datas de nascimento."
+            />
 
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => navigate("/admin/leads")}>Cancelar</Button>
