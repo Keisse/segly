@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { formatCurrencyBRL, maskCurrencyBRLInput, parseCurrencyBRL } from "@/lib/currency";
 
 type ProposalStatus = "draft" | "sent" | "accepted" | "implementation" | "implemented" | "lost";
 type ProposalRow = {
@@ -53,7 +54,7 @@ const statusMeta: Record<ProposalStatus, { label: string; icon: typeof FileText 
   lost: { label: "Perdida", icon: XCircle },
 };
 
-const money = (value: number | string) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value || 0));
+const money = (value: number | string) => formatCurrencyBRL(value, "R$ 0,00");
 const dateBr = (value?: string | null) => value ? new Intl.DateTimeFormat("pt-BR").format(new Date(`${value}T12:00:00`)) : "—";
 
 function boletoStatus(dueDate: string | null, paid: boolean) {
@@ -84,7 +85,7 @@ export function LeadProposalsPanel({ leadId, ownerId, currentProductId, customFi
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ProposalRow | null>(null);
   const [productId, setProductId] = useState(currentProductId || "");
-  const [value, setValue] = useState(String(customFields?.valor_final_fechado ?? customFields?.valor_fechado ?? ""));
+  const [value, setValue] = useState(formatCurrencyBRL(customFields?.valor_final_fechado ?? customFields?.valor_fechado ?? ""));
   const [boletoDueDate, setBoletoDueDate] = useState(String(customFields?.data_boleto ?? ""));
   const [status, setStatus] = useState<ProposalStatus>("draft");
   const [lostReason, setLostReason] = useState("");
@@ -131,7 +132,7 @@ export function LeadProposalsPanel({ leadId, ownerId, currentProductId, customFi
   const reset = () => {
     setEditing(null);
     setProductId(currentProductId || "");
-    setValue(String(customFields?.valor_final_fechado ?? customFields?.valor_fechado ?? ""));
+    setValue(formatCurrencyBRL(customFields?.valor_final_fechado ?? customFields?.valor_fechado ?? ""));
     setBoletoDueDate(String(customFields?.data_boleto ?? ""));
     setStatus("draft");
     setLostReason("");
@@ -144,7 +145,7 @@ export function LeadProposalsPanel({ leadId, ownerId, currentProductId, customFi
   const openEdit = (proposal: ProposalRow) => {
     setEditing(proposal);
     setProductId(proposal.product_id);
-    setValue(String(proposal.negotiated_value));
+    setValue(formatCurrencyBRL(proposal.negotiated_value));
     setBoletoDueDate(proposal.boleto_due_date || "");
     setStatus(proposal.status);
     setLostReason(proposal.lost_reason || "");
@@ -174,7 +175,7 @@ export function LeadProposalsPanel({ leadId, ownerId, currentProductId, customFi
       if (!productId) throw new Error("Selecione o produto.");
       if (!validHttpUrl(documentUrl)) throw new Error("Informe uma URL válida, iniciando com http:// ou https://.");
 
-      const negotiated = Number(String(value).replace(/\./g, "").replace(",", "."));
+      const negotiated = parseCurrencyBRL(value);
       if (!Number.isFinite(negotiated) || negotiated <= 0) throw new Error("Informe um valor negociado válido.");
       if (status === "lost" && !lostReason.trim()) throw new Error("Informe o motivo da perda.");
 
@@ -282,7 +283,7 @@ export function LeadProposalsPanel({ leadId, ownerId, currentProductId, customFi
           </DialogHeader>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2"><Label>Produto *</Label><Select value={productId} onValueChange={setProductId}><SelectTrigger><SelectValue placeholder="Selecione o produto" /></SelectTrigger><SelectContent>{products.map((product) => <SelectItem key={product.id} value={product.id}>{product.name} · {product.insurer_name || product.category}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-1.5"><Label>Valor negociado *</Label><Input inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} placeholder="0,00" /></div>
+            <div className="space-y-1.5"><Label>Valor negociado *</Label><Input inputMode="decimal" value={value} onChange={(e) => setValue(maskCurrencyBRLInput(e.target.value))} placeholder="R$ 0,00" /></div>
             <div className="space-y-1.5"><Label>Status *</Label><Select value={status} onValueChange={(v) => setStatus(v as ProposalStatus)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(Object.keys(statusMeta) as ProposalStatus[]).map((item) => <SelectItem key={item} value={item}>{statusMeta[item].label}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1.5 sm:col-span-2"><Label>Vencimento do boleto</Label><Input type="date" value={boletoDueDate} onChange={(e) => setBoletoDueDate(e.target.value)} /></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5" />URL da proposta</Label><Input type="url" value={documentUrl} onChange={(e) => setDocumentUrl(e.target.value)} placeholder="https://..." /><p className="text-xs text-muted-foreground">Opcional. Pode usar URL, arquivo ou ambos.</p></div>
