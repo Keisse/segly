@@ -70,10 +70,38 @@ function normalize(value: unknown) {
   return String(value ?? "").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
+function parseMoneyValue(value: unknown) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value !== "string") return 0;
+  const raw = value.trim().replace(/\s/g, "");
+  if (!raw) return 0;
+
+  let normalized = raw;
+  if (raw.includes(",") && raw.includes(".")) {
+    normalized = raw.lastIndexOf(",") > raw.lastIndexOf(".")
+      ? raw.replace(/\./g, "").replace(",", ".")
+      : raw.replace(/,/g, "");
+  } else if (raw.includes(",")) {
+    normalized = raw.replace(/\./g, "").replace(",", ".");
+  }
+
+  const parsed = Number(normalized.replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function formatMoney(value: unknown) {
-  const n = Number(String(value ?? "").replace(/[^\d,.-]/g, "").replace(".", "").replace(",", "."));
-  if (!Number.isFinite(n) || n <= 0) return null;
+  const n = parseMoneyValue(value);
+  if (n <= 0) return null;
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
+}
+
+function negotiatedValueForLead(lead: LeadRow, proposal?: ProposalRow) {
+  return parseMoneyValue(
+    proposal?.negotiated_value
+      ?? lead.custom_fields?.valor_final_fechado
+      ?? lead.custom_fields?.valor_fechado
+      ?? lead.custom_fields?.valor_apresentado,
+  );
 }
 
 function stageAge(value?: string | null) {
@@ -161,14 +189,13 @@ function getAgeDistribution(lead: LeadRow): AgeDistribution | null {
 const activityDotClass = { overdue: "bg-red-500", today: "bg-amber-400", future: "bg-emerald-500" };
 const activityLabel = { overdue: "Atividade atrasada", today: "Atividade para hoje", future: "Atividade futura" };
 
-function LeadCardVisual({ lead, owner, nextActivity, proposal, overlay = false }: { lead: LeadRow; owner?: OwnerInfo; nextActivity?: ActivityInfo; proposal?: ProposalRow; overlay?: boolean }) {
+function LeadCardVisual({ lead, owner, nextActivity, proposal, overlay = false, showNegotiatedValue = false }: { lead: LeadRow; owner?: OwnerInfo; nextActivity?: ActivityInfo; proposal?: ProposalRow; overlay?: boolean; showNegotiatedValue?: boolean }) {
   const wa = lead.telefone ? lead.telefone.replace(/\D/g, "") : "";
   const activityStatus = nextActivity ? activityState(nextActivity.scheduled_at) : null;
-  const amount = formatMoney(proposal?.negotiated_value ?? lead.custom_fields?.valor_apresentado ?? lead.custom_fields?.valor_fechado ?? lead.custom_fields?.valor_final_fechado);
+  const amount = formatMoney(negotiatedValueForLead(lead, proposal));
   const ageDistribution = getAgeDistribution(lead);
   const mainContent = <>
     <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-sm font-semibold truncate uppercase">{lead.empresa || lead.nome}</p><p className="text-xs text-muted-foreground truncate">{lead.nome}</p></div>{activityStatus && <span title={activityLabel[activityStatus]} className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${activityDotClass[activityStatus]}`} />}</div>
-    {amount && <div className="flex items-center gap-1.5 text-xs font-medium text-foreground"><CircleDollarSign className="w-3.5 h-3.5" /><span>{amount}</span></div>}
     {proposal && <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" /><div className="min-w-0"><p className="font-medium text-foreground truncate">{proposal.products?.name || "Proposta comercial"}</p><p className="truncate">{proposalStatusLabel[proposal.status]}{proposal.products?.insurer_name ? ` · ${proposal.products.insurer_name}` : ""}</p></div></div>}
     {ageDistribution && <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
       <UsersRound className="h-3.5 w-3.5 shrink-0 mt-1" />
@@ -204,12 +231,27 @@ function LeadCardVisual({ lead, owner, nextActivity, proposal, overlay = false }
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Clock3 className="w-3 h-3 shrink-0" /><span>{stageAge(lead.stage_entered_at || lead.created_at)} nesta etapa</span></div>
       {nextActivity ? <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0 mt-0.5" /><span className="line-clamp-2">{nextActivity.type} · {new Date(nextActivity.scheduled_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div> : <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CalendarClock className="w-3 h-3 shrink-0" /><span>Sem próxima atividade</span></div>}
       {!overlay && lead.email && <a href={`mailto:${lead.email}`} draggable={false} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></a>}
-      {!overlay && wa && <a href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`} target="_blank" rel="noreferrer" draggable={false} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors"><MessageCircle className="w-3 h-3 shrink-0" /><span className="truncate">{lead.telefone}</span></a>}
+      {!overlay && (wa || (showNegotiatedValue && amount)) && (
+        <div className="flex items-center justify-between gap-2 text-[11px]">
+          {wa ? (
+            <a href={`https://wa.me/${wa.startsWith("55") ? wa : `55${wa}`}`} target="_blank" rel="noreferrer" draggable={false} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="flex min-w-0 items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors">
+              <MessageCircle className="w-3 h-3 shrink-0" />
+              <span className="truncate">{lead.telefone}</span>
+            </a>
+          ) : <span />}
+          {showNegotiatedValue && amount && (
+            <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-foreground">
+              <CircleDollarSign className="h-3.5 w-3.5" />
+              {amount}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   </Card>;
 }
 
-function DraggableLeadCard({ lead, owner, nextActivity, proposal }: { lead: LeadRow; owner?: OwnerInfo; nextActivity?: ActivityInfo; proposal?: ProposalRow }) {
+function DraggableLeadCard({ lead, owner, nextActivity, proposal, showNegotiatedValue = false }: { lead: LeadRow; owner?: OwnerInfo; nextActivity?: ActivityInfo; proposal?: ProposalRow; showNegotiatedValue?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: lead.id });
   return (
     <div
@@ -220,7 +262,7 @@ function DraggableLeadCard({ lead, owner, nextActivity, proposal }: { lead: Lead
       style={{ touchAction: "none" }}
       onDragStart={(event) => event.preventDefault()}
     >
-      <LeadCardVisual lead={lead} owner={owner} nextActivity={nextActivity} proposal={proposal} />
+      <LeadCardVisual lead={lead} owner={owner} nextActivity={nextActivity} proposal={proposal} showNegotiatedValue={showNegotiatedValue} />
     </div>
   );
 }
@@ -281,6 +323,10 @@ const KanbanPageEnhanced = () => {
   const filteredLeads = useMemo(() => { const q = normalize(search.trim()); if (!q) return leads; return leads.filter((lead) => { const cnpj = lead.custom_fields?.cnpj; return [lead.empresa, lead.nome, lead.telefone, cnpj].some((value) => normalize(value).includes(q)); }); }, [leads, search]);
   const grouped = useMemo(() => { const g: Record<string, LeadRow[]> = {}; stages.forEach((s) => { g[s.id] = []; }); filteredLeads.forEach((lead) => { const effectiveStageId = optimisticStages[lead.id] ?? lead.stage_id; if (effectiveStageId && g[effectiveStageId]) g[effectiveStageId].push(lead); }); return g; }, [stages, filteredLeads, optimisticStages]);
   const activeLead = useMemo(() => leads.find((lead) => lead.id === activeDragId) ?? null, [leads, activeDragId]);
+  const proposalStageOrder = useMemo(
+    () => stages.find((stage) => normalize(stage.nome) === "proposta")?.ordem ?? Number.POSITIVE_INFINITY,
+    [stages],
+  );
 
   const handleDragStart = (event: DragStartEvent) => setActiveDragId(String(event.active.id));
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -326,9 +372,54 @@ const KanbanPageEnhanced = () => {
     <PipelineTabs pipelines={pipelines} activeId={activePipelineId} onSelect={selectPipeline} />
     {!activePipelineId ? <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p> : loadingLeads ? <p className="text-sm text-muted-foreground">Carregando vidas…</p> : stages.length === 0 ? <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p> : <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
       <div className="grid gap-3 overflow-x-auto pb-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))` }}>
-        {stages.map((col) => { const cards = grouped[col.id] ?? []; const overWip = col.wip_limit != null && cards.length > col.wip_limit; return <DroppableStageColumn key={col.id} id={col.id}><div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: col.cor ?? "#64748b" }} />{col.nome}{col.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}</h3><Badge variant={overWip ? "destructive" : "secondary"} className="text-xs">{cards.length}{col.wip_limit != null ? `/${col.wip_limit}` : ""}</Badge></div><div className="space-y-2 min-h-[320px]">{cards.map((lead) => <DraggableLeadCard key={lead.id} lead={lead} owner={ownerMap.get(lead.owner_id ?? "")} nextActivity={nextActivityMap.get(lead.id)} proposal={latestProposalMap.get(lead.id)} />)}</div></DroppableStageColumn>; })}
+        {stages.map((col) => {
+          const cards = grouped[col.id] ?? [];
+          const overWip = col.wip_limit != null && cards.length > col.wip_limit;
+          const showNegotiatedValue = col.ordem >= proposalStageOrder;
+          const columnTotal = showNegotiatedValue
+            ? cards.reduce((sum, lead) => sum + negotiatedValueForLead(lead, latestProposalMap.get(lead.id)), 0)
+            : 0;
+          const formattedColumnTotal = showNegotiatedValue ? formatMoney(columnTotal) : null;
+
+          return (
+            <DroppableStageColumn key={col.id} id={col.id}>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <h3 className="text-sm font-semibold inline-flex flex-wrap items-center gap-2">
+                  <span className="w-2 h-2 rounded-full" style={{ background: col.cor ?? "#64748b" }} />
+                  <span>{col.nome}</span>
+                  {formattedColumnTotal && (
+                    <span className="font-bold text-primary">{formattedColumnTotal}</span>
+                  )}
+                  {col.celebrate_enabled && <PartyPopper className="w-3.5 h-3.5 text-primary" aria-label="Celebração ativa" />}
+                </h3>
+                <Badge variant={overWip ? "destructive" : "secondary"} className="text-xs shrink-0">
+                  {cards.length}{col.wip_limit != null ? `/${col.wip_limit}` : ""}
+                </Badge>
+              </div>
+              <div className="space-y-2 min-h-[320px]">
+                {cards.map((lead) => (
+                  <DraggableLeadCard
+                    key={lead.id}
+                    lead={lead}
+                    owner={ownerMap.get(lead.owner_id ?? "")}
+                    nextActivity={nextActivityMap.get(lead.id)}
+                    proposal={latestProposalMap.get(lead.id)}
+                    showNegotiatedValue={showNegotiatedValue}
+                  />
+                ))}
+              </div>
+            </DroppableStageColumn>
+          );
+        })}
       </div>
-      <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }}>{activeLead ? <div className="w-[245px] rotate-[1.5deg] scale-[1.03] cursor-grabbing pointer-events-none"><LeadCardVisual lead={activeLead} owner={overlayOwner} nextActivity={overlayActivity} proposal={overlayProposal} overlay /></div> : null}</DragOverlay>
+      <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }}>{activeLead ? <div className="w-[245px] rotate-[1.5deg] scale-[1.03] cursor-grabbing pointer-events-none"><LeadCardVisual
+        lead={activeLead}
+        owner={overlayOwner}
+        nextActivity={overlayActivity}
+        proposal={overlayProposal}
+        overlay
+        showNegotiatedValue={(stages.find((stage) => stage.id === (optimisticStages[activeLead.id] ?? activeLead.stage_id))?.ordem ?? -1) >= proposalStageOrder}
+      /></div> : null}</DragOverlay>
     </DndContext>}
     <StageTransitionDialog open={!!pendingMove} onOpenChange={handleTransitionOpenChange} lead={pendingMove?.lead ?? null} stageId={pendingMove?.stageId ?? null} stageName={pendingMove?.stageName ?? "etapa"} onConfirm={confirmPendingMove} />
   </div>;
