@@ -45,7 +45,7 @@ const AdminLogin = () => {
             <img
               src={seglyLogo}
               alt="Segly"
-              className="h-10 mx-auto mb-6"
+              className="h-10 mx-auto mb-6 dark:brightness-0 dark:invert"
             />
             <h1 className="text-2xl font-display font-bold text-foreground mb-2">
               Admin Dashboard
