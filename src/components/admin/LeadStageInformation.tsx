@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatPhone } from "@/lib/phone";
+import { formatCurrencyBRL, isMoneyField, maskCurrencyBRLInput } from "@/lib/currency";
 
 type StageRow = { id: string; nome: string; ordem: number };
 type StageField = {
@@ -155,7 +156,9 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
   const valueFor = (stageId: string, field: StageField) => {
     const raw = stageValues(stageId)?.[field.field_key];
     if (Array.isArray(raw)) return raw.join(", ");
-    return raw == null ? "" : String(raw);
+    if (raw == null) return "";
+    if (isMoneyField(field.field_key, field.label)) return formatCurrencyBRL(raw);
+    return String(raw);
   };
 
   const startEdit = (stageId: string, field: StageField) => {
@@ -215,8 +218,9 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
   const renderEditor = (field: StageField) => {
     if (field.field_type === "long_text") return <Textarea value={editingValue} onChange={(event) => setEditingValue(event.target.value)} rows={3} autoFocus />;
     if (field.field_type === "select" && field.options.length > 0) return <Select value={editingValue || BLANK_VALUE} onValueChange={(value) => setEditingValue(value === BLANK_VALUE ? "" : value)}><SelectTrigger><SelectValue placeholder={field.placeholder ?? "Selecione..."} /></SelectTrigger><SelectContent><SelectItem value={BLANK_VALUE}>Deixar em branco</SelectItem>{field.options.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent></Select>;
-    const type = field.field_type === "email" ? "email" : field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : field.field_type === "phone" ? "tel" : "text";
-    return <Input type={type} value={editingValue} onChange={(event) => setEditingValue(event.target.value)} placeholder={field.placeholder ?? undefined} autoFocus />;
+    const moneyField = isMoneyField(field.field_key, field.label);
+    const type = field.field_type === "email" ? "email" : moneyField ? "text" : field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : field.field_type === "phone" ? "tel" : "text";
+    return <Input type={type} inputMode={moneyField ? "decimal" : undefined} value={editingValue} onChange={(event) => setEditingValue(moneyField ? maskCurrencyBRLInput(event.target.value) : event.target.value)} placeholder={field.placeholder ?? undefined} autoFocus />;
   };
 
   if (isLoading) return <div className="glass-card p-6 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
