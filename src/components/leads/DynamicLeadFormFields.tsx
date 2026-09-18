@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatPhone } from "@/lib/phone";
+import { formatCurrencyBRL, isMoneyField, maskCurrencyBRLInput } from "@/lib/currency";
 import type { LeadFormField } from "@/hooks/useLeadFormFields";
 
 export type LeadFormValues = Record<string, unknown>;
@@ -25,6 +26,7 @@ export const formatCpfCnpj = (value: string) => {
 const normalizeInputValue = (field: LeadFormField, value: string) => {
   if (field.field_key === "telefone" || field.type === "phone") return formatPhone(value);
   if (field.field_key === "cnpj") return formatCpfCnpj(value);
+  if (isMoneyField(field.field_key, field.label)) return maskCurrencyBRLInput(value);
   return value;
 };
 
@@ -258,13 +260,15 @@ export function DynamicLeadFormFields({
             ) : (
               <Input
                 id={id}
-                type={field.type === "email" ? "email" : field.type === "number" ? "number" : field.type === "date" ? "date" : field.type === "phone" ? "tel" : "text"}
-                inputMode={field.field_key === "cnpj" ? "numeric" : undefined}
+                type={field.type === "email" ? "email" : isMoneyField(field.field_key, field.label) ? "text" : field.type === "number" ? "number" : field.type === "date" ? "date" : field.type === "phone" ? "tel" : "text"}
+                inputMode={field.field_key === "cnpj" ? "numeric" : isMoneyField(field.field_key, field.label) ? "decimal" : undefined}
                 min={peopleCountField && field.id === peopleCountField.id ? 1 : undefined}
                 max={peopleCountField && field.id === peopleCountField.id ? 100 : undefined}
                 step={peopleCountField && field.id === peopleCountField.id ? 1 : undefined}
-                value={String(value ?? field.default_value ?? "")}
-                placeholder={field.placeholder ?? undefined}
+                value={isMoneyField(field.field_key, field.label)
+                  ? formatCurrencyBRL(value ?? field.default_value ?? "")
+                  : String(value ?? field.default_value ?? "")}
+                placeholder={isMoneyField(field.field_key, field.label) ? "R$ 0,00" : field.placeholder ?? undefined}
                 disabled={disabled}
                 onChange={(event) => changeField(field, normalizeInputValue(field, event.target.value))}
               />
