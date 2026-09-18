@@ -55,7 +55,7 @@ const normalizedBirthDate = (value: unknown) => {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-  const br = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const br = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
   if (!br) return "";
   return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
 };
@@ -78,6 +78,57 @@ const calculateAge = (value: string) => {
   if (age < 0 || age > 130) return null;
   return age;
 };
+
+export function ExpandedBirthDateInputs({
+  fieldId,
+  count,
+  value,
+  disabled = false,
+  onChange,
+}: {
+  fieldId: string;
+  count: number;
+  value: unknown;
+  disabled?: boolean;
+  onChange: (dates: string[]) => void;
+}) {
+  const dates = birthDateValues(value, count);
+
+  if (count <= 0) {
+    return (
+      <div id={fieldId} className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        Informe primeiro quantas pessoas serão cadastradas para abrir os campos de data de nascimento.
+      </div>
+    );
+  }
+
+  return (
+    <div id={fieldId} className="space-y-2.5 rounded-lg border bg-muted/10 p-3 sm:p-4">
+      {dates.map((date, index) => {
+        const age = calculateAge(date);
+        return (
+          <div key={`${fieldId}-${index}`} className="grid gap-2 sm:grid-cols-[72px_minmax(0,240px)_1fr] sm:items-center">
+            <span className="text-sm font-medium text-muted-foreground">Pessoa {index + 1}</span>
+            <Input
+              type="date"
+              value={date}
+              disabled={disabled}
+              aria-label={`Data de nascimento da pessoa ${index + 1}`}
+              onChange={(event) => {
+                const next = [...dates];
+                next[index] = event.target.value;
+                onChange(next);
+              }}
+            />
+            <span className="min-h-5 text-sm font-medium text-foreground">
+              {date ? (age === null ? "Data inválida" : `${age} ${age === 1 ? "ano" : "anos"}`) : ""}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function DynamicLeadFormFields({
   fields,
@@ -113,7 +164,6 @@ export function DynamicLeadFormFields({
         const value = values[field.field_key];
         const long = field.type === "long_text";
         const expandedBirthDates = !!birthDatesField && field.id === birthDatesField.id;
-        const dates = expandedBirthDates ? birthDateValues(value, peopleCount) : [];
 
         return (
           <div key={field.id} className={long || expandedBirthDates ? "space-y-2 md:col-span-2" : "space-y-2"}>
@@ -122,36 +172,13 @@ export function DynamicLeadFormFields({
             </Label>
 
             {expandedBirthDates ? (
-              peopleCount > 0 ? (
-                <div id={id} className="space-y-2.5 rounded-lg border bg-muted/10 p-3 sm:p-4">
-                  {dates.map((date, index) => {
-                    const age = calculateAge(date);
-                    return (
-                      <div key={`${field.id}-${index}`} className="grid gap-2 sm:grid-cols-[72px_minmax(0,240px)_1fr] sm:items-center">
-                        <span className="text-sm font-medium text-muted-foreground">Pessoa {index + 1}</span>
-                        <Input
-                          type="date"
-                          value={date}
-                          disabled={disabled}
-                          aria-label={`Data de nascimento da pessoa ${index + 1}`}
-                          onChange={(event) => {
-                            const next = [...dates];
-                            next[index] = event.target.value;
-                            onChange(field.field_key, next);
-                          }}
-                        />
-                        <span className="min-h-5 text-sm font-medium text-foreground">
-                          {date ? (age === null ? "Data inválida" : `${age} ${age === 1 ? "ano" : "anos"}`) : ""}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div id={id} className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                  Informe primeiro quantas pessoas serão cadastradas para abrir os campos de data de nascimento.
-                </div>
-              )
+              <ExpandedBirthDateInputs
+                fieldId={id}
+                count={peopleCount}
+                value={value}
+                disabled={disabled}
+                onChange={(next) => onChange(field.field_key, next)}
+              />
             ) : field.type === "long_text" ? (
               <Textarea
                 id={id}
