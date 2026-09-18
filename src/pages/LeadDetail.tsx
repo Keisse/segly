@@ -149,18 +149,36 @@ const LeadDetail = () => {
     return String((lead as unknown as Record<string, unknown>)[field.sourceKey] ?? "");
   };
 
-  const startInfoEdit = (field: InfoField) => {
+  const startInfoEdit = async (field: InfoField) => {
     if (field.key === "datas_nascimento") return;
 
     setEditingInfoKey(field.key);
-    setEditingInfoValue(getInfoValue(field));
 
     if (field.key === "quantidade_pessoas") {
-      const count = Math.min(100, Math.max(0, Math.trunc(Number(lead.custom_fields?.quantidade_pessoas ?? 0) || 0)));
-      setOriginalPeopleCount(count);
-      setEditingInfoValue(String(count || ""));
-      setEditingBirthDates(birthDateValues(lead.custom_fields?.datas_nascimento, count));
+      try {
+        const { data: freshLead, error } = await supabase
+          .from("leads")
+          .select("custom_fields")
+          .eq("id", lead.id)
+          .single();
+        if (error) throw error;
+
+        const freshCustom = freshLead?.custom_fields && typeof freshLead.custom_fields === "object"
+          ? freshLead.custom_fields as Record<string, unknown>
+          : {};
+
+        const count = Math.min(100, Math.max(0, Math.trunc(Number(freshCustom.quantidade_pessoas ?? 0) || 0)));
+        setOriginalPeopleCount(count);
+        setEditingInfoValue(String(count || ""));
+        setEditingBirthDates(birthDateValues(freshCustom.datas_nascimento, count));
+      } catch (error) {
+        setEditingInfoKey(null);
+        toast.error(error instanceof Error ? error.message : "Não foi possível carregar os dados atuais das vidas.");
+      }
+      return;
     }
+
+    setEditingInfoValue(getInfoValue(field));
   };
 
   const cancelInfoEdit = () => {
@@ -186,6 +204,15 @@ const LeadDetail = () => {
 
         if (quantityChanged && nextDates.some((date) => !date)) {
           throw new Error(`Preencha a data de nascimento das ${nextCount} pessoas antes de salvar.`);
+        }
+
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        if (quantityChanged && nextDates.some((date) => {
+          const parsed = new Date(`${date}T12:00:00`);
+          return Number.isNaN(parsed.getTime()) || parsed > today;
+        })) {
+          throw new Error("A data de nascimento não pode estar no futuro.");
         }
 
         const ages = nextDates
@@ -228,13 +255,13 @@ const LeadDetail = () => {
       }
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["lead", lead.id] }),
         queryClient.invalidateQueries({ queryKey: ["leads"] }),
         queryClient.invalidateQueries({ queryKey: ["leads-by-pipeline"] }),
         queryClient.invalidateQueries({ queryKey: ["dashboard-v2-leads"] }),
         queryClient.invalidateQueries({ queryKey: ["lead-audit-timeline", lead.id] }),
         queryClient.invalidateQueries({ queryKey: ["audit-events"] }),
       ]);
+      await queryClient.refetchQueries({ queryKey: ["lead", lead.id], exact: true });
       toast.success(`${field.label} atualizado.`);
       cancelInfoEdit();
     } catch (error) {
