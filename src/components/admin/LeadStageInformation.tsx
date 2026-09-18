@@ -151,6 +151,7 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
   });
 
   const stageValues = (stageId: string) => savedRows.find((row) => row.stage_id === stageId)?.data ?? {};
+  const stageDeferred = (stageId: string) => Boolean(stageValues(stageId)?.__deferred);
   const valueFor = (stageId: string, field: StageField) => {
     const raw = stageValues(stageId)?.[field.field_key];
     if (Array.isArray(raw)) return raw.join(", ");
@@ -171,7 +172,13 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
       if (field.field_type === "phone") value = formatPhone(value);
       if (field.field_key === "cnpj") value = formatCpfCnpj(value);
 
-      const nextStageData = { ...(stageValues(stage.id) ?? {}), [field.field_key]: value || null };
+      const nextStageData = { ...(stageValues(stage.id) ?? {}), [field.field_key]: value || null } as Record<string, unknown>;
+      const requiredFields = fields.filter((item) => item.stage_id === stage.id && item.required);
+      const completedRequired = requiredFields.every((item) => {
+        const nextValue = item.id === field.id ? value : valueFor(stage.id, item);
+        return !!String(nextValue ?? "").trim();
+      });
+      if (completedRequired) delete nextStageData.__deferred;
       const { error: stageDataError } = await supabase.from("lead_stage_data" as never).upsert({ organization_id: lead.organization_id, lead_id: leadId, stage_id: stage.id, data: nextStageData } as never, { onConflict: "lead_id,stage_id" });
       if (stageDataError) throw stageDataError;
 
@@ -241,6 +248,7 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
       {visibleStages.map((stage) => {
         const stageFields = fields.filter((field) => field.stage_id === stage.id).sort((a, b) => a.ordem - b.ordem);
         const answered = stageFields.filter((field) => !!valueFor(stage.id, field).trim()).length;
+        const deferred = stageDeferred(stage.id);
         const isCurrent = stage.id === lead.stage_id;
         return (
           <div key={stage.id} className={`glass-card p-4 sm:p-6 space-y-5 ${isCurrent ? "border-primary/30" : ""}`}>
@@ -249,8 +257,11 @@ export function LeadStageInformation({ leadId }: { leadId: string }) {
                 <h2 className="text-lg font-semibold text-foreground">{isCurrent ? "Dados desta etapa" : "Dados da etapa"}</h2>
                 <span className="text-lg font-semibold text-primary">· {stage.nome}</span>
                 {isCurrent && <Badge variant="outline" className="ml-1 text-[10px] font-normal text-primary border-primary/30">Etapa atual</Badge>}
+                {deferred && <Badge variant="secondary" className="ml-1 text-[10px] font-normal">Responder depois</Badge>}
               </div>
-              <Badge variant={answered === stageFields.length && stageFields.length > 0 ? "default" : "secondary"}>{answered}/{stageFields.length} preenchidas</Badge>
+              <Badge variant={!deferred && answered === stageFields.length && stageFields.length > 0 ? "default" : "secondary"}>
+                {deferred ? "Pendente" : `${answered}/${stageFields.length} preenchidas`}
+              </Badge>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
