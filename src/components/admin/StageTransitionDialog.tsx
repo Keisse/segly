@@ -11,6 +11,7 @@ import { CalendarClock, CheckCircle2, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhone } from "@/lib/phone";
+import { formatCurrencyBRL, isMoneyField, maskCurrencyBRLInput, parseCurrencyBRL } from "@/lib/currency";
 import { usePipelineStageFields, type PipelineStageField } from "@/hooks/usePipelineStageFields";
 
 type LeadForTransition = {
@@ -66,28 +67,7 @@ const todayInput = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 
-const parseMoney = (value: unknown) => {
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-  if (typeof value !== "string") return 0;
-  const raw = value.trim().replace(/\s/g, "");
-  if (!raw) return 0;
-  let normalized = raw;
-  if (raw.includes(",") && raw.includes(".")) {
-    normalized = raw.lastIndexOf(",") > raw.lastIndexOf(".")
-      ? raw.replace(/\./g, "").replace(",", ".")
-      : raw.replace(/,/g, "");
-  } else if (raw.includes(",")) {
-    normalized = raw.replace(",", ".");
-  }
-  const parsed = Number(normalized.replace(/[^\d.-]/g, ""));
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const money = (value: unknown) => {
-  const number = parseMoney(value);
-  if (number <= 0) return "Não informado";
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(number);
-};
+const money = (value: unknown) => formatCurrencyBRL(value, "Não informado");
 
 function toScheduledAt(date: string, time?: string) {
   if (!date) return null;
@@ -159,7 +139,10 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
         if (field.field_key === "data_pagamento_boleto") fallback = lead.custom_fields?.data_pagamento_boleto ?? "";
         if (field.field_key === "data_ganho") fallback = todayInput();
         if (field.field_key === "valor_fechado") fallback = latestProposal?.negotiated_value ?? lead.custom_fields?.valor_fechado ?? lead.custom_fields?.valor_final_fechado ?? "";
-        initial[field.field_key] = savedValue == null ? String(fallback ?? "") : String(savedValue);
+        const initialValue = savedValue == null ? fallback : savedValue;
+        initial[field.field_key] = isMoneyField(field.field_key, field.label)
+          ? formatCurrencyBRL(initialValue)
+          : String(initialValue ?? "");
       });
       setValues(initial);
       setProductId(lead.product_id || latestProposal?.product_id || "");
@@ -171,12 +154,13 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
   const stayedWithCurrentOperator = stageName === "Perdido" && values.motivo_perda === "Permaneceu na operadora atual";
   const selectedProduct = products.find((product) => product.id === productId);
   const effectiveDueDate = String(values.data_boleto || proposalDueDate || "");
-  const numericProposalValue = parseMoney(proposalValue ?? values.valor_fechado ?? "");
+  const numericProposalValue = parseCurrencyBRL(values.valor_fechado || proposalValue || "");
 
   const changeValue = (field: PipelineStageField, value: string) => {
     let next = value;
     if (field.field_type === "phone") next = formatPhone(value);
     if (field.field_key === "cnpj") next = cnpjMask(value);
+    if (isMoneyField(field.field_key, field.label)) next = maskCurrencyBRLInput(value);
     setValues((prev) => ({ ...prev, [field.field_key]: next }));
   };
 
@@ -341,7 +325,7 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
       const proposalPatch: Record<string, unknown> = {};
       if (isProposal) {
         proposalPatch.boleto_due_date = values.data_boleto || null;
-        const proposalAmount = parseMoney(values.valor_fechado || "");
+        const proposalAmount = parseCurrencyBRL(values.valor_fechado || "");
         if (proposalAmount > 0) proposalPatch.negotiated_value = proposalAmount;
       }
       if (isGain) {
@@ -456,7 +440,8 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
                     </Select>
                   ) : (
                     <Input
-                      type={field.field_type === "date" ? "date" : field.field_type === "number" ? "number" : "text"}
+                      type={field.field_type === "date" ? "date" : isMoneyField(field.field_key, field.label) ? "text" : field.field_type === "number" ? "number" : "text"}
+                      inputMode={isMoneyField(field.field_key, field.label) ? "decimal" : undefined}
                       value={value}
                       onChange={(event) => changeValue(field, event.target.value)}
                     />
