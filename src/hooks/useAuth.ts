@@ -6,7 +6,7 @@ type AuthContextValue = {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => ReturnType<typeof supabase.auth.signInWithPassword>;
+  signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => ReturnType<typeof supabase.auth.signUp>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
@@ -48,11 +48,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     session,
     loading,
-    signIn: (email: string, password: string) => supabase.auth.signInWithPassword({ email, password }),
+    signIn: async (email: string, password: string) => {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.session) {
+        throw new Error("Nao foi possivel iniciar a sessao.");
+      }
+
+      // Update auth state before the login page navigates to a protected route.
+      // This avoids a race where ProtectedRoute redirects back to /admin-login.
+      setSession(data.session);
+      setUser(data.user ?? data.session.user);
+      setLoading(false);
+    },
     signUp: (email: string, password: string) => supabase.auth.signUp({ email, password }),
     signOut: async () => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      setSession(null);
+      setUser(null);
     },
     isAuthenticated: !!session,
   }), [user, session, loading]);
