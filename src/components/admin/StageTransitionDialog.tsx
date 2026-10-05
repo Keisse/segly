@@ -137,6 +137,7 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
         if (field.field_key === "data_boleto") fallback = latestProposal?.boleto_due_date ?? lead.custom_fields?.data_boleto ?? "";
         if (field.field_key === "boleto_pago") fallback = lead.custom_fields?.boleto_pago ?? (isGain ? "Sim" : "");
         if (field.field_key === "data_pagamento_boleto") fallback = lead.custom_fields?.data_pagamento_boleto ?? "";
+        if (field.field_key === "valor_final_fechado") fallback = lead.custom_fields?.valor_final_fechado ?? latestProposal?.negotiated_value ?? lead.custom_fields?.valor_fechado ?? "";
         if (field.field_key === "data_ganho") fallback = todayInput();
         if (field.field_key === "valor_fechado") fallback = latestProposal?.negotiated_value ?? lead.custom_fields?.valor_fechado ?? lead.custom_fields?.valor_final_fechado ?? "";
         const initialValue = savedValue == null ? fallback : savedValue;
@@ -154,7 +155,7 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
   const stayedWithCurrentOperator = stageName === "Perdido" && values.motivo_perda === "Permaneceu na operadora atual";
   const selectedProduct = products.find((product) => product.id === productId);
   const effectiveDueDate = String(values.data_boleto || proposalDueDate || "");
-  const numericProposalValue = parseCurrencyBRL(values.valor_fechado || proposalValue || "");
+  const numericProposalValue = parseCurrencyBRL(values.valor_final_fechado || values.valor_fechado || proposalValue || "");
 
   const changeValue = (field: PipelineStageField, value: string) => {
     let next = value;
@@ -207,11 +208,11 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
       toast.error("Informe o vencimento do boleto na etapa Proposta antes de marcar a venda como ganha.");
       return false;
     }
-    if (values.boleto_pago !== "Sim") {
-      toast.error("A etapa Ganho exige a confirmação de que o boleto foi pago.");
+    if (!values.boleto_pago) {
+      toast.error("Informe se o boleto foi pago.");
       return false;
     }
-    if (!values.data_pagamento_boleto) {
+    if (values.boleto_pago === "Sim" && !values.data_pagamento_boleto) {
       toast.error("Informe a data do pagamento do boleto.");
       return false;
     }
@@ -309,8 +310,8 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
       directPatch.product_id = productId;
       custom.valor_final_fechado = numericProposalValue;
       custom.data_boleto = effectiveDueDate;
-      custom.boleto_pago = "Sim";
-      custom.data_pagamento_boleto = values.data_pagamento_boleto;
+      custom.boleto_pago = values.boleto_pago;
+      custom.data_pagamento_boleto = values.data_pagamento_boleto || null;
       custom.data_ganho = values.data_ganho;
       customChanged = true;
     }
