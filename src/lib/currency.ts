@@ -48,8 +48,16 @@ function normalizeSemantic(value: unknown) {
     .toLowerCase();
 }
 
-export function isMoneyField(fieldKey: unknown, label?: unknown) {
-  const text = `${normalizeSemantic(fieldKey)} ${normalizeSemantic(label)}`;
-  if (/percent|porcent|pct|comissao.*%/.test(text)) return false;
-  return /(valor|preco|preco|fatura|mensalidade|receita|custo|ticket|proposta|negociado|negociacao|premio)/.test(text);
+const MONEY_FIELD_KEYS = new Set([
+  "valor_medio_fatura",
+  "valor_apresentado",
+  "valor_fechado",
+  "valor_final_fechado",
+  "valor_negociado",
+  "negotiated_value",
+  "premio",
+]);
+
+export function isMoneyField(fieldKey: unknown, _label?: unknown) {
+  return MONEY_FIELD_KEYS.has(normalizeSemantic(fieldKey));
 }
