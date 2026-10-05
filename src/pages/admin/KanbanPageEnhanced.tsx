@@ -481,7 +481,17 @@ const KanbanPageEnhanced = () => {
     </div>
     <PipelineTabs pipelines={pipelines} activeId={activePipelineId} onSelect={selectPipeline} />
     {!activePipelineId ? <p className="text-sm text-muted-foreground">Nenhum pipeline disponível.</p> : loadingLeads ? <p className="text-sm text-muted-foreground">Carregando vidas…</p> : stages.length === 0 ? <p className="text-sm text-muted-foreground">Este pipeline ainda não tem etapas.</p> : <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
-      <div className="grid gap-3 overflow-x-auto pb-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))` }}>
+      <div
+        className="w-full min-w-0 max-w-full overflow-auto overscroll-contain rounded-lg border border-border/70 bg-background/40 shadow-sm"
+        style={{ height: "calc(100vh - 300px)", minHeight: "420px" }}
+      >
+        <div
+          className="grid gap-3 p-3 pb-4"
+          style={{
+            gridTemplateColumns: `repeat(${stages.length}, minmax(245px, 1fr))`,
+            minWidth: `max(100%, ${Math.max(0, stages.length * 245 + Math.max(0, stages.length - 1) * 12 + 24)}px)`,
+          }}
+        >
         {stages.map((col) => {
           const cards = grouped[col.id] ?? [];
           const overWip = col.wip_limit != null && cards.length > col.wip_limit;
@@ -521,6 +531,7 @@ const KanbanPageEnhanced = () => {
             </DroppableStageColumn>
           );
         })}
+        </div>
       </div>
       <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }}>{activeLead ? <div className="w-[245px] rotate-[1.5deg] scale-[1.03] cursor-grabbing pointer-events-none"><LeadCardVisual
         lead={activeLead}
