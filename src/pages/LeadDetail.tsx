@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Mail, Phone, Building2, Briefcase, Users, Calendar, MessageSquare, Plus, Loader2, Pencil, Check, X, History, ChevronDown } from "lucide-react";
-import { useLead, useAddNote, useUpdateNote, useUpdateLeadStatus } from "@/hooks/useLeads";
+import { useLead, useAddNote, useUpdateNote } from "@/hooks/useLeads";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyRole } from "@/hooks/useMyRole";
 import { LeadActivitiesPanel } from "@/components/admin/LeadActivitiesPanel";
@@ -15,9 +15,10 @@ import { LeadAuditTimeline } from "@/components/admin/LeadAuditTimeline";
 import { LeadEditDialog } from "@/components/admin/LeadEditDialog";
 import { LeadProposalsPanel } from "@/components/admin/LeadProposalsPanel";
 import { LeadStageInformation } from "@/components/admin/LeadStageInformation";
+import { StageTransitionDialog } from "@/components/admin/StageTransitionDialog";
 import { birthDateValues, ExpandedBirthDateInputs } from "@/components/leads/DynamicLeadFormFields";
 import { AgeDistributionTable } from "@/components/leads/AgeDistributionTable";
-import { statusLabels, statusColors, getMaturityLevel, maturityLabels, maturityColors, type LeadStatus } from "@/types/lead";
+import { getMaturityLevel, maturityLabels, maturityColors } from "@/types/lead";
 import { capitalizeWords } from "@/lib/formatName";
 import { formatPhone } from "@/lib/phone";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,7 +118,8 @@ const LeadDetail = () => {
 
   const addNote = useAddNote();
   const updateNote = useUpdateNote();
-  const updateStatus = useUpdateLeadStatus();
+  const updateStage = useUpdateLeadStage();
+  const [pendingStageId, setPendingStageId] = useState<string | null>(null);
   const [newNote, setNewNote] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
@@ -135,6 +137,7 @@ const LeadDetail = () => {
   if (!lead) return <div className="min-h-screen flex items-center justify-center"><div className="text-center"><p className="text-muted-foreground mb-4">Vida não encontrada</p><Button onClick={() => navigate("/admin/dashboard")}>Voltar ao Dashboard</Button></div></div>;
 
   const currentStage = pipelineStages.find((stage) => stage.id === lead.stage_id) ?? null;
+  const pendingStage = pipelineStages.find((stage) => stage.id === pendingStageId) ?? null;
   const negotiationStage = pipelineStages.find((stage) => normalize(stage.nome).includes("negoci")) ?? null;
   const canShowProposals = !!currentStage && !!negotiationStage && currentStage.ordem >= negotiationStage.ordem;
 
@@ -294,6 +297,16 @@ const LeadDetail = () => {
   }));
   const ageDistributionTotal = currentAges.length;
 
+  const handleStageConfirm = async () => {
+    if (!lead.pipeline_id || !pendingStageId) return;
+    await updateStage.mutateAsync({
+      leadId: lead.id,
+      stageId: pendingStageId,
+      pipelineId: lead.pipeline_id,
+    });
+    setPendingStageId(null);
+  };
+
   return (
     <div className="min-h-screen py-4 px-3 sm:py-6 sm:px-4">
       <div className="max-w-5xl mx-auto space-y-6 min-w-0">
@@ -315,7 +328,14 @@ const LeadDetail = () => {
             </div>
             <div className="flex flex-wrap items-center gap-4">
               {hasDiagnostic && <div className="text-center"><div className={`text-3xl font-bold ${maturityLevel === "iniciante" ? "text-red-400" : maturityLevel === "intermediario" ? "text-amber-400" : maturityLevel === "avancado" ? "text-blue-400" : "text-emerald-400"}`}>{Math.round(score)}%</div><div className={`px-3 py-1 rounded-full text-xs font-medium ${maturityColors[maturityLevel]}`}>{maturityLabels[maturityLevel]}</div></div>}
-              <Select value={lead.status} onValueChange={(newStatus) => updateStatus.mutate({ id: lead.id, status: newStatus as LeadStatus })}><SelectTrigger className={`w-[150px] ${statusColors[lead.status]} border-0`}><SelectValue /></SelectTrigger><SelectContent className="bg-card border-border">{Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
+              <Select value={currentStage?.id ?? ""} onValueChange={(stageId) => { if (stageId !== lead.stage_id) setPendingStageId(stageId); }}>
+                <SelectTrigger className="w-[190px] border-0 bg-secondary/60">
+                  <SelectValue placeholder="Selecione a etapa" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  {pipelineStages.map((stage) => <SelectItem key={stage.id} value={stage.id}>{stage.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex flex-wrap gap-4 mt-6 pt-4 border-t border-border/50">
@@ -434,6 +454,14 @@ const LeadDetail = () => {
         </motion.div>
       </div>
       <LeadEditDialog lead={lead} open={editOpen} onOpenChange={setEditOpen} />
+      <StageTransitionDialog
+        open={!!pendingStageId}
+        onOpenChange={(open) => { if (!open) setPendingStageId(null); }}
+        lead={lead}
+        stageId={pendingStageId}
+        stageName={pendingStage?.nome ?? ""}
+        onConfirm={handleStageConfirm}
+      />
     </div>
   );
 };
