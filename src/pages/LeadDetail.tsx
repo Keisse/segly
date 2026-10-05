@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Mail, Phone, Building2, Briefcase, Users, Calendar, MessageSquare, Plus, Loader2, Pencil, Check, X, History, ChevronDown } from "lucide-react";
 import { useLead, useAddNote, useUpdateNote } from "@/hooks/useLeads";
+import { useUpdateLeadStage } from "@/hooks/usePipelines";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyRole } from "@/hooks/useMyRole";
 import { LeadActivitiesPanel } from "@/components/admin/LeadActivitiesPanel";
