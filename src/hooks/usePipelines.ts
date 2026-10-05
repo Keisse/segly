@@ -185,7 +185,29 @@ export function useUpdateLeadStage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ leadId, stageId, pipelineId, kanbanOrder }: { leadId: string; stageId: string; pipelineId: string; kanbanOrder?: number }) => {
-      const patch: Record<string, unknown> = { stage_id: stageId, pipeline_id: pipelineId };
+      const { data: targetStage, error: stageError } = await supabase
+        .from("pipeline_stages" as never)
+        .select("id,nome,is_won,is_lost")
+        .eq("id", stageId)
+        .eq("pipeline_id", pipelineId)
+        .single();
+      if (stageError) throw stageError;
+
+      const stage = targetStage as unknown as { nome: string; is_won: boolean; is_lost: boolean };
+      const normalizedStageName = normalize(stage.nome);
+      const legacyStatus = stage.is_lost
+        ? "perdido"
+        : stage.is_won
+          ? "convertido"
+          : normalizedStageName.includes("novo")
+            ? "novo"
+            : normalizedStageName.includes("contato")
+              ? "contatado"
+              : normalizedStageName.includes("negoci")
+                ? "em_negociacao"
+                : "em_analise";
+
+      const patch: Record<string, unknown> = { stage_id: stageId, pipeline_id: pipelineId, status: legacyStatus };
       if (typeof kanbanOrder === "number") patch.kanban_order = kanbanOrder;
       const { error } = await supabase.from("leads").update(patch as never).eq("id", leadId);
       if (error) throw error;
