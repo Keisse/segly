@@ -173,7 +173,7 @@ const ActionPlanPage = () => {
                       <CardContent className="pt-6">
                         <BookOpen className="w-8 h-8 text-primary mb-3" />
                         <h3 className="font-semibold mb-1">Trilha Recomendada</h3>
-                        <p className="text-sm text-muted-foreground">Cursos alinhados ao seu nível de maturidade e pilar </p>
+                        <p className="text-sm text-muted-foreground">Cursos alinhados ao seu nível de maturidade e pilar </p>
                       </CardContent>
                     </Card>
                     <Card className="bg-card/30 border-border/30">

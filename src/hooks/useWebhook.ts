@@ -34,7 +34,7 @@ interface UtmParams {
 
 interface WebhookLeadCapturePayload {
   type: "lead_capture";
-  lead: LeadData & { porte_empresa: string };
+  lead: LeadData & { porte_empresa: string; porte?: string };
   utm?: UtmParams;
 }
 
@@ -56,7 +56,7 @@ export function useSendWebhook() {
       // Normalize porte to porte_empresa for the webhook
       const normalizedLead = {
         ...payload.lead,
-        porte_empresa: payload.lead.porte_empresa || (payload.lead as any).porte,
+        porte_empresa: payload.lead.porte_empresa || payload.lead.porte || "",
       };
 
       const webhookPayload = {

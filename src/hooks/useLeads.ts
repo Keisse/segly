@@ -2,9 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Lead, LeadStatus, Nota, HistoricoItem, ResultadoDiagnostico } from "@/types/lead";
 import { toast } from "sonner";
-import type { Json } from "@/integrations/supabase/types";
+import type { Json, Database } from "@/integrations/supabase/types";
 
-function transformLead(row: any): Lead {
+function transformLead(row: Database["public"]["Tables"]["leads"]["Row"]): Lead {
   return {
     id: row.id,
     created_at: row.created_at,

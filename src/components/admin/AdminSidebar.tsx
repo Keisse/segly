@@ -14,6 +14,7 @@ import {
   History,
   Package,
   BookOpen,
+  type LucideIcon,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -46,7 +47,7 @@ const PulsingHeart = ({ className }: IconProps) => (
   />
 );
 
-type Item = { title: string; url: string; icon: any; adminOnly?: boolean; leaderOnly?: boolean };
+type Item = { title: string; url: string; icon: LucideIcon; adminOnly?: boolean; leaderOnly?: boolean };
 
 const mainItems: Item[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },

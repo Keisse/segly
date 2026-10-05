@@ -12,6 +12,7 @@ import {
   TrendingUp,
   UserCheck,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,7 +55,7 @@ function percent(part: number, total: number) {
   return Math.round((part / total) * 100);
 }
 
-function KpiCard({ title, value, detail, icon: Icon }: { title: string; value: string | number; detail: string; icon: any }) {
+function KpiCard({ title, value, detail, icon: Icon }: { title: string; value: string | number; detail: string; icon: LucideIcon }) {
   return (
     <Card className="min-w-0">
       <CardContent className="p-4 xl:p-5">
