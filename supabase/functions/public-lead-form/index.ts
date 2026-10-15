@@ -110,8 +110,8 @@ Deno.serve(async (req: Request) => {
   const answers = (body.answers && typeof body.answers === "object" ? body.answers : {}) as Record<string, unknown>;
   const activeFields = fields ?? [];
 
-  if (![answers.nome, answers.empresa, answers.telefone].some((value) => clean(value))) {
-    return json({ error: "Informe nome, empresa ou telefone para identificar o cadastro." }, 400);
+  if (!clean(answers.empresa)) {
+    return json({ error: "Informe o nome da empresa." }, 400);
   }
 
   const peopleField = activeFields.find(isPeopleCountField);
