@@ -80,48 +80,27 @@ const NovoLeadPage = () => {
   }, [fields, values]);
 
   const validate = () => {
-    const peopleField = fields.find(isPeopleCountField);
-    const birthField = fields.find(isBirthDatesField);
-    const peopleCount = peopleField ? Math.max(0, Math.trunc(Number(values[peopleField.field_key] ?? peopleField.default_value ?? 0) || 0)) : 0;
-
-    for (const field of fields) {
-      if (!field.required) continue;
-
-      if (birthField && field.id === birthField.id) {
-        if (peopleCount <= 0) {
-          toast.error("Informe primeiro a quantidade de pessoas.");
-          return false;
-        }
-        const dates = birthDateValues(values[field.field_key], peopleCount);
-        if (dates.some((date) => !date)) {
-          toast.error(`Preencha a data de nascimento das ${peopleCount} pessoas.`);
-          return false;
-        }
-        continue;
-      }
-
-      const value = values[field.field_key] ?? field.default_value ?? "";
-      const empty = Array.isArray(value) ? value.length === 0 : String(value).trim() === "";
-      if (empty) {
-        toast.error(`Preencha: ${field.label}`);
-        return false;
-      }
+    // No cadastro inicial, os campos podem ser complementados durante o atendimento.
+    // Exigimos apenas uma identificação para não criar registros inteiramente vazios.
+    if (!String(values.nome ?? values.empresa ?? "").trim() && !String(values.telefone ?? "").trim()) {
+      toast.error("Informe pelo menos um nome, empresa ou telefone para identificar a vida.");
+      return false;
     }
 
     const email = String(values.email ?? "").trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       toast.error("Informe um e-mail válido.");
       return false;
     }
 
     const phoneDigits = String(values.telefone ?? "").replace(/\D/g, "");
-    if (phoneDigits.length < 10 || phoneDigits.length > 13) {
+    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 13)) {
       toast.error("Informe um telefone válido com DDD.");
       return false;
     }
 
     const documentDigits = String(values.cnpj ?? "").replace(/\D/g, "");
-    if (documentDigits.length !== 11 && documentDigits.length !== 14) {
+    if (documentDigits && documentDigits.length !== 11 && documentDigits.length !== 14) {
       toast.error("Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos.");
       return false;
     }
@@ -263,11 +242,11 @@ const NovoLeadPage = () => {
         <Card>
           <CardHeader>
             <CardTitle>Cadastrar Vidas</CardTitle>
-            <CardDescription>{defaultForm.description || "Os campos marcados com * são obrigatórios."}</CardDescription>
+            <CardDescription>{"Preencha as informações disponíveis. Os demais dados poderão ser incluídos antes da cotação."}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <DynamicLeadFormFields
-              fields={fields}
+              fields={fields.map((field) => ({ ...field, required: false }))}
               values={values}
               onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
               disabled={saving}
@@ -277,7 +256,7 @@ const NovoLeadPage = () => {
             <AgeDistributionTable
               total={ageDistribution.total}
               rows={ageDistribution.rows}
-              description="Atualizada automaticamente conforme as datas de nascimento."
+              description="Opcional no cadastro inicial. As datas serão exigidas ao avançar para Cotar."
             />
 
             <div className="flex justify-end gap-3 pt-2">
