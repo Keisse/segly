@@ -78,8 +78,24 @@ export default function PublicLeadFormPage() {
   })), [data]);
 
   const validate = () => {
-    if (![values.nome, values.empresa, values.telefone].some((value) => String(value ?? "").trim())) {
-      return "Informe pelo menos um nome, empresa ou telefone para identificar a vida.";
+    const peopleField = fields.find(isPeopleCountField);
+    const birthField = fields.find(isBirthDatesField);
+    const peopleCount = peopleField
+      ? Math.max(0, Math.trunc(Number(values[peopleField.field_key] ?? peopleField.default_value ?? 0) || 0))
+      : 0;
+
+    for (const field of fields) {
+      if (!field.required) continue;
+
+      if (birthField && field.id === birthField.id) {
+        if (peopleCount <= 0) return "Informe primeiro a quantidade de pessoas.";
+        const dates = birthDateValues(values[field.field_key] ?? field.default_value, peopleCount);
+        if (dates.some((date) => !date)) return `Preencha a data de nascimento das ${peopleCount} pessoas.`;
+        continue;
+      }
+
+      const value = values[field.field_key] ?? field.default_value ?? "";
+      if (valueIsEmpty(value)) return `Preencha: ${field.label}`;
     }
 
     const email = String(values.email ?? fields.find((field) => field.field_key === "email")?.default_value ?? "").trim();
@@ -172,11 +188,11 @@ export default function PublicLeadFormPage() {
                 <span className="text-sm font-semibold">Segly</span>
               </div>
               <CardTitle className="text-2xl sm:text-3xl">Cadastrar Vidas</CardTitle>
-              <CardDescription>{"Preencha os dados disponíveis. As datas de nascimento serão obrigatórias ao avançar para Cotar."}</CardDescription>
+              <CardDescription>{data?.form.description || "Preencha os dados abaixo para cadastrar as vidas do plano de saúde."}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <DynamicLeadFormFields
-                fields={fields.map((field) => ({ ...field, required: false }))}
+                fields={fields}
                 values={values}
                 onChange={(key, value) => {
                   setError(null);
