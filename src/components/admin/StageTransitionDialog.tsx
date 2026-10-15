@@ -352,6 +352,10 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
 
   const handleDefer = async () => {
     if (!lead || !stageId) return;
+    if (stageName.trim().toLowerCase() === "cotar") {
+      toast.error("Preencha as datas de nascimento antes de avançar para Cotar.");
+      return;
+    }
     setSaving(true);
     try {
       await saveDeferredStage();
@@ -373,6 +377,10 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
         toast.error(`Preencha: ${field.label}`);
         return;
       }
+    }
+    if (stageName.trim().toLowerCase() === "cotar" && !String(values.datas_nascimento ?? "").trim()) {
+      toast.error("Informe as datas de nascimento antes de avançar para Cotar.");
+      return;
     }
     if (!validateGain()) return;
 
@@ -463,7 +471,7 @@ export function StageTransitionDialog({ open, onOpenChange, lead, stageId, stage
         <DialogFooter className="gap-2 sm:justify-between">
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-            <Button variant="secondary" onClick={handleDefer} disabled={saving || isLoading}>Responder depois</Button>
+            {stageName.trim().toLowerCase() !== "cotar" && <Button variant="secondary" onClick={handleDefer} disabled={saving || isLoading}>Responder depois</Button>}
           </div>
           <Button onClick={handleConfirm} disabled={saving || isLoading}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Salvar e mover</Button>
         </DialogFooter>
