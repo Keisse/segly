@@ -82,7 +82,7 @@ const NovoLeadPage = () => {
   const validate = () => {
     // No cadastro inicial, os campos podem ser complementados durante o atendimento.
     // Exigimos apenas uma identificação para não criar registros inteiramente vazios.
-    if (!String(values.nome ?? values.empresa ?? "").trim() && !String(values.telefone ?? "").trim()) {
+    if (![values.nome, values.empresa, values.telefone].some((value) => String(value ?? "").trim())) {
       toast.error("Informe pelo menos um nome, empresa ou telefone para identificar a vida.");
       return false;
     }
