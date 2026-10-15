@@ -110,8 +110,8 @@ Deno.serve(async (req: Request) => {
   const answers = (body.answers && typeof body.answers === "object" ? body.answers : {}) as Record<string, unknown>;
   const activeFields = fields ?? [];
 
-  for (const key of coreKeys) {
-    if (!clean(answers[key])) return json({ error: `Campo obrigatório não preenchido: ${key}.` }, 400);
+  if (![answers.nome, answers.empresa, answers.telefone].some((value) => clean(value))) {
+    return json({ error: "Informe nome, empresa ou telefone para identificar o cadastro." }, 400);
   }
 
   const peopleField = activeFields.find(isPeopleCountField);
@@ -120,27 +120,15 @@ Deno.serve(async (req: Request) => {
     ? Math.min(100, Math.max(0, Math.trunc(Number(answers[peopleField.field_key] ?? peopleField.default_value ?? 0) || 0)))
     : 0;
 
-  for (const field of activeFields) {
-    const rawValue = answers[field.field_key] ?? field.default_value ?? "";
-
-    if (field.required && birthField && field.id === birthField.id) {
-      if (peopleCount <= 0) return json({ error: "Informe primeiro a quantidade de pessoas." }, 400);
-      const dates = normalizeBirthDates(rawValue, peopleCount);
-      if (dates.some((date) => !date)) return json({ error: `Preencha a data de nascimento das ${peopleCount} pessoas.` }, 400);
-      continue;
-    }
-
-    if (field.required && isEmpty(rawValue)) return json({ error: `Preencha: ${field.label}.` }, 400);
-  }
-
+  // Campos adicionais serão completados antes da cotação.
   const email = clean(answers.email, 255).toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "E-mail inválido." }, 400);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "E-mail inválido." }, 400);
 
   const phoneDigits = clean(answers.telefone, 30).replace(/\D/g, "");
-  if (phoneDigits.length < 10 || phoneDigits.length > 13) return json({ error: "Telefone inválido." }, 400);
+  if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 13)) return json({ error: "Telefone inválido." }, 400);
 
   const docDigits = clean(answers.cnpj, 30).replace(/\D/g, "");
-  if (docDigits.length !== 11 && docDigits.length !== 14) return json({ error: "CPF/CNPJ inválido." }, 400);
+  if (docDigits && docDigits.length !== 11 && docDigits.length !== 14) return json({ error: "CPF/CNPJ inválido." }, 400);
 
   const customFields: Record<string, unknown> = {};
   const leadData: Record<string, unknown> = {
