@@ -81,9 +81,9 @@ const NovoLeadPage = () => {
 
   const validate = () => {
     // No cadastro inicial, os campos podem ser complementados durante o atendimento.
-    // Exigimos apenas uma identificação para não criar registros inteiramente vazios.
-    if (![values.nome, values.empresa, values.telefone].some((value) => String(value ?? "").trim())) {
-      toast.error("Informe pelo menos um nome, empresa ou telefone para identificar a vida.");
+    // Somente o nome da empresa é obrigatório no primeiro cadastro.
+    if (!String(values.empresa ?? "").trim()) {
+      toast.error("Informe o nome da empresa.");
       return false;
     }
 
@@ -246,7 +246,7 @@ const NovoLeadPage = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <DynamicLeadFormFields
-              fields={fields.map((field) => ({ ...field, required: false }))}
+              fields={fields.map((field) => ({ ...field, required: field.field_key === "empresa" }))}
               values={values}
               onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
               disabled={saving}
