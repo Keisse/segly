@@ -70,8 +70,8 @@ export default function PublicLeadFormPage() {
   })), [data]);
 
   const validate = () => {
-    if (![values.nome, values.empresa, values.telefone].some((value) => String(value ?? "").trim())) {
-      return "Informe nome, empresa ou telefone para identificar o cadastro.";
+    if (!String(values.empresa ?? "").trim()) {
+      return "Informe o nome da empresa.";
     }
 
     const email = String(values.email ?? fields.find((field) => field.field_key === "email")?.default_value ?? "").trim();
@@ -168,7 +168,7 @@ export default function PublicLeadFormPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <DynamicLeadFormFields
-                fields={fields.map((field) => ({ ...field, required: false }))}
+                fields={fields.map((field) => ({ ...field, required: field.field_key === "empresa" }))}
                 values={values}
                 onChange={(key, value) => {
                   setError(null);
