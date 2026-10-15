@@ -4,10 +4,7 @@ import { CheckCircle2, Heart, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  birthDateValues,
   DynamicLeadFormFields,
-  isBirthDatesField,
-  isPeopleCountField,
   type LeadFormValues,
 } from "@/components/leads/DynamicLeadFormFields";
 import type { LeadFormField } from "@/hooks/useLeadFormFields";
@@ -18,11 +15,6 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 type PublicFormResponse = {
   form: { id: string; name: string; description: string | null };
   fields: Array<Partial<LeadFormField> & { id: string; field_key: string; label: string; type: LeadFormField["type"]; required: boolean; active: boolean; ordem: number }>;
-};
-
-const valueIsEmpty = (value: unknown) => {
-  if (Array.isArray(value)) return value.length === 0 || value.every((item) => String(item ?? "").trim() === "");
-  return String(value ?? "").trim() === "";
 };
 
 export default function PublicLeadFormPage() {
